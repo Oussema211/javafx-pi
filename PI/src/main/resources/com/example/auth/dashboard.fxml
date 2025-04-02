@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<VBox alignment="CENTER" spacing="20" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.auth.controller.DashboardController">
+    <Text text="Dashboard" style="-fx-font: bold 24px 'System';"/>
+    <Label fx:id="welcomeLabel" text="Welcome, User!" style="-fx-font: 18px 'System';"/>
+    <Label fx:id="emailLabel" text="Email: " style="-fx-font: 14px 'System';"/>
+    <Button text="Logout" onAction="#handleLogout"/>
+</VBox>
