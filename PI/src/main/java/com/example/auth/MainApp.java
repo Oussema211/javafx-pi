@@ -1,7 +1,7 @@
 package com.example.auth;
 
 import com.example.auth.model.User;
-import com.example.auth.utils.SessionManager;
+import utils.SessionManager;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
