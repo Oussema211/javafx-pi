@@ -7,5 +7,6 @@
     <Text text="Dashboard" style="-fx-font: bold 24px 'System';"/>
     <Label fx:id="welcomeLabel" text="Welcome, User!" style="-fx-font: 18px 'System';"/>
     <Label fx:id="emailLabel" text="Email: " style="-fx-font: 14px 'System';"/>
-    <Button text="Logout" onAction="#handleLogout"/>
+    <Button text="View Reclamations" onAction="#handleReclamationLink" style="-fx-background-color: #6C983B; -fx-text-fill: white; -fx-font-size: 14px; -fx-padding: 10; -fx-background-radius: 5;"/>
+    <Button text="Logout" onAction="#handleLogout" style="-fx-background-color: #ff5555; -fx-text-fill: white; -fx-font-size: 14px; -fx-padding: 10; -fx-background-radius: 5;"/>
 </VBox>
