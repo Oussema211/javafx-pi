@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<VBox alignment="CENTER" spacing="20" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.auth.controller.AddUserController">
+    <Text text="Add New User" style="-fx-font: bold 24px 'System';"/>
+    <Label text="Nom (Last Name)"/>
+    <TextField fx:id="nomField"/>
+    <Label text="Prénom (First Name)"/>
+    <TextField fx:id="prenomField"/>
+    <Label text="Email"/>
+    <TextField fx:id="emailField"/>
+    <Label text="Password"/>
+    <PasswordField fx:id="passwordField"/>
+    <Label text="Travail (Occupation)"/>
+    <TextField fx:id="travailField"/>
+    <Label text="Photo URL"/>
+    <TextField fx:id="photoUrlField"/>
+    <Label text="Numéro de Téléphone"/>
+    <TextField fx:id="numTelField"/>
+    <Label text="Roles (comma-separated)"/>
+    <TextField fx:id="rolesField"/>
+    <Button text="Add User" onAction="#handleAddUser"/>
+    <Label fx:id="messageLabel" text="" textFill="RED"/>
+</VBox>
