@@ -40,8 +40,8 @@ public class SignupController {
             messageLabel.setText("Nom (Last Name) is required");
             return;
         }
-        if (!nom.matches("^[A-Za-zÀ-ÿ\\s-]+$")) {
-            messageLabel.setText("Nom must contain only letters, spaces, or hyphens");
+        if (!nom.matches("^[A-Za-z\\u00C0-\\u00FF\\s-]+$")) {
+            messageLabel.setText("Nom must contain only letters, accented letters, spaces, or hyphens");
             return;
         }
 
@@ -50,8 +50,8 @@ public class SignupController {
             messageLabel.setText("Prénom (First Name) is required");
             return;
         }
-        if (!prenom.matches("^[A-Za-zÀ-ÿ\\s-]+$")) {
-            messageLabel.setText("Prénom must contain only letters, spaces, or hyphens");
+        if (!prenom.matches("^[A-Za-z\\u00C0-\\u00FF\\s-]+$")) {
+            messageLabel.setText("Prénom must contain only letters, accented letters, spaces, or hyphens");
             return;
         }
 
@@ -147,7 +147,7 @@ public class SignupController {
     private void toggleFullScreen() {
         Stage stage = (Stage) emailField.getScene().getWindow();
         boolean isFullScreen = stage.isFullScreen();
-        stage.setFullScreen(!isFullScreen); // Toggle full-screen state
+        stage.setFullScreen(!isFullScreen);
         toggleFullScreenButton.setText(isFullScreen ? "Toggle Full Screen" : "Exit Full Screen");
         System.out.println("DEBUG: Toggled full-screen mode to: " + !isFullScreen);
     }
