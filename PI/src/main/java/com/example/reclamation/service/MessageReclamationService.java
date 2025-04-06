@@ -27,6 +27,7 @@ public class MessageReclamationService {
             stmt.execute(sql);
         } catch (SQLException e) {
             System.err.println("Error initializing message_reclamation table: " + e.getMessage());
+            e.printStackTrace(); // For debugging
         }
     }
 
@@ -59,8 +60,8 @@ public class MessageReclamationService {
             pstmt.setString(1, id.toString());
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
-                UUID reclamationId = rs.getString("reclamation_id") != null ? 
-                                    UUID.fromString(rs.getString("reclamation_id").replaceAll("(.{8})(.{4})(.{4})(.{4})(.{12})", "$1-$2-$3-$4-$5")) : 
+                UUID reclamationId = rs.getString("reclamation_id") != null ?
+                                    UUID.fromString(rs.getString("reclamation_id").replaceAll("(.{8})(.{4})(.{4})(.{4})(.{12})", "$1-$2-$3-$4-$5")) :
                                     null;
                 return new MessageReclamation(
                         UUID.fromString(rs.getString("id").replaceAll("(.{8})(.{4})(.{4})(.{4})(.{12})", "$1-$2-$3-$4-$5")),
@@ -84,8 +85,8 @@ public class MessageReclamationService {
         try (Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                UUID reclamationId = rs.getString("reclamation_id") != null ? 
-                                    UUID.fromString(rs.getString("reclamation_id").replaceAll("(.{8})(.{4})(.{4})(.{4})(.{12})", "$1-$2-$3-$4-$5")) : 
+                UUID reclamationId = rs.getString("reclamation_id") != null ?
+                                    UUID.fromString(rs.getString("reclamation_id").replaceAll("(.{8})(.{4})(.{4})(.{4})(.{12})", "$1-$2-$3-$4-$5")) :
                                     null;
                 messages.add(new MessageReclamation(
                         UUID.fromString(rs.getString("id").replaceAll("(.{8})(.{4})(.{4})(.{4})(.{12})", "$1-$2-$3-$4-$5")),

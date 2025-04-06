@@ -12,6 +12,7 @@ import java.util.UUID;
 
 public class AuthService {
     private final Connection conn;
+    
 
     public AuthService() {
         conn = MyDatabase.getInstance().getCnx();
@@ -208,4 +209,6 @@ public class AuthService {
             return false;
         }
     }
+
+  
 }

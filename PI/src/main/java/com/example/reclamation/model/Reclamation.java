@@ -3,7 +3,7 @@ package com.example.reclamation.model;
 import java.util.Date;
 import java.util.UUID;
 
-public class Reclamation { // Corrected name
+public class Reclamation {
     private UUID id;
     private UUID userId;
     private UUID tagId;
@@ -11,10 +11,10 @@ public class Reclamation { // Corrected name
     private int rate;
     private String title;
     private String description;
-    private String statut;
+    private Status statut; 
 
     public Reclamation(UUID id, UUID userId, UUID tagId, Date dateReclamation, int rate, 
-                       String title, String description, String statut) {
+                       String title, String description, Status statut) {
         this.id = id;
         this.userId = userId;
         this.tagId = tagId;
@@ -33,7 +33,7 @@ public class Reclamation { // Corrected name
     public int getRate() { return rate; }
     public String getTitle() { return title; }
     public String getDescription() { return description; }
-    public String getStatut() { return statut; }
+    public Status getStatut() { return statut; } // Updated return type
 
     public void setId(UUID id) { this.id = id; }
     public void setUserId(UUID userId) { this.userId = userId; }
@@ -42,5 +42,5 @@ public class Reclamation { // Corrected name
     public void setRate(int rate) { this.rate = rate; }
     public void setTitle(String title) { this.title = title; }
     public void setDescription(String description) { this.description = description; }
-    public void setStatut(String statut) { this.statut = statut; }
+    public void setStatut(Status statut) { this.statut = statut; } // Updated parameter type
 }

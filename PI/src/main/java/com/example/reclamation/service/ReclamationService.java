@@ -2,6 +2,7 @@ package com.example.reclamation.service;
 
 import utils.MyDatabase;
 import com.example.reclamation.model.Reclamation;
+import com.example.reclamation.model.Status;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -15,7 +16,7 @@ public class ReclamationService {
     public ReclamationService() {
         conn = MyDatabase.getInstance().getCnx();
         try (Statement stmt = conn.createStatement()) {
-            String sql = "CREATE TABLE IF NOT EXISTS reclamations (" + // Fixed to 'reclamations'
+            String sql = "CREATE TABLE IF NOT EXISTS reclamations (" +
                     "id VARCHAR(36) PRIMARY KEY, " +
                     "user_id VARCHAR(36) NOT NULL, " +
                     "tag_id VARCHAR(36), " +
@@ -23,7 +24,7 @@ public class ReclamationService {
                     "rate INT NOT NULL, " +
                     "title VARCHAR(255) NOT NULL, " +
                     "description VARCHAR(255) NOT NULL, " +
-                    "statut VARCHAR(255) NOT NULL, " +
+                    "statut VARCHAR(255) NOT NULL, " + // Still stored as VARCHAR in DB
                     "FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE, " +
                     "FOREIGN KEY (tag_id) REFERENCES tag(id) ON DELETE SET NULL)";
             stmt.execute(sql);
@@ -32,8 +33,7 @@ public class ReclamationService {
         }
     }
 
-    // Create: Add a new reclamation
-    public boolean addReclamation(UUID userId, UUID tagId, int rate, String title, String description, String statut) {
+    public boolean addReclamation(UUID userId, UUID tagId, int rate, String title, String description, Status statut) {
         UUID id = UUID.randomUUID();
         Date dateReclamation = new Date();
         String sql = "INSERT INTO reclamations (id, user_id, tag_id, date_reclamation, rate, title, description, statut) " +
@@ -46,15 +46,18 @@ public class ReclamationService {
             pstmt.setInt(5, rate);
             pstmt.setString(6, title);
             pstmt.setString(7, description);
-            pstmt.setString(8, statut);
+            pstmt.setString(8, statut.getDisplayName());
             pstmt.executeUpdate();
             return true;
         } catch (SQLException e) {
-            System.err.println("Error adding reclamation: " + e.getMessage());
+            if (e.getMessage().contains("FOREIGN KEY")) {
+                System.err.println("Foreign key error: User ID " + userId + " does not exist.");
+            } else {
+                System.err.println("Error adding reclamation: " + e.getMessage());
+            }
             return false;
         }
     }
-
     // Read: Get reclamation by ID
     public Reclamation getReclamationById(UUID id) {
         String sql = "SELECT * FROM reclamations WHERE id = ?";
@@ -70,7 +73,7 @@ public class ReclamationService {
                         rs.getInt("rate"),
                         rs.getString("title"),
                         rs.getString("description"),
-                        rs.getString("statut")
+                        Status.fromString(rs.getString("statut")) // Convert DB string to enum
                 );
             }
         } catch (SQLException e) {
@@ -94,7 +97,7 @@ public class ReclamationService {
                         rs.getInt("rate"),
                         rs.getString("title"),
                         rs.getString("description"),
-                        rs.getString("statut")
+                        Status.fromString(rs.getString("statut")) // Convert DB string to enum
                 ));
             }
         } catch (SQLException e) {
@@ -114,7 +117,7 @@ public class ReclamationService {
             pstmt.setInt(4, reclamation.getRate());
             pstmt.setString(5, reclamation.getTitle());
             pstmt.setString(6, reclamation.getDescription());
-            pstmt.setString(7, reclamation.getStatut());
+            pstmt.setString(7, reclamation.getStatut().getDisplayName()); // Store enum's display name
             pstmt.setString(8, reclamation.getId().toString());
             int rowsAffected = pstmt.executeUpdate();
             return rowsAffected > 0;
