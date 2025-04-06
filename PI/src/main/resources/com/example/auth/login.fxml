@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.text.*?>
 
-<VBox alignment="CENTER" spacing="20" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.auth.controller.LoginController">
-    <Text text="Login" style="-fx-font: bold 24px 'System';"/>
-    <Label text="Email"/>
-    <TextField fx:id="emailField"/>
-    <Label text="Password"/>
-    <PasswordField fx:id="passwordField"/>
-    <Button fx:id="loginButton" text="Login" onAction="#handleLogin"/>
-    <Label fx:id="messageLabel" text="" textFill="RED"/>
-    <Hyperlink text="Don't have an account? Sign up" onAction="#switchToSignup"/>
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.auth.controller.LoginController"
+      styleClass="vbox" spacing="10" alignment="CENTER">
+    <Label text="Login" styleClass="label" />
+    <TextField fx:id="emailField" promptText="Email" styleClass="text-field" />
+    <PasswordField fx:id="passwordField" promptText="Password" styleClass="password-field" />
+    <Label fx:id="messageLabel" styleClass="message-label" />
+    <Button text="Login" onAction="#handleLogin" styleClass="button" />
+    <Hyperlink text="Don't have an account? Sign up" onAction="#switchToSignup" styleClass="hyperlink" />
+    <Button fx:id="toggleFullScreenButton" text="Toggle Full Screen" onAction="#toggleFullScreen" styleClass="button" />
 </VBox>
