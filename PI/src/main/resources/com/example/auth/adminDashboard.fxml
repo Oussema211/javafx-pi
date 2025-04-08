@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<VBox alignment="CENTER" spacing="20" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.auth.controller.AdminDashboardController">
+    <Text text="Admin Dashboard" style="-fx-font: bold 24px 'System';"/>
+    <Label fx:id="welcomeLabel" text="Welcome, Admin!"/>
+    <Button text="Add New User" onAction="#showAddUserForm"/>
+    <TableView fx:id="usersTable">
+        <columns>
+            <TableColumn fx:id="emailColumn" text="Email" prefWidth="150"/>
+            <TableColumn fx:id="nomColumn" text="Nom" prefWidth="100"/>
+            <TableColumn fx:id="prenomColumn" text="Prénom" prefWidth="100"/>
+            <TableColumn fx:id="rolesColumn" text="Roles" prefWidth="100"/>
+            <TableColumn fx:id="actionsColumn" text="Actions" prefWidth="150"/>
+        </columns>
+    </TableView>
+    <Button text="Logout" onAction="#handleLogout"/>
+</VBox>
