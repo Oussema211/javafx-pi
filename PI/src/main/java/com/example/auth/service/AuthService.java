@@ -16,7 +16,7 @@ public class AuthService {
     public AuthService() {
         conn = MyDatabase.getInstance().getCnx();
         try (Statement stmt = conn.createStatement()) {
-            String sql = "CREATE TABLE IF NOT EXISTS users (" +
+            String sql = "CREATE TABLE IF NOT EXISTS user (" +
                     "id VARCHAR(36) PRIMARY KEY, " +
                     "email VARCHAR(100) NOT NULL UNIQUE, " +
                     "roles TEXT NOT NULL, " +
@@ -45,7 +45,7 @@ public class AuthService {
         Date dateInscri = new Date();
         boolean isVerified = false;
 
-        String sql = "INSERT INTO users (id, email, roles, password, travail, date_inscri, photo_url, " +
+        String sql = "INSERT INTO user (id, email, roles, password, travail, date_inscri, photo_url, " +
                 "is_verified, nom, prenom, num_tel) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, id.toString());
@@ -71,7 +71,7 @@ public class AuthService {
     }
 
     public User login(String email, String password) {
-        String sql = "SELECT * FROM users WHERE email = ?";
+        String sql = "SELECT * FROM user WHERE email = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, email);
             ResultSet rs = pstmt.executeQuery();
@@ -107,7 +107,7 @@ public class AuthService {
     }
 
     public User getUserById(UUID id) {
-        String sql = "SELECT * FROM users WHERE id = ?";
+        String sql = "SELECT * FROM user WHERE id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, id.toString());
             ResultSet rs = pstmt.executeQuery();
@@ -142,7 +142,7 @@ public class AuthService {
     // Read: Get all users
     public List<User> getAllUsers() {
         List<User> users = new ArrayList<>();
-        String sql = "SELECT * FROM users";
+        String sql = "SELECT * FROM user";
         try (Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
@@ -175,7 +175,7 @@ public class AuthService {
 
     // Update: Update an existing user
     public boolean updateUser(User user) {
-        String sql = "UPDATE users SET email = ?, roles = ?, password = ?, travail = ?, " +
+        String sql = "UPDATE user SET email = ?, roles = ?, password = ?, travail = ?, " +
                 "photo_url = ?, is_verified = ?, nom = ?, prenom = ?, num_tel = ? WHERE id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, user.getEmail());
@@ -198,7 +198,7 @@ public class AuthService {
 
     // Delete: Delete a user by ID
     public boolean deleteUser(UUID id) {
-        String sql = "DELETE FROM users WHERE id = ?";
+        String sql = "DELETE FROM user WHERE id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, id.toString());
             int rowsAffected = pstmt.executeUpdate();
