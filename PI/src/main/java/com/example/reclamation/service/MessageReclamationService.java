@@ -75,20 +75,29 @@ public class MessageReclamationService {
         return null;
     }
 
-    // Read: Get all messages
     public List<MessageReclamation> getAllMessages() {
         List<MessageReclamation> messages = new ArrayList<>();
-        String sql = "SELECT HEX(id) AS id, HEX(user_id) AS user_id, HEX(reclamation_id) AS reclamation_id, " +
-                     "contenu, date_message FROM message_reclamation";
+        String sql = "SELECT id, user_id, reclamation_id, contenu, date_message FROM message_reclamation";
         try (Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                UUID reclamationId = rs.getString("reclamation_id") != null ?
-                                    UUID.fromString(rs.getString("reclamation_id").replaceAll("(.{8})(.{4})(.{4})(.{4})(.{12})", "$1-$2-$3-$4-$5")) :
-                                    null;
+                String idStr = rs.getString("id");
+                String userIdStr = rs.getString("user_id");
+                String reclamationIdStr = rs.getString("reclamation_id");
+    
+                // Debug raw values to ensure they're in the correct format
+                System.out.println("Raw id: " + idStr);
+                System.out.println("Raw user_id: " + userIdStr);
+                System.out.println("Raw reclamation_id: " + reclamationIdStr);
+    
+                // Parse UUIDs directly from the VARCHAR strings
+                UUID id = UUID.fromString(idStr);
+                UUID userId = UUID.fromString(userIdStr);
+                UUID reclamationId = reclamationIdStr != null ? UUID.fromString(reclamationIdStr) : null;
+    
                 messages.add(new MessageReclamation(
-                        UUID.fromString(rs.getString("id").replaceAll("(.{8})(.{4})(.{4})(.{4})(.{12})", "$1-$2-$3-$4-$5")),
-                        UUID.fromString(rs.getString("user_id").replaceAll("(.{8})(.{4})(.{4})(.{4})(.{12})", "$1-$2-$3-$4-$5")),
+                        id,
+                        userId,
                         reclamationId,
                         rs.getString("contenu"),
                         rs.getTimestamp("date_message")
@@ -96,6 +105,10 @@ public class MessageReclamationService {
             }
         } catch (SQLException e) {
             System.err.println("Error fetching all messages: " + e.getMessage());
+            e.printStackTrace();
+        } catch (IllegalArgumentException e) {
+            System.err.println("Error parsing UUID: " + e.getMessage());
+            e.printStackTrace();
         }
         return messages;
     }
