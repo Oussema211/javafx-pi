@@ -1,25 +1,45 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.text.*?>
 
-<VBox alignment="CENTER" spacing="20" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.auth.controller.SignupController">
-    <Text text="Sign Up" style="-fx-font: bold 24px 'System';"/>
-    <Label text="Nom (Last Name)"/>
-    <TextField fx:id="nomField"/>
-    <Label text="Prénom (First Name)"/>
-    <TextField fx:id="prenomField"/>
-    <Label text="Email"/>
-    <TextField fx:id="emailField"/>
-    <Label text="Password"/>
-    <PasswordField fx:id="passwordField"/>
-    <Label text="Travail (Occupation)"/>
-    <TextField fx:id="travailField"/>
-    <Label text="Photo URL"/>
-    <TextField fx:id="photoUrlField"/>
-    <Label text="Numéro de Téléphone"/>
-    <TextField fx:id="numTelField"/>
-    <Button text="Sign Up" onAction="#handleSignup"/>
-    <Label fx:id="messageLabel" text="" textFill="RED"/>
-    <Hyperlink text="Already have an account? Login" onAction="#switchToLogin"/>
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.auth.controller.SignupController"
+      styleClass="vbox" spacing="10" alignment="CENTER">
+    <Label text="Sign Up" styleClass="label" />
+    <TextField fx:id="nomField" promptText="Nom (Last Name)" styleClass="text-field">
+        <tooltip>
+            <Tooltip text="Nom must contain only letters, spaces, or hyphens" />
+        </tooltip>
+    </TextField>
+    <TextField fx:id="prenomField" promptText="Prénom (First Name)" styleClass="text-field">
+        <tooltip>
+            <Tooltip text="Prénom must contain only letters, spaces, or hyphens" />
+        </tooltip>
+    </TextField>
+    <TextField fx:id="emailField" promptText="Email" styleClass="text-field">
+        <tooltip>
+            <Tooltip text="Enter a valid email (e.g., user@example.com)" />
+        </tooltip>
+    </TextField>
+    <PasswordField fx:id="passwordField" promptText="Password" styleClass="password-field">
+        <tooltip>
+            <Tooltip text="Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one digit" />
+        </tooltip>
+    </PasswordField>
+    <TextField fx:id="travailField" promptText="Travail" styleClass="text-field" />
+    <TextField fx:id="photoUrlField" promptText="Photo URL (optional)" styleClass="text-field">
+        <tooltip>
+            <Tooltip text="Enter a valid URL (e.g., https://example.com/image.jpg)" />
+        </tooltip>
+    </TextField>
+    <TextField fx:id="numTelField" promptText="Numéro de Téléphone" styleClass="text-field">
+        <tooltip>
+            <Tooltip text="Enter a valid phone number (e.g., +1234567890 or 123-456-7890)" />
+        </tooltip>
+    </TextField>
+    <Label fx:id="messageLabel" styleClass="message-label" />
+    <Button text="Sign Up" onAction="#handleSignup" styleClass="button" />
+    <Hyperlink text="Already have an account? Login" onAction="#switchToLogin" styleClass="hyperlink" />
+    <Button fx:id="toggleFullScreenButton" text="Toggle Full Screen" onAction="#toggleFullScreen" styleClass="button" />
 </VBox>
