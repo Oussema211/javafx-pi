@@ -17,9 +17,9 @@ public class MessageReclamationService {
         conn = MyDatabase.getInstance().getCnx();
         try (Statement stmt = conn.createStatement()) {
             String sql = "CREATE TABLE IF NOT EXISTS message_reclamation (" +
-                    "id BINARY(16) PRIMARY KEY, " +
-                    "user_id BINARY(16) NOT NULL, " +
-                    "reclamation_id BINARY(16) DEFAULT NULL, " +
+                    "id VARCHAR(36) PRIMARY KEY, " +
+                    "user_id VARCHAR(36) NOT NULL, " +
+                    "reclamation_id VARCHAR(36) DEFAULT NULL, " +
                     "contenu VARCHAR(255) NOT NULL, " +
                     "date_message DATETIME NOT NULL, " +
                     "FOREIGN KEY (user_id) REFERENCES user(id), " +
@@ -31,13 +31,11 @@ public class MessageReclamationService {
         }
     }
 
-    // Create: Add a new message
     public boolean addMessage(UUID userId, UUID reclamationId, String contenu) {
         UUID id = UUID.randomUUID();
         Date dateMessage = new Date();
         String sql = "INSERT INTO message_reclamation (id, user_id, reclamation_id, contenu, date_message) " +
-                     "VALUES (UNHEX(REPLACE(?, '-', '')), UNHEX(REPLACE(?, '-', '')), " +
-                     "UNHEX(REPLACE(?, '-', '')), ?, ?)";
+                     "VALUES (?, ?, ?, ?, ?)";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, id.toString());
             pstmt.setString(2, userId.toString());
@@ -48,10 +46,10 @@ public class MessageReclamationService {
             return true;
         } catch (SQLException e) {
             System.err.println("Error adding message: " + e.getMessage());
+            e.printStackTrace();
             return false;
         }
     }
-
     // Read: Get message by ID
     public MessageReclamation getMessageById(UUID id) {
         String sql = "SELECT HEX(id) AS id, HEX(user_id) AS user_id, HEX(reclamation_id) AS reclamation_id, " +

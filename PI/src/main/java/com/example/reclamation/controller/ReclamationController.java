@@ -7,32 +7,36 @@ import com.example.auth.model.User;
 import com.example.auth.service.AuthService;
 import com.example.reclamation.service.ReclamationService;
 import com.example.reclamation.service.TagService;
+import utils.SessionManager;
 
 import javafx.animation.FadeTransition;
 import javafx.animation.ScaleTransition;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.shape.Circle;
-import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
 public class ReclamationController {
-    private static final String CURRENT_USER_ID = "e8d17e79-c3d8-487a-83a6-8b7dcd9afd0e";
 
     private final AuthService authService = new AuthService();
     private final ReclamationService reclamationService = new ReclamationService();
     private final TagService tagService = new TagService();
+    private final SessionManager sessionManager = SessionManager.getInstance();
 
     @FXML private BorderPane root;
     @FXML private GridPane contentContainer;
@@ -129,6 +133,9 @@ public class ReclamationController {
         card.setOnMouseExited(e -> card.setStyle("-fx-background-color: white; -fx-background-radius: 15; " +
                 "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 15, 0, 0, 5);"));
 
+        // Add click handler to navigate to ReclamationMessages
+        card.setOnMouseClicked(e -> handleReclamationClick(rec));
+
         StackPane profileContainer = new StackPane();
         String photoUrl = user != null && user.getPhotoUrl() != null ? "file:" + user.getPhotoUrl() : "file:images/admin.jpg";
         ImageView avatar = new ImageView(new Image(photoUrl, true));
@@ -171,7 +178,8 @@ public class ReclamationController {
         contentWrapper.getChildren().addAll(titleBar, desc, metaInfo);
 
         HBox actionButtons = new HBox(5);
-        if (rec.getUserId().toString().equals(CURRENT_USER_ID)) {
+        User currentUser = sessionManager.getLoggedInUser();
+        if (currentUser != null && rec.getUserId().equals(currentUser.getId())) {
             Button editBtn = new Button("Edit");
             editBtn.setStyle("-fx-background-color: #f5f5f5; -fx-background-radius: 50%; -fx-padding: 10;");
             editBtn.setOnAction(e -> handleEdit(rec.getId()));
@@ -198,6 +206,27 @@ public class ReclamationController {
 
         return card;
     }
+
+    private void handleReclamationClick(Reclamation reclamation) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/reclamation/ReclamationMessages.fxml"));
+            Parent messagesRoot = loader.load();
+
+            ReclamationMessagesController controller = loader.getController();
+            controller.setPrimaryStage(primaryStage);
+            controller.setSelectedReclamation(reclamation);
+
+            Scene messagesScene = new Scene(messagesRoot, primaryStage.getWidth(), primaryStage.getHeight());
+            primaryStage.setScene(messagesScene);
+            primaryStage.setTitle("Reclamation Messages - " + reclamation.getTitle());
+        } catch (IOException e) {
+            e.printStackTrace();
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to load messages page.");
+            alert.showAndWait();
+        }
+    }
+
+    // Rest of the methods remain unchanged...
 
     private void setupSidebar() {
         sidebar.getChildren().clear();
@@ -322,25 +351,29 @@ public class ReclamationController {
     }
 
     private void handleNewDiscussion() {
+        User currentUser = sessionManager.getLoggedInUser();
+        if (currentUser == null) {
+            Alert alert = new Alert(Alert.AlertType.WARNING, "You must be logged in to create a discussion.");
+            alert.showAndWait();
+            return;
+        }
+
         Dialog<Reclamation> dialog = new Dialog<>();
         dialog.setTitle("New Discussion");
-    
-        // Button types
+
         ButtonType createButtonType = new ButtonType("Create", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(createButtonType, ButtonType.CANCEL);
-    
-        // Root container styled like reclamation-container
+
         VBox content = new VBox(25);
         content.setPadding(new Insets(40));
         content.setAlignment(Pos.CENTER);
         content.setMaxWidth(700);
         content.setStyle(
-            "-fx-background-color: linear-gradient(to bottom right, white, #f5f6fa);" + // Fixed gradient syntax
+            "-fx-background-color: linear-gradient(to bottom right, white, #f5f6fa);" +
             "-fx-background-radius: 20;" +
             "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 30, 0, 0, 10);"
         );
-    
-        // Title
+
         Label titleLabel = new Label("Submit Your Problem");
         titleLabel.setStyle(
             "-fx-font-family: 'Poppins';" +
@@ -349,8 +382,7 @@ public class ReclamationController {
             "-fx-text-fill: #1a1a1a;" +
             "-fx-padding: 0 0 15 0;"
         );
-    
-        // Subtitle
+
         Label subtitle = new Label("We value your feedback. Please describe your concern below.");
         subtitle.setStyle(
             "-fx-font-family: 'Poppins';" +
@@ -358,8 +390,7 @@ public class ReclamationController {
             "-fx-text-fill: #666;" +
             "-fx-padding: 0 0 30 0;"
         );
-    
-        // Form group: Title
+
         VBox titleGroup = new VBox(8);
         Label titleFieldLabel = new Label("Title:");
         titleFieldLabel.setStyle(
@@ -409,8 +440,7 @@ public class ReclamationController {
             }
         });
         titleGroup.getChildren().addAll(titleFieldLabel, titleField);
-    
-        // Form group: Description
+
         VBox descGroup = new VBox(8);
         Label descFieldLabel = new Label("Describe Your Problem:");
         descFieldLabel.setStyle(
@@ -455,8 +485,7 @@ public class ReclamationController {
             }
         });
         descGroup.getChildren().addAll(descFieldLabel, descField);
-    
-        // Form group: Tag
+
         VBox tagGroup = new VBox(8);
         Label tagFieldLabel = new Label("Tag:");
         tagFieldLabel.setStyle(
@@ -501,8 +530,7 @@ public class ReclamationController {
             }
         });
         tagGroup.getChildren().addAll(tagFieldLabel, tagCombo);
-    
-        // Message label for feedback
+
         Label messageLabel = new Label();
         messageLabel.setStyle(
             "-fx-font-family: 'Poppins';" +
@@ -510,11 +538,9 @@ public class ReclamationController {
             "-fx-text-fill: #e74c3c;" +
             "-fx-font-weight: 500;"
         );
-    
-        // Add all form groups and message label to content
+
         content.getChildren().addAll(titleLabel, subtitle, titleGroup, descGroup, tagGroup, messageLabel);
-    
-        // Customize the Create button
+
         Button createButton = (Button) dialog.getDialogPane().lookupButton(createButtonType);
         createButton.setStyle(
             "-fx-font-family: 'Poppins';" +
@@ -546,8 +572,7 @@ public class ReclamationController {
             "-fx-padding: 15 30;" +
             "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 15, 0, 0, 4);"
         ));
-    
-        // Add ripple effect to Create button
+
         createButton.setOnMousePressed(e -> {
             ScaleTransition st = new ScaleTransition(Duration.millis(200), createButton);
             st.setFromX(1.0);
@@ -558,72 +583,58 @@ public class ReclamationController {
             st.setAutoReverse(true);
             st.play();
         });
-    
-        // Set content
+
         dialog.getDialogPane().setContent(content);
-    
-        // Handle the Create action with validation
+
         createButton.setOnAction(e -> {
             String title = titleField.getText().trim();
             String description = descField.getText().trim();
-            String tagName = tagCombo.getValue(); // Tag is optional
-    
-            // Validation
+            String tagName = tagCombo.getValue();
+
             if (title.isEmpty() || description.isEmpty()) {
                 messageLabel.setText("Please fill in all required fields (Title and Description)");
-                messageLabel.setStyle("-fx-text-fill: #e74c3c;"); // Red for error
+                messageLabel.setStyle("-fx-text-fill: #e74c3c;");
                 return;
             }
-    
-            // Create reclamation with a valid user ID
+
             Tag selectedTag = tagName != null ? tagService.getTagByName(tagName) : null;
             UUID tagId = selectedTag != null ? selectedTag.getId() : null;
-            UUID userId = UUID.fromString(CURRENT_USER_ID); // Ensure this matches a user in the DB
-    
+            UUID userId = currentUser.getId();
+
             boolean success = reclamationService.addReclamation(
                 userId,
                 tagId,
-                1, // Rate set to 1
+                1,
                 title,
                 description,
-                Status.WAITING // Status set to WAITING
+                Status.WAITING
             );
-    
+
             if (success) {
                 messageLabel.setText("Reclamation added successfully!");
-                messageLabel.setStyle("-fx-text-fill: #2ecc71;"); // Green for success
-                setupMainContainer(); // Refresh UI
-                // Clear fields
+                messageLabel.setStyle("-fx-text-fill: #2ecc71;");
+                setupMainContainer();
                 titleField.clear();
                 descField.clear();
                 tagCombo.getSelectionModel().clearSelection();
-                // Close dialog after a short delay
-                new Thread(() -> {
-                    try {
-                        Thread.sleep(1000); // Show message for 1 second
-                        javafx.application.Platform.runLater(() -> {
-                            Stage stage = (Stage) dialog.getDialogPane().getScene().getWindow();
-                            stage.close();
-                        });
-                    } catch (InterruptedException ex) {
-                        ex.printStackTrace();
-                    }
-                }).start();
+
+                javafx.animation.PauseTransition delay = new javafx.animation.PauseTransition(Duration.seconds(1));
+                delay.setOnFinished(event -> dialog.close());
+                delay.play();
             } else {
                 messageLabel.setText("Failed to add reclamation. Check user ID or database constraints.");
-                messageLabel.setStyle("-fx-text-fill: #e74c3c;"); // Red for error
+                messageLabel.setStyle("-fx-text-fill: #e74c3c;");
             }
         });
-    
-        // Add fade-in animation
+
         FadeTransition fadeIn = new FadeTransition(Duration.millis(500), content);
         fadeIn.setFromValue(0);
         fadeIn.setToValue(1);
         dialog.setOnShown(e -> fadeIn.play());
-    
-        // Show dialog
+
         dialog.show();
     }
+
     private void handleWriteReview() {
         System.out.println("Opening write review form - not implemented yet.");
     }
