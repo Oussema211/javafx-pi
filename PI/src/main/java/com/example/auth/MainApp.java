@@ -29,7 +29,7 @@ public class MainApp extends Application {
         if (user == null) {
             fxmlFile = "/com/example/auth/login.fxml";
         } else {
-            fxmlFile = user.hasRole("ROLE_ADMIN") ? "/com/example/auth/adminDashboard.fxml" : "/com/example/auth/dashboard.fxml";
+            fxmlFile = user.hasRole("ROLE_ADMIN") ? "/com/example/auth/dashboard.fxml" : "/com/example/reclamation/Reclamation.fxml";
         }
         System.out.println("DEBUG: Loading FXML: " + fxmlFile);
         Parent root = FXMLLoader.load(getClass().getResource(fxmlFile));

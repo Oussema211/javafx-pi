@@ -66,7 +66,7 @@ public class DashboardController {
         achat.setOnAction(event -> loadContent("/com/example/pages/purchasing.fxml"));
         productButton.setOnAction(event -> loadContent("/com/example/pages/products.fxml"));
         categoryButton.setOnAction(event -> loadContent("/com/example/pages/categories.fxml"));
-        userButton.setOnAction(event -> loadContent("/com/example/pages/users.fxml"));
+        userButton.setOnAction(event -> loadContent("/com/example/auth/adminDashboard.fxml"));
         settings.setOnAction(event -> loadContent("/com/example/pages/settings.fxml"));
         logoutButton.setOnAction(event -> {
             try {
