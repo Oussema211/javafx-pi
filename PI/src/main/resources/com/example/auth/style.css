@@ -1,0 +1,48 @@
+.root {
+    -fx-background-image: url("/com/example/auth/images/agriculture_background.jpg");
+    -fx-background-size: cover;
+    -fx-background-position: center;
+    -fx-background-repeat: no-repeat;
+}
+
+.vbox {
+    -fx-background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent white background for the form */
+    -fx-padding: 20px;
+    -fx-border-radius: 10px;
+    -fx-background-radius: 10px;
+    -fx-max-width: 400px;
+    -fx-alignment: center;
+}
+
+.text-field, .password-field {
+    -fx-background-color: #f0f0f0;
+    -fx-border-color: #4CAF50;
+    -fx-border-radius: 5px;
+    -fx-padding: 5px;
+}
+
+.button {
+    -fx-background-color: #4CAF50; /* Green color for agricultural theme */
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+}
+
+.button:hover {
+    -fx-background-color: #45a049;
+}
+
+.hyperlink {
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+}
+
+.label {
+    -fx-font-weight: bold;
+    -fx-text-fill: #333;
+}
+
+.message-label {
+    -fx-font-weight: bold;
+}
