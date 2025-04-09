@@ -1,5 +1,4 @@
-package com.example.auth.utils;
-
+package utils;
 import com.example.auth.model.User;
 import com.example.auth.service.AuthService;
 

@@ -1,7 +1,7 @@
 package com.example.auth.controller;
 
 import com.example.auth.model.User;
-import com.example.auth.utils.SessionManager;
+import utils.SessionManager;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -55,8 +55,6 @@ public class DashboardController {
     public void initialize() {
         User user = sessionManager.getLoggedInUser();
         if (user == null) {
-            // This should not happen since LoginController handles the redirect,
-            // but we'll log it for debugging
             System.err.println("No user logged in; should have been redirected to login");
             return;
         }
@@ -85,5 +83,23 @@ public class DashboardController {
         Stage stage = (Stage) welcomeLabel.getScene().getWindow();
         Parent root = FXMLLoader.load(getClass().getResource("/com/example/auth/login.fxml"));
         stage.setScene(new Scene(root));
+    }
+
+    @FXML
+    private void handleReclamationLink() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/reclamation/Reclamation.fxml"));
+            Parent reclamationRoot = loader.load();
+            Stage stage = new Stage();
+            stage.setTitle("Reclamation Discussions");
+            stage.setScene(new Scene(reclamationRoot, 1400, 800));
+
+            com.example.reclamation.controller.ReclamationController controller = loader.getController();
+            controller.setPrimaryStage(stage);
+
+            stage.show();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
