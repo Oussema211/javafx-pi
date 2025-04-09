@@ -2,10 +2,10 @@ package com.example.auth;
 
 import com.example.auth.model.User;
 import com.example.auth.service.AuthService;
-import com.example.reclamation.controller.ReclamationController; // Import the controller
 import com.example.reclamation.service.MessageReclamationService;
 import com.example.reclamation.service.ReclamationService;
 import com.example.reclamation.service.TagService;
+
 import utils.SessionManager;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -32,28 +32,12 @@ public class MainApp extends Application {
             fxmlFile = user.hasRole("ROLE_ADMIN") ? "/com/example/auth/dashboard.fxml" : "/com/example/reclamation/Reclamation.fxml";
         }
         System.out.println("DEBUG: Loading FXML: " + fxmlFile);
-
-        // Use FXMLLoader to load the FXML and get the controller if needed
-        FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlFile));
-        Parent root = loader.load();
+        Parent root = FXMLLoader.load(getClass().getResource(fxmlFile));
         if (root == null) {
             System.out.println("DEBUG: Failed to load " + fxmlFile + " - root is null");
             return;
         }
-
-        // Check if the loaded FXML is for Reclamation.fxml and set the primaryStage
-        if (fxmlFile.equals("/com/example/reclamation/Reclamation.fxml")) {
-            ReclamationController controller = loader.getController();
-            if (controller != null) {
-                controller.setPrimaryStage(primaryStage);
-                System.out.println("DEBUG: Set primaryStage in ReclamationController");
-            } else {
-                System.out.println("DEBUG: ReclamationController is null");
-            }
-        }
-
-        // Set up the scene with a default size
-        Scene scene = new Scene(root, 800, 600); // Adjusted default size for better usability
+        Scene scene = new Scene(root, 400, 500);
 
         // Load stylesheet
         java.net.URL stylesheetUrl = getClass().getClassLoader().getResource("com/example/auth/styles.css");

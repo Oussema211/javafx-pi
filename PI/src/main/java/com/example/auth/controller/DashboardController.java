@@ -23,6 +23,8 @@ public class DashboardController {
     @FXML
     private Hyperlink dashboardButton;
     @FXML
+    private Hyperlink reclamation;
+    @FXML
     private Hyperlink achat;
     @FXML
     private Hyperlink productButton;
@@ -63,10 +65,11 @@ public class DashboardController {
         emailLabel.setText("Email: " + user.getEmail());
 
         dashboardButton.setOnAction(event -> loadContent("/com/example/pages/dashboard.fxml"));
+        reclamation.setOnAction(event -> loadContent("/com/example/pages/reclamation.fxml"));
         achat.setOnAction(event -> loadContent("/com/example/pages/purchasing.fxml"));
         productButton.setOnAction(event -> loadContent("/com/example/pages/products.fxml"));
         categoryButton.setOnAction(event -> loadContent("/com/example/pages/categories.fxml"));
-        userButton.setOnAction(event -> loadContent("/com/example/auth/adminDashboard.fxml"));
+        userButton.setOnAction(event -> loadContent("/com/example/pages/users.fxml"));
         settings.setOnAction(event -> loadContent("/com/example/pages/settings.fxml"));
         logoutButton.setOnAction(event -> {
             try {
@@ -85,21 +88,5 @@ public class DashboardController {
         stage.setScene(new Scene(root));
     }
 
-    @FXML
-    private void handleReclamationLink() {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/reclamation/Reclamation.fxml"));
-            Parent reclamationRoot = loader.load();
-            Stage stage = new Stage();
-            stage.setTitle("Reclamation Discussions");
-            stage.setScene(new Scene(reclamationRoot, 1400, 800));
-
-            com.example.reclamation.controller.ReclamationController controller = loader.getController();
-            controller.setPrimaryStage(stage);
-
-            stage.show();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+    
 }
