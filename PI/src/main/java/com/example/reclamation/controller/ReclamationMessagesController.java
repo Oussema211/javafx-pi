@@ -153,7 +153,7 @@ public class ReclamationMessagesController {
 
         User currentUser = sessionManager.getLoggedInUser();
         if (currentUser != null && message.getUserId().equals(currentUser.getId())) {
-            Button deleteBtn = new Button("🗑️");
+            Button deleteBtn = new Button("Delete");
             deleteBtn.setStyle("-fx-background-color: transparent; -fx-font-size: 18px; -fx-text-fill: #ff5555;");
             deleteBtn.setOnMouseEntered(e -> deleteBtn.setStyle("-fx-background-color: transparent; -fx-font-size: 18px; -fx-text-fill: #cc0000;"));
             deleteBtn.setOnMouseExited(e -> deleteBtn.setStyle("-fx-background-color: transparent; -fx-font-size: 18px; -fx-text-fill: #ff5555;"));

@@ -134,7 +134,7 @@ public class MessageReclamationService {
 
     // Delete: Delete a message by ID
     public boolean deleteMessage(UUID id) {
-        String sql = "DELETE FROM message_reclamation WHERE id = UNHEX(REPLACE(?, '-', ''))";
+        String sql = "DELETE FROM message_reclamation WHERE id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, id.toString());
             int rowsAffected = pstmt.executeUpdate();
