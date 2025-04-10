@@ -2,7 +2,8 @@ package com.example.auth.controller;
 
 import com.example.auth.model.User;
 import com.example.auth.service.AuthService;
-import utils.SessionManager;
+import com.example.auth.utils.SessionManager;
+
 import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;

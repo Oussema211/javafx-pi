@@ -5,9 +5,9 @@ import com.example.reclamation.model.Tag;
 import com.example.reclamation.model.Status;
 import com.example.auth.model.User;
 import com.example.auth.service.AuthService;
+import com.example.auth.utils.SessionManager;
 import com.example.reclamation.service.ReclamationService;
 import com.example.reclamation.service.TagService;
-import utils.SessionManager;
 
 import javafx.animation.FadeTransition;
 import javafx.animation.ScaleTransition;

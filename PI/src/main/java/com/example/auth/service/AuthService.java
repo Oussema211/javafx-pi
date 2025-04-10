@@ -1,8 +1,10 @@
 package com.example.auth.service;
 
 import com.example.auth.model.User;
+import com.example.auth.utils.EmailUtil;
+import com.example.auth.utils.MyDatabase;
+
 import org.mindrot.jbcrypt.BCrypt;
-import utils.MyDatabase;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -10,9 +12,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+import javax.mail.MessagingException;
+
 public class AuthService {
     private final Connection conn;
-    
 
     public AuthService() {
         conn = MyDatabase.getInstance().getCnx();
@@ -29,6 +32,14 @@ public class AuthService {
                     "nom VARCHAR(50) NOT NULL, " +
                     "prenom VARCHAR(50) NOT NULL, " +
                     "num_tel VARCHAR(20))";
+            stmt.execute(sql);
+
+            // Create reset_token table for password reset
+            sql = "CREATE TABLE IF NOT EXISTS reset_token (" +
+                    "token VARCHAR(36) PRIMARY KEY, " +
+                    "user_id VARCHAR(36) NOT NULL, " +
+                    "expiry_date TIMESTAMP NOT NULL, " +
+                    "FOREIGN KEY (user_id) REFERENCES user(id))";
             stmt.execute(sql);
         } catch (SQLException e) {
             System.err.println("Error initializing database: " + e.getMessage());
@@ -210,5 +221,105 @@ public class AuthService {
         }
     }
 
-  
+    // Corrected updatePasswordByEmail method
+    public boolean updatePasswordByEmail(String email, String newPassword) {
+        String hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
+        String sql = "UPDATE user SET password = ? WHERE email = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, hashedPassword);
+            pstmt.setString(2, email);
+            int rowsAffected = pstmt.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            System.err.println("Error updating password: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // Generate and send reset token
+    public boolean requestPasswordReset(String email, String numTel) {
+        // Find user by email and numTel
+        String sql = "SELECT * FROM user WHERE email = ? AND num_tel = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, email);
+            pstmt.setString(2, numTel);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                UUID userId = UUID.fromString(rs.getString("id"));
+                // Generate a unique token
+                String token = UUID.randomUUID().toString();
+                // Set expiration to 1 hour from now
+                Timestamp expiryDate = new Timestamp(System.currentTimeMillis() + 60 * 60 * 1000);
+
+                // Store the token in the database
+                String insertSql = "INSERT INTO reset_token (token, user_id, expiry_date) VALUES (?, ?, ?)";
+                try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
+                    insertStmt.setString(1, token);
+                    insertStmt.setString(2, userId.toString());
+                    insertStmt.setTimestamp(3, expiryDate);
+                    insertStmt.executeUpdate();
+                }
+
+                // Send email with reset link
+                String resetLink = "http://localhost:8080/reset-password?token=" + token;
+                String emailBody = "<h2>Password Reset Request</h2>" +
+                        "<p>Click the link below to reset your password:</p>" +
+                        "<a href=\"" + resetLink + "\">Reset Password</a>" +
+                        "<p>This link will expire in 1 hour.</p>";
+                EmailUtil.sendEmail(email, "Password Reset Request", emailBody);
+                return true;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error requesting password reset: " + e.getMessage());
+        } catch (MessagingException e) {
+            System.err.println("Error sending reset email: " + e.getMessage());
+        }
+        return false;
+    }
+
+    // Verify token and reset password
+    public boolean resetPasswordWithToken(String token, String newPassword) {
+        // Find the token in the database
+        String sql = "SELECT * FROM reset_token WHERE token = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, token);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                Timestamp expiryDate = rs.getTimestamp("expiry_date");
+                if (expiryDate.before(new Timestamp(System.currentTimeMillis()))) {
+                    // Token has expired
+                    deleteToken(token);
+                    return false;
+                }
+
+                String userId = rs.getString("user_id");
+                // Update the user's password
+                String hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
+                String updateSql = "UPDATE user SET password = ? WHERE id = ?";
+                try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
+                    updateStmt.setString(1, hashedPassword);
+                    updateStmt.setString(2, userId);
+                    updateStmt.executeUpdate();
+                }
+
+                // Delete the token after use
+                deleteToken(token);
+                return true;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error resetting password with token: " + e.getMessage());
+        }
+        return false;
+    }
+
+    // Helper method to delete a token
+    private void deleteToken(String token) {
+        String sql = "DELETE FROM reset_token WHERE token = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, token);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("Error deleting token: " + e.getMessage());
+        }
+    }
 }

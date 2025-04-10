@@ -2,7 +2,8 @@ package com.example.auth.controller;
 
 import com.example.auth.model.User;
 import com.example.auth.service.AuthService;
-import utils.SessionManager;
+import com.example.auth.utils.SessionManager;
+
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -106,4 +107,19 @@ public class LoginController {
         toggleFullScreenButton.setText(isFullScreen ? "Toggle Full Screen" : "Exit Full Screen");
         System.out.println("DEBUG: Toggled full-screen mode to: " + !isFullScreen);
     }
+    @FXML
+private void handleForgotPassword() {
+    try {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/auth/resetPassword.fxml"));
+        Parent root = loader.load();
+        Stage stage = new Stage();
+        stage.setTitle("Reset Password");
+        stage.setScene(new Scene(root, 400, 400));
+
+        stage.show();
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+}
+
 }

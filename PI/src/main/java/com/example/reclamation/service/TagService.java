@@ -1,12 +1,11 @@
 package com.example.reclamation.service;
 
-import utils.MyDatabase;
-
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import com.example.auth.utils.MyDatabase;
 import com.example.reclamation.model.Tag;
 
 public class TagService {

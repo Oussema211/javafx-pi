@@ -4,9 +4,9 @@ import com.example.reclamation.model.MessageReclamation;
 import com.example.reclamation.model.Reclamation;
 import com.example.auth.model.User;
 import com.example.auth.service.AuthService;
+import com.example.auth.utils.SessionManager;
 import com.example.reclamation.service.MessageReclamationService;
 import com.example.reclamation.service.ReclamationService;
-import utils.SessionManager;
 
 import javafx.animation.PauseTransition;
 import javafx.fxml.FXML;

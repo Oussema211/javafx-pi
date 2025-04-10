@@ -2,11 +2,12 @@ package com.example.auth;
 
 import com.example.auth.model.User;
 import com.example.auth.service.AuthService;
+import com.example.auth.utils.ResetLinkServer;
+import com.example.auth.utils.SessionManager;
 import com.example.reclamation.service.MessageReclamationService;
 import com.example.reclamation.service.ReclamationService;
 import com.example.reclamation.service.TagService;
 
-import utils.SessionManager;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -24,6 +25,7 @@ public class MainApp extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
         System.out.println("DEBUG: Starting MainApp");
+        ResetLinkServer.startServer();
         String fxmlFile;
         User user = sessionManager.getLoggedInUser();
         if (user == null) {
@@ -53,6 +55,9 @@ public class MainApp extends Application {
         primaryStage.setFullScreen(FULL_SCREEN); // Set initial full-screen state
         primaryStage.show();
         System.out.println("DEBUG: MainApp started successfully");
+        primaryStage.setOnCloseRequest(event -> {
+            ResetLinkServer.stopServer();
+        });
     }
 
     public static void main(String[] args) {

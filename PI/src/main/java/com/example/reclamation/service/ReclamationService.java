@@ -1,6 +1,6 @@
 package com.example.reclamation.service;
 
-import utils.MyDatabase;
+import com.example.auth.utils.MyDatabase;
 import com.example.reclamation.model.Reclamation;
 import com.example.reclamation.model.Status;
 

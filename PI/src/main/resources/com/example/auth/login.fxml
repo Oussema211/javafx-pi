@@ -12,5 +12,7 @@
     <Label fx:id="messageLabel" styleClass="message-label" />
     <Button text="Login" onAction="#handleLogin" styleClass="button" />
     <Hyperlink text="Don't have an account? Sign up" onAction="#switchToSignup" styleClass="hyperlink" />
+    <Hyperlink text="Forgot Password?" onAction="#handleForgotPassword" />
+
     <Button fx:id="toggleFullScreenButton" text="Toggle Full Screen" onAction="#toggleFullScreen" styleClass="button" />
 </VBox>
