@@ -1,8 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?import javafx.scene.layout.VBox?>
-<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
 
-
-<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" styleClass="main-content">
-    <Label text="wow" styleClass="content-title"/>
+<VBox alignment="CENTER" spacing="20" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.reclamation.controller.ReclamationDashboardController">
+    <Text text="Reclamations Dashboard" style="-fx-font: bold 24px 'System';"/>
+    <Label fx:id="welcomeLabel" text="Welcome, Admin!"/>
+    <Button text="Add New Reclamation" onAction="#showAddReclamationForm"/>
+    <TableView fx:id="reclamationsTable">
+        <columns>
+            <TableColumn fx:id="userIdColumn" text="User ID" prefWidth="150"/>
+            <TableColumn fx:id="dateColumn" text="Date" prefWidth="120"/>
+            <TableColumn fx:id="rateColumn" text="Rate" prefWidth="80"/>
+            <TableColumn fx:id="titleColumn" text="Title" prefWidth="150"/>
+            <TableColumn fx:id="statusColumn" text="Status" prefWidth="100"/>
+            <TableColumn fx:id="actionsColumn" text="Actions" prefWidth="150"/>
+        </columns>
+    </TableView>
+    <Button text="Logout" onAction="#handleLogout"/>
 </VBox>

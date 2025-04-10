@@ -115,9 +115,9 @@ public class MessageReclamationService {
 
     // Update: Update an existing message
     public boolean updateMessage(MessageReclamation message) {
-        String sql = "UPDATE message_reclamation SET user_id = UNHEX(REPLACE(?, '-', '')), " +
-                     "reclamation_id = UNHEX(REPLACE(?, '-', '')), contenu = ?, date_message = ? " +
-                     "WHERE id = UNHEX(REPLACE(?, '-', ''))";
+        String sql = "UPDATE message_reclamation SET user_id = ?, " +
+                     "reclamation_id = ?, contenu = ?, date_message = ? " +
+                     "WHERE id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, message.getUserId().toString());
             pstmt.setString(2, message.getReclamationId() != null ? message.getReclamationId().toString() : null);
@@ -143,5 +143,29 @@ public class MessageReclamationService {
             System.err.println("Error deleting message: " + e.getMessage());
             return false;
         }
+    }
+    public List<MessageReclamation> getMessagesForReclamation(UUID reclamationId) {
+        List<MessageReclamation> messages = new ArrayList<>();
+        String sql = "SELECT id, user_id, reclamation_id, contenu, date_message " +
+                     "FROM message_reclamation WHERE reclamation_id = ? ORDER BY date_message";
+        
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, reclamationId.toString());
+            ResultSet rs = pstmt.executeQuery();
+            
+            while (rs.next()) {
+                messages.add(new MessageReclamation(
+                    UUID.fromString(rs.getString("id")),
+                    UUID.fromString(rs.getString("user_id")),
+                    UUID.fromString(rs.getString("reclamation_id")),
+                    rs.getString("contenu"),
+                    rs.getTimestamp("date_message")
+                ));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching messages for reclamation: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return messages;
     }
 }
