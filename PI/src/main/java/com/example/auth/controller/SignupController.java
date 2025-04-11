@@ -13,45 +13,40 @@ import java.net.URL;
 import java.util.Collections;
 
 public class SignupController {
-    @FXML private TextField nomField;
-    @FXML private TextField prenomField;
+    @FXML private TextField fullNameField;
     @FXML private TextField emailField;
+    @FXML private TextField usernameField;
     @FXML private PasswordField passwordField;
-    @FXML private TextField travailField;
-    @FXML private TextField photoUrlField;
-    @FXML private TextField numTelField;
-    @FXML private Label messageLabel;
-    @FXML private Button toggleFullScreenButton;
+    @FXML private PasswordField confirmPasswordField;
+    @FXML private Button signupButton;
+    @FXML private Hyperlink loginLink;
+    @FXML private Label messageLabel; // We'll need to add this to the FXML
 
     private AuthService authService = new AuthService();
 
     @FXML
-    private void handleSignup() {
-        String nom = nomField.getText().trim();
-        String prenom = prenomField.getText().trim();
+    private void onSignupClicked() { // Changed from handleSignup to match FXML
+        String fullName = fullNameField.getText().trim();
         String email = emailField.getText().trim();
+        String username = usernameField.getText().trim();
         String password = passwordField.getText().trim();
-        String travail = travailField.getText().trim();
-        String photoUrl = photoUrlField.getText().trim();
-        String numTel = numTelField.getText().trim();
+        String confirmPassword = confirmPasswordField.getText().trim();
 
-        // Validation: Nom (Last Name)
-        if (nom.isEmpty()) {
-            messageLabel.setText("Nom (Last Name) is required");
-            return;
-        }
-        if (!nom.matches("^[A-Za-z\\u00C0-\\u00FF\\s-]+$")) {
-            messageLabel.setText("Nom must contain only letters, accented letters, spaces, or hyphens");
-            return;
-        }
+        // Split fullName into nom and prenom (assuming format "FirstName LastName")
+        String[] nameParts = fullName.split("\\s+");
+        String prenom = nameParts.length > 0 ? nameParts[0] : "";
+        String nom = nameParts.length > 1 ? nameParts[1] : "";
+        String travail = ""; // Not in FXML, set to empty or default
+        String photoUrl = ""; // Not in FXML, set to empty or default
+        String numTel = ""; // Not in FXML, set to empty or default
 
-        // Validation: Prénom (First Name)
-        if (prenom.isEmpty()) {
-            messageLabel.setText("Prénom (First Name) is required");
+        // Validation: Full Name
+        if (fullName.isEmpty()) {
+            messageLabel.setText("Full Name is required");
             return;
         }
-        if (!prenom.matches("^[A-Za-z\\u00C0-\\u00FF\\s-]+$")) {
-            messageLabel.setText("Prénom must contain only letters, accented letters, spaces, or hyphens");
+        if (!nom.matches("^[A-Za-z\\u00C0-\\u00FF\\s-]+$") || !prenom.matches("^[A-Za-z\\u00C0-\\u00FF\\s-]+$")) {
+            messageLabel.setText("Full Name must contain only letters, accented letters, spaces, or hyphens");
             return;
         }
 
@@ -65,6 +60,12 @@ public class SignupController {
             return;
         }
 
+        // Validation: Username
+        if (username.isEmpty()) {
+            messageLabel.setText("Username is required");
+            return;
+        }
+
         // Validation: Password
         if (password.isEmpty()) {
             messageLabel.setText("Password is required");
@@ -75,24 +76,10 @@ public class SignupController {
             return;
         }
 
-        // Validation: Numéro de Téléphone
-        if (numTel.isEmpty()) {
-            messageLabel.setText("Numéro de Téléphone is required");
+        // Validation: Confirm Password
+        if (!password.equals(confirmPassword)) {
+            messageLabel.setText("Passwords do not match");
             return;
-        }
-        if (!numTel.matches("^(\\+\\d{1,3}[- ]?)?\\d{10}$|^\\d{3}-\\d{3}-\\d{4}$")) {
-            messageLabel.setText("Invalid phone number format (e.g., +1234567890 or 123-456-7890)");
-            return;
-        }
-
-        // Validation: Photo URL (optional, but if provided, must be a valid URL)
-        if (!photoUrl.isEmpty()) {
-            try {
-                new URL(photoUrl).toURI();
-            } catch (Exception e) {
-                messageLabel.setText("Invalid Photo URL format");
-                return;
-            }
         }
 
         // Show confirmation dialog
@@ -114,7 +101,7 @@ public class SignupController {
     }
 
     @FXML
-    private void switchToLogin() {
+    private void onLoginClicked() { // Changed from switchToLogin to match FXML
         try {
             System.out.println("DEBUG: Switching to login screen");
             Stage stage = (Stage) emailField.getScene().getWindow();
@@ -131,7 +118,7 @@ public class SignupController {
             if (stylesheetUrl != null) {
                 scene.getStylesheets().add(stylesheetUrl.toExternalForm());
             } else {
-                System.out.println("DEBUG: Could not find styles.css in switchToLogin");
+                System.out.println("DEBUG: Could not find styles.css in onLoginClicked");
             }
 
             stage.setScene(scene);
@@ -143,23 +130,12 @@ public class SignupController {
         }
     }
 
-    @FXML
-    private void toggleFullScreen() {
-        Stage stage = (Stage) emailField.getScene().getWindow();
-        boolean isFullScreen = stage.isFullScreen();
-        stage.setFullScreen(!isFullScreen);
-        toggleFullScreenButton.setText(isFullScreen ? "Toggle Full Screen" : "Exit Full Screen");
-        System.out.println("DEBUG: Toggled full-screen mode to: " + !isFullScreen);
-    }
-
     private void clearFields() {
-        nomField.clear();
-        prenomField.clear();
+        fullNameField.clear();
         emailField.clear();
+        usernameField.clear();
         passwordField.clear();
-        travailField.clear();
-        photoUrlField.clear();
-        numTelField.clear();
+        confirmPasswordField.clear();
         messageLabel.setText("");
     }
 }

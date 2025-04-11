@@ -2,44 +2,62 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.effect.*?>
 
-<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.example.auth.controller.SignupController"
-      styleClass="vbox" spacing="10" alignment="CENTER">
-    <Label text="Sign Up" styleClass="label" />
-    <TextField fx:id="nomField" promptText="Nom (Last Name)" styleClass="text-field">
-        <tooltip>
-            <Tooltip text="Nom must contain only letters, spaces, or hyphens" />
-        </tooltip>
-    </TextField>
-    <TextField fx:id="prenomField" promptText="Prénom (First Name)" styleClass="text-field">
-        <tooltip>
-            <Tooltip text="Prénom must contain only letters, spaces, or hyphens" />
-        </tooltip>
-    </TextField>
-    <TextField fx:id="emailField" promptText="Email" styleClass="text-field">
-        <tooltip>
-            <Tooltip text="Enter a valid email (e.g., user@example.com)" />
-        </tooltip>
-    </TextField>
-    <PasswordField fx:id="passwordField" promptText="Password" styleClass="password-field">
-        <tooltip>
-            <Tooltip text="Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one digit" />
-        </tooltip>
-    </PasswordField>
-    <TextField fx:id="travailField" promptText="Travail" styleClass="text-field" />
-    <TextField fx:id="photoUrlField" promptText="Photo URL (optional)" styleClass="text-field">
-        <tooltip>
-            <Tooltip text="Enter a valid URL (e.g., https://example.com/image.jpg)" />
-        </tooltip>
-    </TextField>
-    <TextField fx:id="numTelField" promptText="Numéro de Téléphone" styleClass="text-field">
-        <tooltip>
-            <Tooltip text="Enter a valid phone number (e.g., +1234567890 or 123-456-7890)" />
-        </tooltip>
-    </TextField>
-    <Label fx:id="messageLabel" styleClass="message-label" />
-    <Button text="Sign Up" onAction="#handleSignup" styleClass="button" />
-    <Hyperlink text="Already have an account? Login" onAction="#switchToLogin" styleClass="hyperlink" />
-    <Button fx:id="toggleFullScreenButton" text="Toggle Full Screen" onAction="#toggleFullScreen" styleClass="button" />
-</VBox>
+<StackPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.auth.controller.SignupController">
+    <!-- Background Image with Blur Effect -->
+    <ImageView fitWidth="800" fitHeight="600">
+        <image>
+            <Image url="@../images/background.jpg" />
+        </image>
+        <effect>
+            <GaussianBlur radius="10" />
+        </effect>
+    </ImageView>
+
+    <!-- Sign-Up Pane with Semi-Transparent Background -->
+    <VBox alignment="CENTER" spacing="15" style="-fx-background-color: rgba(255, 255, 255, 0.2); -fx-background-radius: 10; -fx-padding: 20;" prefWidth="300">
+        <!-- Title -->
+        <Label text="Sign Up" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;" alignment="CENTER" />
+
+        <!-- Full Name Field -->
+        <HBox alignment="CENTER_LEFT" spacing="10">
+            <Label text="Full Name" style="-fx-text-fill: white;" />
+            <TextField fx:id="fullNameField" prefWidth="200" promptText="Full Name" />
+        </HBox>
+
+        <!-- Email Field -->
+        <HBox alignment="CENTER_LEFT" spacing="10">
+            <Label text="Email" style="-fx-text-fill: white;" />
+            <TextField fx:id="emailField" prefWidth="200" promptText="Email" />
+        </HBox>
+
+        <!-- Username Field -->
+        <HBox alignment="CENTER_LEFT" spacing="10">
+            <Label text="Username" style="-fx-text-fill: white;" />
+            <TextField fx:id="usernameField" prefWidth="200" promptText="Username" />
+        </HBox>
+
+        <!-- Password Field -->
+        <HBox alignment="CENTER_LEFT" spacing="10">
+            <Label text="Password" style="-fx-text-fill: white;" />
+            <PasswordField fx:id="passwordField" prefWidth="200" promptText="Password" />
+        </HBox>
+
+        <!-- Confirm Password Field -->
+        <HBox alignment="CENTER_LEFT" spacing="10">
+            <Label text="Confirm Password" style="-fx-text-fill: white;" />
+            <PasswordField fx:id="confirmPasswordField" prefWidth="200" promptText="Confirm Password" />
+        </HBox>
+
+        <!-- Sign-Up Button -->
+        <Button fx:id="signupButton" text="Sign Up" prefWidth="100" style="-fx-background-color: white; -fx-text-fill: black; -fx-font-weight: bold;" onAction="#onSignupClicked" />
+
+        <!-- Message Label for Validation Feedback -->
+        <Label fx:id="messageLabel" style="-fx-text-fill: red;" alignment="CENTER" />
+
+        <!-- Login Link -->
+        <Hyperlink fx:id="loginLink" text="Already have an account? Login" style="-fx-text-fill: red;" onAction="#onLoginClicked" />
+    </VBox>
+</StackPane>

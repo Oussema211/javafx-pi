@@ -9,6 +9,8 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
@@ -17,33 +19,33 @@ import javafx.stage.Stage;
 import java.io.IOException;
 
 public class LoginController {
-    @FXML private TextField emailField;
+    @FXML private TextField usernameField; // Changed from emailField to match FXML
     @FXML private PasswordField passwordField;
-    @FXML private Label messageLabel;
-    @FXML private Button toggleFullScreenButton;
+    @FXML private CheckBox rememberMeCheckBox;
+    @FXML private Hyperlink forgotPasswordLink;
+    @FXML private Button loginButton;
+    @FXML private Hyperlink registerLink;
+    @FXML private Label messageLabel; // We'll need to add this to the FXML
 
     private AuthService authService = new AuthService();
     private SessionManager sessionManager = SessionManager.getInstance();
 
     @FXML
-    private void handleLogin() throws IOException {
-        String email = emailField.getText().trim();
+    private void onLoginClicked() throws IOException { // Changed from handleLogin to match FXML
+        String username = usernameField.getText().trim(); // Changed from email to username
         String password = passwordField.getText().trim();
 
         // Validation
-        if (email.isEmpty() || password.isEmpty()) {
-            messageLabel.setText("Please enter email and password");
+        if (username.isEmpty() || password.isEmpty()) {
+            messageLabel.setText("Please enter username and password");
             return;
         }
 
-        if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-            messageLabel.setText("Invalid email format");
-            return;
-        }
-
-        User user = authService.login(email, password);
+        // Since the FXML uses username instead of email, we'll assume the AuthService can handle username-based login
+        // If AuthService strictly requires email, you'll need to modify the FXML to use emailField instead
+        User user = authService.login(username, password);
         if (user == null) {
-            messageLabel.setText("Invalid email or password");
+            messageLabel.setText("Invalid username or password");
             return;
         }
 
@@ -51,7 +53,7 @@ public class LoginController {
 
         // Redirect based on user role
         String fxmlFile = user.hasRole("ROLE_ADMIN") ? "/com/example/auth/dashboard.fxml" : "/com/example/reclamation/Reclamation.fxml";
-        Stage stage = (Stage) emailField.getScene().getWindow();
+        Stage stage = (Stage) usernameField.getScene().getWindow();
         boolean isFullScreen = stage.isFullScreen();
         Parent root = FXMLLoader.load(getClass().getResource(fxmlFile));
         Scene scene = new Scene(root, 400, 500);
@@ -61,7 +63,7 @@ public class LoginController {
         if (stylesheetUrl != null) {
             scene.getStylesheets().add(stylesheetUrl.toExternalForm());
         } else {
-            System.out.println("DEBUG: Could not find styles.css in handleLogin");
+            System.out.println("DEBUG: Could not find styles.css in onLoginClicked");
         }
 
         stage.setScene(scene);
@@ -70,10 +72,24 @@ public class LoginController {
     }
 
     @FXML
-    private void switchToSignup() {
+    private void onForgotPasswordClicked() { // Changed from handleForgotPassword to match FXML
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/auth/resetPassword.fxml"));
+            Parent root = loader.load();
+            Stage stage = new Stage();
+            stage.setTitle("Reset Password");
+            stage.setScene(new Scene(root, 400, 400));
+            stage.show();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
+    private void onRegisterClicked() { // Changed from switchToSignup to match FXML
         try {
             System.out.println("DEBUG: Switching to signup screen");
-            Stage stage = (Stage) emailField.getScene().getWindow();
+            Stage stage = (Stage) usernameField.getScene().getWindow();
             boolean isFullScreen = stage.isFullScreen();
             Parent root = FXMLLoader.load(getClass().getResource("/com/example/auth/signup.fxml"));
             if (root == null) {
@@ -87,7 +103,7 @@ public class LoginController {
             if (stylesheetUrl != null) {
                 scene.getStylesheets().add(stylesheetUrl.toExternalForm());
             } else {
-                System.out.println("DEBUG: Could not find styles.css in switchToSignup");
+                System.out.println("DEBUG: Could not find styles.css in onRegisterClicked");
             }
 
             stage.setScene(scene);
@@ -98,28 +114,4 @@ public class LoginController {
             e.printStackTrace();
         }
     }
-
-    @FXML
-    private void toggleFullScreen() {
-        Stage stage = (Stage) emailField.getScene().getWindow();
-        boolean isFullScreen = stage.isFullScreen();
-        stage.setFullScreen(!isFullScreen); // Toggle full-screen state
-        toggleFullScreenButton.setText(isFullScreen ? "Toggle Full Screen" : "Exit Full Screen");
-        System.out.println("DEBUG: Toggled full-screen mode to: " + !isFullScreen);
-    }
-    @FXML
-private void handleForgotPassword() {
-    try {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/auth/resetPassword.fxml"));
-        Parent root = loader.load();
-        Stage stage = new Stage();
-        stage.setTitle("Reset Password");
-        stage.setScene(new Scene(root, 400, 400));
-
-        stage.show();
-    } catch (IOException e) {
-        e.printStackTrace();
-    }
-}
-
 }

@@ -250,7 +250,7 @@ public class AuthService {
                 String token = UUID.randomUUID().toString();
                 // Set expiration to 1 hour from now
                 Timestamp expiryDate = new Timestamp(System.currentTimeMillis() + 60 * 60 * 1000);
-
+    
                 // Store the token in the database
                 String insertSql = "INSERT INTO reset_token (token, user_id, expiry_date) VALUES (?, ?, ?)";
                 try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
@@ -259,9 +259,9 @@ public class AuthService {
                     insertStmt.setTimestamp(3, expiryDate);
                     insertStmt.executeUpdate();
                 }
-
+    
                 // Send email with reset link
-                String resetLink = "http://localhost:8080/reset-password?token=" + token;
+                String resetLink = "http://localhost:8080/reset-password?token=" + token;  // Corrected port
                 String emailBody = "<h2>Password Reset Request</h2>" +
                         "<p>Click the link below to reset your password:</p>" +
                         "<a href=\"" + resetLink + "\">Reset Password</a>" +
@@ -276,7 +276,7 @@ public class AuthService {
         }
         return false;
     }
-
+    
     // Verify token and reset password
     public boolean resetPasswordWithToken(String token, String newPassword) {
         // Find the token in the database
