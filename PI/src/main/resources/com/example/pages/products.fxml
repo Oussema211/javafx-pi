@@ -1,8 +1,160 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?import javafx.scene.layout.VBox?>
+
+<?import java.lang.String?>
+<?import javafx.collections.FXCollections?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.cell.PropertyValueFactory?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
 
+<VBox spacing="10" styleClass="main-vbox" stylesheets="@../css/produits.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.produit.controller.ProductController">
 
-<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" styleClass="main-content">
-    <Label text="Products content" styleClass="content-title"/>
+    <HBox spacing="10" styleClass="title-box">
+        <Label styleClass="title-label" text="Products" />
+        <Label styleClass="subtitle-label" text="Add, view and edit your products all in one place. Need help?" />
+        <Region HBox.hgrow="ALWAYS" />
+        <Button styleClass="secondary-button" text="IMPORT" />
+        <Button fx:id="addProductButton" onAction="#handleAddProduct" styleClass="primary-button" text="ADD PRODUCT" />
+    </HBox>
+
+    <VBox styleClass="search-section">
+        <Label styleClass="section-title" text="SEARCH FOR PRODUCT">
+            <opaqueInsets>
+                <Insets />
+            </opaqueInsets>
+            <font>
+                <Font name="Calibri" size="1.0" />
+            </font>
+        </Label>
+        <HBox alignment="CENTER_LEFT" spacing="5">
+            <Label styleClass="search-icon" text="" />
+            <TextField fx:id="searchField" prefHeight="40.0" prefWidth="542.0" promptText="Search product" styleClass="search-field" />
+        </HBox>
+
+        <HBox spacing="10" styleClass="filter-box">
+            <VBox styleClass="filter-column">
+                <Label styleClass="filter-label" text="PRODUCT TYPE" />
+                <ComboBox fx:id="productTypeComboBox" promptText="All" styleClass="filter-combo">
+                    <items>
+                        <FXCollections fx:factory="observableArrayList">
+                            <String fx:value="All" />
+                            <String fx:value="Physical" />
+                            <String fx:value="Digital" />
+                        </FXCollections>
+                    </items>
+                </ComboBox>
+            </VBox>
+
+            <VBox styleClass="filter-column">
+                <Label styleClass="filter-label" text="CATEGORY" />
+                <ComboBox fx:id="categoryComboBox" promptText="All" styleClass="filter-combo" />
+            </VBox>
+
+            <VBox styleClass="filter-column">
+                <Label styleClass="filter-label" text="SUPPLIER" />
+                <ComboBox fx:id="supplierComboBox" promptText="All" styleClass="filter-combo">
+                    <items>
+                        <FXCollections fx:factory="observableArrayList">
+                            <String fx:value="All" />
+                            <String fx:value="Outdoor Gear" />
+                            <String fx:value="Marshall Amp" />
+                            <String fx:value="Kasa" />
+                        </FXCollections>
+                    </items>
+                </ComboBox>
+            </VBox>
+
+            <VBox styleClass="filter-column">
+                <Label styleClass="filter-label" text="BRAND" />
+                <ComboBox fx:id="brandComboBox" promptText="All" styleClass="filter-combo">
+                    <items>
+                        <FXCollections fx:factory="observableArrayList">
+                            <String fx:value="All" />
+                            <String fx:value="Corsair" />
+                            <String fx:value="Marshall" />
+                            <String fx:value="Kasa" />
+                        </FXCollections>
+                    </items>
+                </ComboBox>
+            </VBox>
+
+            <VBox styleClass="filter-column">
+                <Label styleClass="filter-label" text="STATUS" />
+                <ComboBox fx:id="statusComboBox" promptText="Active" styleClass="filter-combo">
+                    <items>
+                        <FXCollections fx:factory="observableArrayList">
+                            <String fx:value="All" />
+                            <String fx:value="Active" />
+                            <String fx:value="Inactive" />
+                            <String fx:value="Draft" />
+                        </FXCollections>
+                    </items>
+                </ComboBox>
+            </VBox>
+
+            <!-- Tags Filter -->
+            <VBox styleClass="filter-column">
+                <Label styleClass="filter-label" text="TAGS" />
+                <TextField fx:id="tagsField" promptText="Enter tags" styleClass="filter-field" />
+            </VBox>
+
+            <!-- Search Button -->
+            <VBox alignment="BOTTOM_LEFT" styleClass="filter-column">
+                <Button fx:id="searchButton" styleClass="search-button" text="SEARCH" />
+            </VBox>
+        </HBox>
+    </VBox>
+
+    <HBox styleClass="results-header">
+        <Label fx:id="resultsCountLabel" styleClass="results-count" text="SHOWING 0 PRODUCTS" />
+        <Label styleClass="time-filter" text="1H" />
+        <Button styleClass="export-button" text="EXPORT LIST" />
+    </HBox>
+
+    <TableView fx:id="productTableView" styleClass="product-table-view" VBox.vgrow="ALWAYS">
+        <columns>
+            <TableColumn fx:id="imagePreviewColumn" prefWidth="50" text="Image Preview">
+            </TableColumn>
+            <TableColumn fx:id="productColumn" prefWidth="150" text="Product">
+                <cellValueFactory>
+                    <PropertyValueFactory property="nom" />
+                </cellValueFactory>
+            </TableColumn>
+            <TableColumn fx:id="descriptionColumn" prefWidth="200" text="Description">
+                <cellValueFactory>
+                    <PropertyValueFactory property="description" />
+                </cellValueFactory>
+            </TableColumn>
+            <TableColumn fx:id="categoryColumn" prefWidth="150" text="Category">
+                <cellValueFactory>
+                    <PropertyValueFactory property="category" />
+                </cellValueFactory>
+            </TableColumn>
+            <TableColumn fx:id="priceColumn" prefWidth="100" text="Price">
+                <cellValueFactory>
+                    <PropertyValueFactory property="prixUnitaire" />
+                </cellValueFactory>
+            </TableColumn>
+            <TableColumn fx:id="quantityColumn" prefWidth="100" text="Quantity">
+                <cellValueFactory>
+                    <PropertyValueFactory property="quantite" />
+                </cellValueFactory>
+            </TableColumn>
+            <TableColumn fx:id="dateCreationColumn" prefWidth="150" text="Date Created">
+                <cellValueFactory>
+                    <PropertyValueFactory property="dateCreation" />
+                </cellValueFactory>
+            </TableColumn>
+             <!-- Updated column -->
+            <TableColumn fx:id="actionsColumn" prefWidth="150" text="Actions" />
+        </columns>
+    </TableView>
 </VBox>
