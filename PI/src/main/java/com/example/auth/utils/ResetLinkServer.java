@@ -19,9 +19,9 @@ public class ResetLinkServer {
     private static HttpServer server;
 
     public static void startServer() throws IOException {
-        server = HttpServer.create(new InetSocketAddress(8081), 0);
+        server = HttpServer.create(new InetSocketAddress(1100), 0);
         server.createContext("/reset-password", new ResetPasswordHandler());
-        server.setExecutor(null); // Use default executor
+        server.setExecutor(null);
         server.start();
         System.out.println("Reset link server started on port 8080");
     }
