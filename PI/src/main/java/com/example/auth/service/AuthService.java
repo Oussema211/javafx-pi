@@ -3,6 +3,7 @@ package com.example.auth.service;
 import com.example.auth.model.User;
 import com.example.auth.utils.EmailUtil;
 import com.example.auth.utils.MyDatabase;
+import com.example.auth.utils.ResetLinkServer;
 
 import org.mindrot.jbcrypt.BCrypt;
 
@@ -34,7 +35,6 @@ public class AuthService {
                     "num_tel VARCHAR(20))";
             stmt.execute(sql);
 
-            // Create reset_token table for password reset
             sql = "CREATE TABLE IF NOT EXISTS reset_token (" +
                     "token VARCHAR(36) PRIMARY KEY, " +
                     "user_id VARCHAR(36) NOT NULL, " +
@@ -47,10 +47,9 @@ public class AuthService {
     }
 
     public boolean signup(String email, String password, String travail, String photoUrl,
-                          String nom, String prenom, String numTel, List<String> roles) {
+                         String nom, String prenom, String numTel, List<String> roles) {
         String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
         UUID id = UUID.randomUUID();
-        // Convert roles list to JSON string
         User tempUser = new User(id, email, "[]", password, travail, new Date(), photoUrl, false, nom, prenom, numTel);
         tempUser.setRoles(roles);
         String rolesJson = tempUser.getRolesAsJson();
@@ -151,7 +150,6 @@ public class AuthService {
         return null;
     }
 
-    // Read: Get all users
     public List<User> getAllUsers() {
         List<User> users = new ArrayList<>();
         String sql = "SELECT * FROM user";
@@ -185,7 +183,6 @@ public class AuthService {
         return users;
     }
 
-    // Update: Update an existing user
     public boolean updateUser(User user) {
         String sql = "UPDATE user SET email = ?, roles = ?, password = ?, travail = ?, " +
                 "photo_url = ?, is_verified = ?, nom = ?, prenom = ?, num_tel = ? WHERE id = ?";
@@ -208,7 +205,6 @@ public class AuthService {
         }
     }
 
-    // Delete: Delete a user by ID
     public boolean deleteUser(UUID id) {
         String sql = "DELETE FROM user WHERE id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -221,7 +217,6 @@ public class AuthService {
         }
     }
 
-    // Corrected updatePasswordByEmail method
     public boolean updatePasswordByEmail(String email, String newPassword) {
         String hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
         String sql = "UPDATE user SET password = ? WHERE email = ?";
@@ -236,9 +231,7 @@ public class AuthService {
         }
     }
 
-    // Generate and send reset token
     public boolean requestPasswordReset(String email, String numTel) {
-        // Find user by email and numTel
         String sql = "SELECT * FROM user WHERE email = ? AND num_tel = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, email);
@@ -246,12 +239,9 @@ public class AuthService {
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
                 UUID userId = UUID.fromString(rs.getString("id"));
-                // Generate a unique token
                 String token = UUID.randomUUID().toString();
-                // Set expiration to 1 hour from now
                 Timestamp expiryDate = new Timestamp(System.currentTimeMillis() + 60 * 60 * 1000);
-    
-                // Store the token in the database
+
                 String insertSql = "INSERT INTO reset_token (token, user_id, expiry_date) VALUES (?, ?, ?)";
                 try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
                     insertStmt.setString(1, token);
@@ -259,9 +249,13 @@ public class AuthService {
                     insertStmt.setTimestamp(3, expiryDate);
                     insertStmt.executeUpdate();
                 }
-    
-                // Send email with reset link
-                String resetLink = "http://localhost:8080/reset-password?token=" + token;  // Corrected port
+
+                if (!ResetLinkServer.startServer()) {
+                    System.err.println("Failed to start reset server; password reset link may not work");
+                    return false;
+                }
+
+                String resetLink = "http://localhost:8082/reset-password?token=" + token;
                 String emailBody = "<h2>Password Reset Request</h2>" +
                         "<p>Click the link below to reset your password:</p>" +
                         "<a href=\"" + resetLink + "\">Reset Password</a>" +
@@ -276,10 +270,8 @@ public class AuthService {
         }
         return false;
     }
-    
-    // Verify token and reset password
+
     public boolean resetPasswordWithToken(String token, String newPassword) {
-        // Find the token in the database
         String sql = "SELECT * FROM reset_token WHERE token = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, token);
@@ -287,13 +279,12 @@ public class AuthService {
             if (rs.next()) {
                 Timestamp expiryDate = rs.getTimestamp("expiry_date");
                 if (expiryDate.before(new Timestamp(System.currentTimeMillis()))) {
-                    // Token has expired
                     deleteToken(token);
+                    ResetLinkServer.stopServer();
                     return false;
                 }
 
                 String userId = rs.getString("user_id");
-                // Update the user's password
                 String hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
                 String updateSql = "UPDATE user SET password = ? WHERE id = ?";
                 try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
@@ -302,8 +293,8 @@ public class AuthService {
                     updateStmt.executeUpdate();
                 }
 
-                // Delete the token after use
                 deleteToken(token);
+                ResetLinkServer.stopServer();
                 return true;
             }
         } catch (SQLException e) {
@@ -312,7 +303,6 @@ public class AuthService {
         return false;
     }
 
-    // Helper method to delete a token
     private void deleteToken(String token) {
         String sql = "DELETE FROM reset_token WHERE token = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {

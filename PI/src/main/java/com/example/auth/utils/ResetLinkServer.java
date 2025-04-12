@@ -14,33 +14,65 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.BindException;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.net.URL;
 
 public class ResetLinkServer {
     private static HttpServer server;
+    private static final Object lock = new Object();
 
-    // Stop the server if it's already running
-    public static void stopServer() {
-        if (server != null) {
-            server.stop(0); // Stops the server immediately
-            server = null; // Clear reference
-            System.out.println("Reset link server stopped");
+    static {
+        Runtime.getRuntime().addShutdownHook(new Thread(ResetLinkServer::stopServer));
+    }
+
+    private static boolean isPortAvailable(int port) {
+        try (ServerSocket socket = new ServerSocket(port)) {
+            socket.setReuseAddress(true);
+            return true;
+        } catch (IOException e) {
+            return false;
         }
     }
 
-    // Start the server with a check to stop it first if needed
-    public static void startServer() throws IOException {
-        stopServer(); // Ensure any existing server is stopped
+    public static void stopServer() {
+        synchronized (lock) {
+            if (server != null) {
+                try {
+                    server.stop(1); // Graceful shutdown with 1-second delay
+                    System.out.println("Reset link server stopped");
+                } catch (Exception e) {
+                    System.err.println("Error stopping server: " + e.getMessage());
+                } finally {
+                    server = null;
+                }
+            }
+        }
+    }
 
-        try {
-            server = HttpServer.create(new InetSocketAddress(8081), 0); // Using port 8081
-            server.createContext("/reset-password", new ResetPasswordHandler());
-            server.setExecutor(null); // Use default executor
-            server.start();
-            System.out.println("Reset link server started on port 8081");
-        } catch (BindException e) {
-            System.err.println("Port 8081 is already in use: " + e.getMessage());
-            throw new IOException("Could not start server on port 8081", e);
+    public static boolean startServer() {
+        synchronized (lock) {
+            stopServer(); // Ensure any existing server is stopped
+
+            int port = 8082;
+            if (!isPortAvailable(port)) {
+                System.err.println("Port " + port + " is already in use. Server not started.");
+                return false;
+            }
+
+            try {
+                server = HttpServer.create(new InetSocketAddress(port), 0);
+                server.createContext("/reset-password", new ResetPasswordHandler());
+                server.setExecutor(null);
+                server.start();
+                System.out.println("Reset link server started on port " + port);
+                return true;
+            } catch (BindException e) {
+                System.err.println("Failed to start server on port " + port + ": " + e.getMessage());
+                return false;
+            } catch (IOException e) {
+                System.err.println("Unexpected error starting server on port " + port + ": " + e.getMessage());
+                return false;
+            }
         }
     }
 
@@ -62,7 +94,6 @@ public class ResetLinkServer {
                 return;
             }
 
-            // Launch JavaFX UI on the JavaFX Application Thread
             String finalToken = token;
             Platform.runLater(() -> {
                 try {
@@ -75,7 +106,6 @@ public class ResetLinkServer {
                     stage.setTitle("Change Password");
                     Scene scene = new Scene(root, 400, 500);
 
-                    // Load stylesheet
                     URL stylesheetUrl = ResetLinkServer.class.getClassLoader().getResource("com/example/auth/styles.css");
                     if (stylesheetUrl != null) {
                         scene.getStylesheets().add(stylesheetUrl.toExternalForm());
@@ -86,10 +116,9 @@ public class ResetLinkServer {
                     stage.setScene(scene);
                     stage.show();
 
-                    // Stop the server when the JavaFX window is closed
+                    // Do not stop server on window close; let it run until token expiry or reset
                     stage.setOnCloseRequest(event -> {
-                        stopServer();
-                        System.out.println("Password reset window closed, server stopped");
+                        System.out.println("Password reset window closed");
                     });
                 } catch (IOException e) {
                     System.err.println("Error loading changePassword.fxml: " + e.getMessage());

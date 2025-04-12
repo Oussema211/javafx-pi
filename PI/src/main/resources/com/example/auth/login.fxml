@@ -23,7 +23,7 @@
 
         <!-- Username Field -->
         <HBox alignment="CENTER_LEFT" spacing="10">
-            <Label text="Username" style="-fx-text-fill: white;" />
+            <Label text="Email" style="-fx-text-fill: white;" />
             <TextField fx:id="usernameField" prefWidth="200" promptText="Username" />
         </HBox>
 

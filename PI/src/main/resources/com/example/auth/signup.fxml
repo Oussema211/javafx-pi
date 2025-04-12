@@ -3,61 +3,77 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.image.*?>
-<?import javafx.scene.effect.*?>
 
-<StackPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.auth.controller.SignupController">
-    <!-- Background Image with Blur Effect -->
-    <ImageView fitWidth="800" fitHeight="600">
-        <image>
-            <Image url="@../images/background.jpg" />
-        </image>
-        <effect>
-            <GaussianBlur radius="10" />
-        </effect>
-    </ImageView>
-
-    <!-- Sign-Up Pane with Semi-Transparent Background -->
-    <VBox alignment="CENTER" spacing="15" style="-fx-background-color: rgba(255, 255, 255, 0.2); -fx-background-radius: 10; -fx-padding: 20;" prefWidth="300">
+<StackPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.auth.controller.SignupController" styleClass="root">
+    <!-- Sign-Up Form -->
+    <VBox styleClass="vbox" spacing="15">
         <!-- Title -->
-        <Label text="Sign Up" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;" alignment="CENTER" />
+        <Label text="Sign Up" styleClass="label" style="-fx-font-size: 24px;" alignment="CENTER" />
 
-        <!-- Full Name Field -->
+        <!-- First Name (Prenom) and Last Name (Nom) -->
+        <VBox spacing="10">
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <Label text="First Name" styleClass="label" />
+                <TextField fx:id="prenomField" prefWidth="250" promptText="First Name" styleClass="text-field" />
+            </HBox>
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <Label text="Last Name" styleClass="label" />
+                <TextField fx:id="nomField" prefWidth="250" promptText="Last Name" styleClass="text-field" />
+            </HBox>
+        </VBox>
+
+        <!-- Email and Username -->
+        <VBox spacing="10">
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <Label text="Email" styleClass="label" />
+                <TextField fx:id="emailField" prefWidth="250" promptText="Email" styleClass="text-field" />
+            </HBox>
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <Label text="Username" styleClass="label" />
+                <TextField fx:id="usernameField" prefWidth="250" promptText="Username" styleClass="text-field" />
+            </HBox>
+        </VBox>
+
+        <!-- Password and Confirm Password -->
+        <VBox spacing="10">
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <Label text="Password" styleClass="label" />
+                <PasswordField fx:id="passwordField" prefWidth="250" promptText="Password" styleClass="password-field" />
+            </HBox>
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <Label text="Confirm Password" styleClass="label" />
+                <PasswordField fx:id="confirmPasswordField" prefWidth="250" promptText="Confirm Password" styleClass="password-field" />
+            </HBox>
+        </VBox>
+
+        <!-- Work (Travail) -->
         <HBox alignment="CENTER_LEFT" spacing="10">
-            <Label text="Full Name" style="-fx-text-fill: white;" />
-            <TextField fx:id="fullNameField" prefWidth="200" promptText="Full Name" />
+            <Label text="Work" styleClass="label" />
+            <TextField fx:id="travailField" prefWidth="250" promptText="Work/Occupation" styleClass="text-field" />
         </HBox>
 
-        <!-- Email Field -->
+        <!-- Phone Number (Num Tel) -->
         <HBox alignment="CENTER_LEFT" spacing="10">
-            <Label text="Email" style="-fx-text-fill: white;" />
-            <TextField fx:id="emailField" prefWidth="200" promptText="Email" />
+            <Label text="Phone Number" styleClass="label" />
+            <TextField fx:id="numTelField" prefWidth="250" promptText="Phone Number" styleClass="text-field" />
         </HBox>
 
-        <!-- Username Field -->
-        <HBox alignment="CENTER_LEFT" spacing="10">
-            <Label text="Username" style="-fx-text-fill: white;" />
-            <TextField fx:id="usernameField" prefWidth="200" promptText="Username" />
-        </HBox>
-
-        <!-- Password Field -->
-        <HBox alignment="CENTER_LEFT" spacing="10">
-            <Label text="Password" style="-fx-text-fill: white;" />
-            <PasswordField fx:id="passwordField" prefWidth="200" promptText="Password" />
-        </HBox>
-
-        <!-- Confirm Password Field -->
-        <HBox alignment="CENTER_LEFT" spacing="10">
-            <Label text="Confirm Password" style="-fx-text-fill: white;" />
-            <PasswordField fx:id="confirmPasswordField" prefWidth="200" promptText="Confirm Password" />
-        </HBox>
+        <!-- Photo Selection (Last Field) -->
+        <VBox spacing="5" alignment="CENTER">
+            <HBox alignment="CENTER" spacing="10">
+                <Button fx:id="choosePhotoButton" text="Choose Photo" onAction="#onChoosePhotoClicked" styleClass="button" />
+                <ImageView fx:id="photoPreview" fitWidth="50" fitHeight="50" preserveRatio="true" />
+            </HBox>
+            <Label fx:id="photoErrorLabel" alignment="CENTER" visible="false" />
+        </VBox>
 
         <!-- Sign-Up Button -->
-        <Button fx:id="signupButton" text="Sign Up" prefWidth="100" style="-fx-background-color: white; -fx-text-fill: black; -fx-font-weight: bold;" onAction="#onSignupClicked" />
+        <Button fx:id="signupButton" text="Sign Up" prefWidth="120" styleClass="button" onAction="#onSignupClicked" />
 
         <!-- Message Label for Validation Feedback -->
-        <Label fx:id="messageLabel" style="-fx-text-fill: red;" alignment="CENTER" />
+        <Label fx:id="messageLabel" styleClass="message-label" alignment="CENTER" />
 
         <!-- Login Link -->
-        <Hyperlink fx:id="loginLink" text="Already have an account? Login" style="-fx-text-fill: red;" onAction="#onLoginClicked" />
+        <Hyperlink fx:id="loginLink" text="Already have an account? Login" styleClass="hyperlink" onAction="#onLoginClicked" />
     </VBox>
 </StackPane>
