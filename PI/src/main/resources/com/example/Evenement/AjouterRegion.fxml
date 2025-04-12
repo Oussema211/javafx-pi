@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx/11.0.1"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.example.Evenement.Controller.RegionController">
+
+    <top>
+        <Label text="Ajouter une région"
+               style="-fx-font-size: 18px; -fx-font-weight: bold;">
+            <padding>
+                <Insets top="10" right="10" bottom="10" left="10"/>
+            </padding>
+        </Label>
+    </top>
+
+    <center>
+        <GridPane hgap="10" vgap="10" alignment="CENTER">
+            <padding>
+                <Insets top="10" right="10" bottom="10" left="10"/>
+            </padding>
+
+            <Label text="Nom:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+            <TextField fx:id="nomField" GridPane.rowIndex="0" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+
+            <Label text="Ville:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+            <TextField fx:id="villeField" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+            <Label text="Description:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+            <TextField fx:id="descriptionField" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+            <HBox spacing="10" GridPane.rowIndex="3" GridPane.columnIndex="1" alignment="CENTER_RIGHT">
+                <Button text="Sauvegarder" onAction="#handleSave"
+                        style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-min-width: 100;"/>
+                <Button text="Afficher Régions" onAction="#handleShowRegions"
+                        style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-min-width: 100;"/>
+            </HBox>
+        </GridPane>
+    </center>
+</BorderPane>

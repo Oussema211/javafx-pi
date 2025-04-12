@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.cell.PropertyValueFactory?>
+
+<VBox xmlns="http://javafx.com/javafx/8.0.171"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.Evenement.Controller.RegionListController">
+    <padding>
+        <Insets top="10" right="10" bottom="10" left="10"/>
+    </padding>
+    <spacing>10</spacing>
+
+    <TableView fx:id="regionTable">
+        <columns>
+            <TableColumn text="Nom" fx:id="colNom"/>
+            <TableColumn text="Ville" fx:id="colVille"/>
+            <TableColumn text="Description" fx:id="colDescription"/>
+            <TableColumn text="Actions" fx:id="colActions"/>
+        </columns>
+    </TableView>
+
+    <HBox spacing="10">
+        <Button text="Ajouter une région" onAction="#handleAdd"/>
+        <Button text="Ajouter un événement" onAction="#handleAddEvent"
+                style="-fx-background-color: #2196F3; -fx-text-fill: white;"/>
+    </HBox>
+</VBox>

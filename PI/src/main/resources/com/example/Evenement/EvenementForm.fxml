@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.Evenement.Controller.EvenementController" spacing="10" style="-fx-padding: 10;">
+
+    <GridPane hgap="10" vgap="10">
+        <Label text="Titre:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+        <TextField fx:id="titreField" GridPane.rowIndex="0" GridPane.columnIndex="1" GridPane.columnSpan="3"/>
+
+        <Label text="Description:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+        <TextArea fx:id="descriptionArea" GridPane.rowIndex="1" GridPane.columnIndex="1"
+                  GridPane.columnSpan="3" prefRowCount="3"/>
+
+        <Label text="Type:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+        <ComboBox fx:id="typeCombo" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+        <Label text="Statut:" GridPane.rowIndex="2" GridPane.columnIndex="2"/>
+        <ComboBox fx:id="statutCombo" GridPane.rowIndex="2" GridPane.columnIndex="3"/>
+
+        <Label text="Date début:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+        <HBox GridPane.rowIndex="3" GridPane.columnIndex="1" spacing="5">
+            <DatePicker fx:id="dateDebutPicker" prefWidth="150"/>
+            <Label text="Heure:"/>
+            <Spinner fx:id="heureDebutSpinner" prefWidth="60"/>
+        </HBox>
+
+        <Label text="Date fin:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+        <HBox GridPane.rowIndex="4" GridPane.columnIndex="1" spacing="5">
+            <DatePicker fx:id="dateFinPicker" prefWidth="150"/>
+            <Label text="Heure:"/>
+            <Spinner fx:id="heureFinSpinner" prefWidth="60"/>
+        </HBox>
+
+        <Label text="Photo:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+        <HBox GridPane.rowIndex="5" GridPane.columnIndex="1" spacing="10">
+            <ImageView fx:id="photoView" fitWidth="100" fitHeight="100" preserveRatio="true"/>
+            <Button fx:id="uploadPhotoBtn" text="Choisir..." onAction="#handleUploadPhoto"/>
+        </HBox>
+
+        <Label text="Régions:" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+        <ListView fx:id="regionsListView" GridPane.rowIndex="6" GridPane.columnIndex="1"
+                  GridPane.columnSpan="3" prefHeight="150"/>
+    </GridPane>
+
+    <HBox spacing="10" alignment="CENTER_RIGHT">
+        <Button fx:id="saveBtn" text="Enregistrer" onAction="#handleSave"
+                style="-fx-background-color: #4CAF50; -fx-text-fill: white;"/>
+    </HBox>
+</VBox>
