@@ -46,16 +46,17 @@
 
         <Label text="Régions :" GridPane.rowIndex="7" GridPane.columnIndex="0"/>
         <VBox spacing="5" GridPane.rowIndex="7" GridPane.columnIndex="1">
-            <TextField fx:id="regionSearchField" promptText="Rechercher une région..." />
-            <ComboBox fx:id="regionsComboBox" prefWidth="200" />
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <TextField fx:id="regionSearchField" promptText="Rechercher une région..." prefWidth="300"/>
+                <Button text="Ajouter" onAction="#handleAddRegion" style="-fx-background-color: #4CAF50; -fx-text-fill: white;"/>
+            </HBox>
             <ListView fx:id="selectedRegionsListView" prefHeight="100" VBox.vgrow="ALWAYS">
                 <placeholder>
                     <Label text="Aucune région sélectionnée"/>
                 </placeholder>
             </ListView>
             <HBox spacing="10">
-                <Button text="Ajouter" onAction="#handleAddRegion" />
-                <Button text="Supprimer" onAction="#handleRemoveRegion" />
+                <Button text="Supprimer" onAction="#handleRemoveRegion" style="-fx-background-color: #F44336; -fx-text-fill: white;"/>
             </HBox>
         </VBox>
     </GridPane>

@@ -32,13 +32,12 @@ public class EvenementController {
     @FXML private DatePicker dateFinPicker;
     @FXML private Spinner<Integer> heureFinSpinner;
     @FXML private ImageView photoView;
-    @FXML private ComboBox<Region> regionsComboBox;
+    @FXML private TextField regionSearchField;
     @FXML private ListView<Region> selectedRegionsListView;
     @FXML private Button addRegionBtn;
     @FXML private Button removeRegionBtn;
     @FXML private Button uploadPhotoBtn;
     @FXML private Button saveBtn;
-    @FXML private TextField regionSearchField;
 
     // Données
     private Evenement currentEvent;
@@ -46,6 +45,7 @@ public class EvenementController {
     private final ObservableList<Region> allRegions = FXCollections.observableArrayList();
     private final ObservableList<Region> selectedRegions = FXCollections.observableArrayList();
     private FilteredList<Region> filteredRegions;
+    private ContextMenu regionSuggestionsMenu;
 
     @FXML
     public void initialize() {
@@ -75,18 +75,6 @@ public class EvenementController {
     }
 
     private void setupRegionsSelection() {
-        // Configurer le ComboBox pour afficher le nom de la région
-        regionsComboBox.setCellFactory(lv -> new ListCell<Region>() {
-            @Override
-            protected void updateItem(Region item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty ? "" : item.getNom() + " (" + item.getVille() + ")");
-            }
-        });
-
-        // Configurer le ComboBox pour afficher le nom de la région dans le champ de texte
-        regionsComboBox.setButtonCell(regionsComboBox.getCellFactory().call(null));
-
         // Configurer la liste des régions sélectionnées
         selectedRegionsListView.setItems(selectedRegions);
         selectedRegionsListView.setCellFactory(lv -> new ListCell<Region>() {
@@ -99,41 +87,99 @@ public class EvenementController {
 
         // Configurer la recherche de régions
         filteredRegions = new FilteredList<>(allRegions, s -> true);
-        regionsComboBox.setItems(filteredRegions);
+
+        // Créer le menu contextuel pour les suggestions
+        regionSuggestionsMenu = new ContextMenu();
+        regionSuggestionsMenu.setAutoHide(true);
 
         // Ajouter un écouteur pour le champ de recherche
         regionSearchField.textProperty().addListener((obs, oldText, newText) -> {
-            if (newText == null || newText.isEmpty()) {
-                filteredRegions.setPredicate(null);
-            } else {
-                String lowerCaseFilter = newText.toLowerCase();
-                filteredRegions.setPredicate(region -> {
-                    return region.getNom().toLowerCase().contains(lowerCaseFilter) ||
-                           region.getVille().toLowerCase().contains(lowerCaseFilter);
-                });
-            }
+            updateRegionSuggestions(newText);
         });
 
-        // Ajouter un écouteur pour la sélection dans le ComboBox
-        regionsComboBox.setOnAction(event -> {
-            Region selectedRegion = regionsComboBox.getValue();
-            if (selectedRegion != null && !selectedRegions.contains(selectedRegion)) {
-                selectedRegions.add(selectedRegion);
-                regionsComboBox.setValue(null);
-                regionSearchField.clear();
+        // Ajouter un écouteur pour la touche Entrée dans le champ de recherche
+        regionSearchField.setOnAction(event -> {
+            addSelectedRegion();
+        });
+
+        // Ajouter un écouteur pour la touche Tab dans le champ de recherche
+        regionSearchField.setOnKeyPressed(event -> {
+            if (event.getCode() == javafx.scene.input.KeyCode.TAB) {
+                if (!regionSuggestionsMenu.getItems().isEmpty()) {
+                    regionSuggestionsMenu.getItems().get(0).fire();
+                    event.consume();
+                }
             }
         });
     }
 
-    @FXML
-    private void handleAddRegion() {
-        Region selectedRegion = regionsComboBox.getValue();
-        if (selectedRegion != null && !selectedRegions.contains(selectedRegion)) {
-            selectedRegions.add(selectedRegion);
-            regionsComboBox.setValue(null);
+    private void updateRegionSuggestions(String searchText) {
+        regionSuggestionsMenu.getItems().clear();
+        
+        if (searchText == null || searchText.isEmpty()) {
+            regionSuggestionsMenu.hide();
+            return;
+        }
+
+        String lowerCaseFilter = searchText.toLowerCase();
+        List<Region> matchingRegions = allRegions.stream()
+            .filter(region -> region.getNom().toLowerCase().contains(lowerCaseFilter) || 
+                             region.getVille().toLowerCase().contains(lowerCaseFilter))
+            .collect(Collectors.toList());
+
+        if (matchingRegions.isEmpty()) {
+            regionSuggestionsMenu.hide();
+            return;
+        }
+
+        // Limiter à 5 suggestions maximum
+        int count = 0;
+        for (Region region : matchingRegions) {
+            if (count >= 5) break;
+            
+            MenuItem item = new MenuItem(region.getNom() + " (" + region.getVille() + ")");
+            item.setOnAction(e -> {
+                regionSearchField.setText(region.getNom() + " (" + region.getVille() + ")");
+                addRegion(region);
+            });
+            regionSuggestionsMenu.getItems().add(item);
+            count++;
+        }
+
+        // Afficher le menu sous le champ de recherche
+        regionSuggestionsMenu.show(regionSearchField, 
+            javafx.geometry.Side.BOTTOM, 
+            0, 
+            0);
+    }
+
+    private void addSelectedRegion() {
+        String searchText = regionSearchField.getText().toLowerCase();
+        if (!searchText.isEmpty()) {
+            // Trouver la première région correspondante
+            Region matchingRegion = allRegions.stream()
+                .filter(region -> region.getNom().toLowerCase().contains(searchText) || 
+                                 region.getVille().toLowerCase().contains(searchText))
+                .findFirst()
+                .orElse(null);
+            
+            if (matchingRegion != null) {
+                addRegion(matchingRegion);
+            }
+        }
+    }
+
+    private void addRegion(Region region) {
+        if (region != null && !selectedRegions.contains(region)) {
+            selectedRegions.add(region);
             regionSearchField.clear();
             selectedRegionsListView.refresh();
         }
+    }
+
+    @FXML
+    private void handleAddRegion() {
+        addSelectedRegion();
     }
 
     @FXML
@@ -141,7 +187,6 @@ public class EvenementController {
         Region selectedRegion = selectedRegionsListView.getSelectionModel().getSelectedItem();
         if (selectedRegion != null) {
             selectedRegions.remove(selectedRegion);
-            // Forcer la mise à jour de l'affichage
             selectedRegionsListView.refresh();
         }
     }
