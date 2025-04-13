@@ -93,4 +93,31 @@ public class RegionDAO {
             return false;
         }
     }
+
+    public boolean titreExists(String titre) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM region WHERE LOWER(nom) = LOWER(?)";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, titre);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        }
+        return false;
+    }
+
+    public boolean titreExistsForOtherEvent(String titre, int currentRegionId) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM region WHERE LOWER(nom) = LOWER(?) AND id != ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, titre);
+            stmt.setInt(2, currentRegionId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        }
+        return false;
+    }
 }
