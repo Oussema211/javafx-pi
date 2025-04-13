@@ -75,5 +75,14 @@
 
         <!-- Login Link -->
         <Hyperlink fx:id="loginLink" text="Already have an account? Login" styleClass="hyperlink" onAction="#onLoginClicked" />
+        <!-- Photo Selection -->
+<VBox spacing="10" alignment="CENTER">
+    <HBox alignment="CENTER" spacing="10">
+        <Button fx:id="choosePhotoButton" text="Choose Photo" onAction="#onChoosePhotoClicked" styleClass="button" />
+        <ImageView fx:id="photoPreview" fitWidth="100" fitHeight="100" preserveRatio="true" />
+    </HBox>
+    <Label fx:id="photoErrorLabel" alignment="CENTER" visible="false" />
+</VBox>
+
     </VBox>
 </StackPane>

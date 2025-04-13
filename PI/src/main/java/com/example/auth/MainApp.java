@@ -15,10 +15,11 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.net.URL;
 
 public class MainApp extends Application {
     private final SessionManager sessionManager = SessionManager.getInstance();
-    private static final boolean FULL_SCREEN = false; // Set to true for always full-screen, false for windowed
+    private static final boolean FULL_SCREEN = false;
     private final AuthService authService = new AuthService();
     private final TagService tagService = new TagService();
     private final ReclamationService reclamationService = new ReclamationService();
@@ -27,33 +28,27 @@ public class MainApp extends Application {
     @Override
     public void start(Stage primaryStage) throws IOException {
         System.out.println("DEBUG: Starting MainApp");
+
         String fxmlFile;
         User user = sessionManager.getLoggedInUser();
         if (user == null) {
             fxmlFile = "/com/example/auth/login.fxml";
         } else {
-            fxmlFile = user.hasRole("ROLE_ADMIN") ? "/com/example/auth/dashboard.fxml" : "/com/example/reclamation/Reclamation.fxml";
+            fxmlFile = user.hasRole("ROLE_ADMIN")
+                ? "/com/example/auth/dashboard.fxml"
+                : "/com/example/reclamation/Reclamation.fxml";
         }
-        System.out.println("DEBUG: Loading FXML: " + fxmlFile);
 
+        System.out.println("DEBUG: Loading FXML: " + fxmlFile);
         FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlFile));
-        Parent root;
-        try {
-            root = loader.load();
-        } catch (IOException e) {
-            System.err.println("ERROR: Failed to load " + fxmlFile + ": " + e.getMessage());
-            throw e;
-        }
+        Parent root = loader.load();
 
         if (root == null) {
-            System.err.println("ERROR: Root is null after loading FXML: " + fxmlFile);
-            throw new IOException("Failed to load FXML: " + fxmlFile);
+            throw new IOException("ERROR: Root is null after loading FXML: " + fxmlFile);
         }
 
         Scene scene = new Scene(root, 400, 500);
-
-        // Load stylesheet
-        java.net.URL stylesheetUrl = getClass().getClassLoader().getResource("com/example/auth/styles.css");
+        URL stylesheetUrl = getClass().getClassLoader().getResource("com/example/auth/styles.css");
         if (stylesheetUrl != null) {
             scene.getStylesheets().add(stylesheetUrl.toExternalForm());
         } else {

@@ -81,26 +81,23 @@ public class AuthService {
         }
     }
 
-    public User login(String email, String password) {
+    public User authenticate(String email, String password) {
         String sql = "SELECT * FROM user WHERE email = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, email);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
-                String hashedPassword = rs.getString("password");
-                if (BCrypt.checkpw(password, hashedPassword)) {
-                    Date dateInscri = null;
-                    try {
-                        dateInscri = rs.getDate("date_inscri");
-                    } catch (SQLException e) {
-                        System.err.println("Invalid date_inscri for user " + email + ", using current date: " + e.getMessage());
+                String storedPassword = rs.getString("password");
+                if (password == null || BCrypt.checkpw(password, storedPassword)) {
+                    Date dateInscri = rs.getDate("date_inscri");
+                    if (dateInscri == null) {
                         dateInscri = new Date();
                     }
                     return new User(
                             UUID.fromString(rs.getString("id")),
                             rs.getString("email"),
                             rs.getString("roles"),
-                            hashedPassword,
+                            storedPassword,
                             rs.getString("travail"),
                             dateInscri,
                             rs.getString("photo_url"),
@@ -112,9 +109,13 @@ public class AuthService {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("Error during login: " + e.getMessage());
+            System.err.println("Error during authentication: " + e.getMessage());
         }
         return null;
+    }
+
+    public User login(String email, String password) {
+        return authenticate(email, password);
     }
 
     public User getUserById(UUID id) {
@@ -123,11 +124,8 @@ public class AuthService {
             pstmt.setString(1, id.toString());
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
-                Date dateInscri = null;
-                try {
-                    dateInscri = rs.getDate("date_inscri");
-                } catch (SQLException e) {
-                    System.err.println("Invalid date_inscri for user with ID " + id + ", using current date: " + e.getMessage());
+                Date dateInscri = rs.getDate("date_inscri");
+                if (dateInscri == null) {
                     dateInscri = new Date();
                 }
                 return new User(
@@ -156,11 +154,8 @@ public class AuthService {
         try (Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                Date dateInscri = null;
-                try {
-                    dateInscri = rs.getDate("date_inscri");
-                } catch (SQLException e) {
-                    System.err.println("Invalid date_inscri for user with ID " + rs.getString("id") + ", using current date: " + e.getMessage());
+                Date dateInscri = rs.getDate("date_inscri");
+                if (dateInscri == null) {
                     dateInscri = new Date();
                 }
                 users.add(new User(

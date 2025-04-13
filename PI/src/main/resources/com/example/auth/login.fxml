@@ -24,7 +24,7 @@
         <!-- Username Field -->
         <HBox alignment="CENTER_LEFT" spacing="10">
             <Label text="Email" style="-fx-text-fill: white;" />
-            <TextField fx:id="usernameField" prefWidth="200" promptText="Username" />
+            <TextField fx:id="usernameField" prefWidth="200" promptText="Email" />
         </HBox>
 
         <!-- Password Field -->
@@ -47,5 +47,11 @@
 
         <!-- Register Link -->
         <Hyperlink fx:id="registerLink" text="Don't have an account? Register" style="-fx-text-fill: red;" onAction="#onRegisterClicked" />
+
+        <!-- Face Capture Section -->
+        <VBox spacing="10" alignment="CENTER">
+            <Button fx:id="captureFaceButton" text="Start Face Capture" onAction="#toggleFaceCapture" style="-fx-background-color: white; -fx-text-fill: black; -fx-font-weight: bold;" />
+            <Label fx:id="faceCaptureStatus" text="Face capture not active" style="-fx-text-fill: white;" visible="false" />
+        </VBox>
     </VBox>
 </StackPane>
