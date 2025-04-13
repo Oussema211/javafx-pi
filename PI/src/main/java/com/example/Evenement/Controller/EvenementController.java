@@ -321,22 +321,94 @@ public class EvenementController {
     }
 
     private boolean validateForm() {
-        if (titreField.getText() == null || titreField.getText().trim().isEmpty()) {
+        // Validation du titre
+        String titre = titreField.getText();
+        if (titre == null || titre.trim().isEmpty()) {
             showAlert("Erreur", "Le titre est obligatoire", Alert.AlertType.ERROR);
+            titreField.requestFocus();
+            return false;
+        }
+        
+        if (titre.length() < 3 || titre.length() > 100) {
+            showAlert("Erreur", "Le titre doit contenir entre 3 et 100 caractères", Alert.AlertType.ERROR);
+            titreField.requestFocus();
+            return false;
+        }
+        
+        // Vérification des caractères spéciaux indésirables
+        if (!titre.matches("^[a-zA-Z0-9\\s\\-_.,!?()]+$")) {
+            showAlert("Erreur", "Le titre ne doit pas contenir de caractères spéciaux indésirables", Alert.AlertType.ERROR);
+            titreField.requestFocus();
+            return false;
+        }
+        
+        // Vérification des doublons de titre
+        try {
+            EvenementDAO dao = new EvenementDAO();
+            if (currentEvent == null || currentEvent.getId() == null) {
+                // Nouvel événement
+                if (dao.titreExists(titre)) {
+                    showAlert("Erreur", "Un événement avec ce titre existe déjà", Alert.AlertType.ERROR);
+                    titreField.requestFocus();
+                    return false;
+                }
+            } else {
+                // Modification d'un événement existant
+                if (dao.titreExistsForOtherEvent(titre, currentEvent.getId())) {
+                    showAlert("Erreur", "Un autre événement avec ce titre existe déjà", Alert.AlertType.ERROR);
+                    titreField.requestFocus();
+                    return false;
+                }
+            }
+        } catch (Exception e) {
+            showAlert("Erreur", "Erreur lors de la vérification du titre: " + e.getMessage(), Alert.AlertType.ERROR);
             return false;
         }
 
+        // Validation de la description
+        String description = descriptionArea.getText();
+        if (description == null || description.trim().isEmpty()) {
+            showAlert("Erreur", "La description est obligatoire", Alert.AlertType.ERROR);
+            descriptionArea.requestFocus();
+            return false;
+        }
+        
+        if (description.length() < 10 || description.length() > 500) {
+            showAlert("Erreur", "La description doit contenir entre 10 et 500 caractères", Alert.AlertType.ERROR);
+            descriptionArea.requestFocus();
+            return false;
+        }
+
+        // Validation du type
         if (typeCombo.getValue() == null) {
-            showAlert("Erreur", "Veuillez sélectionner un type", Alert.AlertType.ERROR);
+            showAlert("Erreur", "Le type d'événement est obligatoire", Alert.AlertType.ERROR);
+            typeCombo.requestFocus();
             return false;
         }
 
+        // Validation du statut
+        if (statutCombo.getValue() == null) {
+            showAlert("Erreur", "Le statut de l'événement est obligatoire", Alert.AlertType.ERROR);
+            statutCombo.requestFocus();
+            return false;
+        }
+
+        // Validation des dates
         if (!areDatesValid()) {
             return false;
         }
         
+        // Validation de la photo
+        if (photoPath == null || photoPath.trim().isEmpty()) {
+            showAlert("Erreur", "Une photo est obligatoire", Alert.AlertType.ERROR);
+            uploadPhotoBtn.requestFocus();
+            return false;
+        }
+        
+        // Validation des régions
         if (selectedRegions.isEmpty()) {
-            showAlert("Erreur", "Veuillez sélectionner au moins une région", Alert.AlertType.ERROR);
+            showAlert("Erreur", "Au moins une région doit être sélectionnée", Alert.AlertType.ERROR);
+            regionSearchField.requestFocus();
             return false;
         }
 
@@ -344,16 +416,27 @@ public class EvenementController {
     }
 
     private boolean areDatesValid() {
-        if (dateDebutPicker.getValue() == null || dateFinPicker.getValue() == null) {
-            showAlert("Erreur", "Les dates sont obligatoires", Alert.AlertType.ERROR);
+        // Vérification que les dates sont sélectionnées
+        if (dateDebutPicker.getValue() == null) {
+            showAlert("Erreur", "La date de début est obligatoire", Alert.AlertType.ERROR);
+            dateDebutPicker.requestFocus();
             return false;
         }
 
-        LocalDateTime debut = getDateTimeFromFields(dateDebutPicker, heureDebutSpinner);
-        LocalDateTime fin = getDateTimeFromFields(dateFinPicker, heureFinSpinner);
+        if (dateFinPicker.getValue() == null) {
+            showAlert("Erreur", "La date de fin est obligatoire", Alert.AlertType.ERROR);
+            dateFinPicker.requestFocus();
+            return false;
+        }
 
-        if (fin.isBefore(debut)) {
-            showAlert("Erreur", "La date de fin doit être après la date de début", Alert.AlertType.ERROR);
+        // Création des objets LocalDateTime pour la comparaison
+        LocalDateTime dateDebut = getDateTimeFromFields(dateDebutPicker, heureDebutSpinner);
+        LocalDateTime dateFin = getDateTimeFromFields(dateFinPicker, heureFinSpinner);
+
+        // Vérification que la date de fin est après la date de début
+        if (!dateFin.isAfter(dateDebut)) {
+            showAlert("Erreur", "La date de fin doit être postérieure à la date de début", Alert.AlertType.ERROR);
+            dateFinPicker.requestFocus();
             return false;
         }
 

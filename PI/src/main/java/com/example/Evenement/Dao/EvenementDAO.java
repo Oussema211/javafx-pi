@@ -203,4 +203,31 @@ public class EvenementDAO {
             linkRegionsToEvent(event.getId(), event.getRegions());
         }
     }
+
+    public boolean titreExists(String titre) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM evenement WHERE LOWER(titre) = LOWER(?)";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, titre);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        }
+        return false;
+    }
+
+    public boolean titreExistsForOtherEvent(String titre, int currentEventId) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM evenement WHERE LOWER(titre) = LOWER(?) AND id != ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, titre);
+            stmt.setInt(2, currentEventId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        }
+        return false;
+    }
 }
