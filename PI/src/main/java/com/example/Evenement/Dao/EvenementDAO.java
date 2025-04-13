@@ -4,7 +4,8 @@ import com.example.Evenement.Model.Evenement;
 import com.example.Evenement.Model.Region;
 import com.example.Evenement.Model.TypeEvenement;
 import com.example.Evenement.Model.StatutEvenement;
-import com.example.auth.utils.MyDatabase;
+import utils.MyDatabase;
+
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;

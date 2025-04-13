@@ -1,7 +1,8 @@
 package com.example.Evenement.Dao;
 
 import com.example.Evenement.Model.Region;
-import com.example.auth.utils.MyDatabase;
+import utils.MyDatabase;
+
 
 import java.sql.*;
 import java.util.ArrayList;

@@ -15,39 +15,19 @@ import javafx.stage.Stage;
 import java.io.IOException;
 
 public class DashboardController {
-
-    @FXML
-    private BorderPane borderPane;
-    @FXML
-    private VBox mainContent;
-    @FXML
-    private Hyperlink dashboardButton;
-    @FXML
-    private Hyperlink achat;
-    @FXML
-    private Hyperlink productButton;
-    @FXML
-    private Hyperlink categoryButton;
-    @FXML
-    private Hyperlink userButton;
-    @FXML
-    private Hyperlink settings;
-    @FXML
-    private Hyperlink logoutButton;
-
+    @FXML private BorderPane borderPane;
+    @FXML private VBox mainContent;
+    @FXML private Hyperlink dashboardButton;
+    @FXML private Hyperlink achat;
+    @FXML private Hyperlink productButton;
+    @FXML private Hyperlink categoryButton;
+    @FXML private Hyperlink userButton;
+    @FXML private Hyperlink settings;
+    @FXML private Hyperlink logoutButton;
+    @FXML private Hyperlink eventManagementButton;
+    @FXML private VBox eventSubMenu;
     @FXML private Label welcomeLabel;
     @FXML private Label emailLabel;
-
-
-    private void loadContent(String fxmlPath) {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
-            VBox content = loader.load();
-            borderPane.setCenter(content);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     private SessionManager sessionManager = SessionManager.getInstance();
 
@@ -55,8 +35,6 @@ public class DashboardController {
     public void initialize() {
         User user = sessionManager.getLoggedInUser();
         if (user == null) {
-            // This should not happen since LoginController handles the redirect,
-            // but we'll log it for debugging
             System.err.println("No user logged in; should have been redirected to login");
             return;
         }
@@ -64,6 +42,19 @@ public class DashboardController {
         welcomeLabel.setText("Welcome, " + user.getPrenom() + " " + user.getNom() + "!");
         emailLabel.setText("Email: " + user.getEmail());
 
+        // Initialiser le sous-menu comme caché
+        eventSubMenu.setVisible(false);
+        eventSubMenu.setManaged(false);
+
+        // Configurer les gestionnaires d'événements
+        setupEventHandlers();
+    }
+
+    private void setupEventHandlers() {
+        // Gestion du menu événement
+        eventManagementButton.setOnAction(event -> toggleEventSubMenu());
+
+        // Navigation principale
         dashboardButton.setOnAction(event -> loadContent("/com/example/pages/dashboard.fxml"));
         achat.setOnAction(event -> loadContent("/com/example/pages/purchasing.fxml"));
         productButton.setOnAction(event -> loadContent("/com/example/pages/products.fxml"));
@@ -74,9 +65,54 @@ public class DashboardController {
             try {
                 handleLogout();
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                e.printStackTrace();
             }
         });
+    }
+
+    private void toggleEventSubMenu() {
+        boolean visible = !eventSubMenu.isVisible();
+        eventSubMenu.setVisible(visible);
+        eventSubMenu.setManaged(visible);
+    }
+
+    @FXML
+    private void handleAddRegion() {
+        loadContent("/com/example/Evenement/AjouterRegion.fxml");
+        hideSubMenu();
+    }
+
+    @FXML
+    private void handleListRegions() {
+        loadContent("/com/example/Evenement/RegionList.fxml");
+        hideSubMenu();
+    }
+
+    @FXML
+    private void handleAddEvent() {
+        loadContent("/com/example/Evenement/EvenementForm.fxml");
+        hideSubMenu();
+    }
+
+    @FXML
+    private void handleListEvents() {
+        loadContent("/com/example/Evenement/EvenementList.fxml");
+        hideSubMenu();
+    }
+
+    private void loadContent(String fxmlPath) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
+            Parent content = loader.load();
+            borderPane.setCenter(content);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void hideSubMenu() {
+        eventSubMenu.setVisible(false);
+        eventSubMenu.setManaged(false);
     }
 
     @FXML
