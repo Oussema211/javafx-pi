@@ -5,64 +5,88 @@
 <?import javafx.scene.image.*?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.cell.PropertyValueFactory?>
+<?import javafx.scene.text.Text?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.text.FontWeight?>
 
-<VBox xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.example.Evenement.Controller.EvenementController" spacing="10">
-    <padding>
-        <Insets top="10" right="10" bottom="10" left="10"/>
-    </padding>
+<StackPane xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.Evenement.Controller.EvenementController" style="-fx-background-color: white;">
+    
+    <VBox spacing="15" VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS">
+        <padding>
+            <Insets top="10" right="10" bottom="10" left="10"/>
+        </padding>
 
-    <GridPane hgap="10" vgap="10">
-        <Label text="Titre:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-        <TextField fx:id="titreField" GridPane.rowIndex="0" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+        <Text text="Ajouter un événement" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-fill: #2c3e50;"/>
+        
+        <Separator style="-fx-background-color: #3498db;"/>
 
-        <Label text="Description:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-        <TextArea fx:id="descriptionArea" GridPane.rowIndex="1" GridPane.columnIndex="1" 
-                  prefRowCount="3" wrapText="true" GridPane.hgrow="ALWAYS"/>
+        <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS">
+            <GridPane hgap="15" vgap="2" style="-fx-background-color: white; -fx-padding: 10; -fx-background-radius: 5;">
+                <columnConstraints>
+                    <ColumnConstraints minWidth="100" prefWidth="120"/>
+                    <ColumnConstraints hgrow="ALWAYS"/>
+                </columnConstraints>
 
-        <Label text="Type:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-        <ComboBox fx:id="typeCombo" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                <Label text="Titre:" style="-fx-font-weight: bold; -fx-text-fill: #2c3e50;" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                <TextField fx:id="titreField" style="-fx-background-radius: 3;" GridPane.rowIndex="0" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
 
-        <Label text="Statut:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
-        <ComboBox fx:id="statutCombo" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+                <Label text="Description:" style="-fx-font-weight: bold; -fx-text-fill: #2c3e50;" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                <TextArea fx:id="descriptionArea" style="-fx-background-radius: 3;" GridPane.rowIndex="1" GridPane.columnIndex="1" 
+                          prefRowCount="3" wrapText="true" GridPane.hgrow="ALWAYS"/>
 
-        <Label text="Date de début:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
-        <HBox spacing="5" GridPane.rowIndex="4" GridPane.columnIndex="1">
-            <DatePicker fx:id="dateDebutPicker"/>
-            <Spinner fx:id="heureDebutSpinner" prefWidth="80"/>
+                <Label text="Type:" style="-fx-font-weight: bold; -fx-text-fill: #2c3e50;" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                <ComboBox fx:id="typeCombo" style="-fx-background-radius: 3;" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+                <Label text="Statut:" style="-fx-font-weight: bold; -fx-text-fill: #2c3e50;" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                <ComboBox fx:id="statutCombo" style="-fx-background-radius: 3;" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+
+                <Label text="Date de début:" style="-fx-font-weight: bold; -fx-text-fill: #2c3e50;" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+                <HBox spacing="10" GridPane.rowIndex="4" GridPane.columnIndex="1">
+                    <DatePicker fx:id="dateDebutPicker" style="-fx-background-radius: 3;"/>
+                    <Spinner fx:id="heureDebutSpinner" prefWidth="80" style="-fx-background-radius: 3;"/>
+                </HBox>
+
+                <Label text="Date de fin:" style="-fx-font-weight: bold; -fx-text-fill: #2c3e50;" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+                <HBox spacing="10" GridPane.rowIndex="5" GridPane.columnIndex="1">
+                    <DatePicker fx:id="dateFinPicker" style="-fx-background-radius: 3;"/>
+                    <Spinner fx:id="heureFinSpinner" prefWidth="80" style="-fx-background-radius: 3;"/>
+                </HBox>
+
+                <Label text="Photo:" style="-fx-font-weight: bold; -fx-text-fill: #2c3e50;" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+                <HBox spacing="10" alignment="CENTER_LEFT" GridPane.rowIndex="6" GridPane.columnIndex="1">
+                    <Button fx:id="uploadPhotoBtn" text="Choisir une photo" onAction="#handleUploadPhoto" 
+                            style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 3;"/>
+                    <ImageView fx:id="photoView" fitWidth="200" fitHeight="200" preserveRatio="true" style="-fx-background-color: #ecf0f1; -fx-background-radius: 5;"/>
+                </HBox>
+
+                <Label text="Régions :" style="-fx-font-weight: bold; -fx-text-fill: #2c3e50;" GridPane.rowIndex="7" GridPane.columnIndex="0"/>
+                <VBox spacing="2" GridPane.rowIndex="7" GridPane.columnIndex="1">
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <TextField fx:id="regionSearchField" promptText="Rechercher une région..." prefWidth="400" 
+                                  style="-fx-background-radius: 3;"/>
+                        <Button text="Ajouter" onAction="#handleAddRegion" 
+                                style="-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-background-radius: 3;"/>
+                    </HBox>
+                    <ListView fx:id="selectedRegionsListView" prefHeight="150" 
+                              style="-fx-background-radius: 3; -fx-background-color: white;">
+                        <placeholder>
+                            <Label text="Aucune région sélectionnée" style="-fx-text-fill: #7f8c8d;"/>
+                        </placeholder>
+                    </ListView>
+                    <HBox spacing="10">
+                        <Button text="Supprimer" onAction="#handleRemoveRegion" 
+                                style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-background-radius: 3;"/>
+                    </HBox>
+                </VBox>
+            </GridPane>
+        </ScrollPane>
+        
+        <HBox spacing="10" alignment="CENTER_RIGHT">
+            <Button text="Liste des régions" onAction="#handleShowRegions" 
+                    style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 3; -fx-padding: 10 20 10 20;"/>
+            <Button fx:id="saveBtn" text="Enregistrer" onAction="#handleSave"
+                    style="-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 3; -fx-padding: 10 20 10 20;"/>
         </HBox>
-
-        <Label text="Date de fin:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
-        <HBox spacing="5" GridPane.rowIndex="5" GridPane.columnIndex="1">
-            <DatePicker fx:id="dateFinPicker"/>
-            <Spinner fx:id="heureFinSpinner" prefWidth="80"/>
-        </HBox>
-
-        <Label text="Photo:" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
-        <VBox spacing="5" GridPane.rowIndex="6" GridPane.columnIndex="1">
-            <ImageView fx:id="photoView" fitWidth="200" fitHeight="200" preserveRatio="true"/>
-            <Button fx:id="uploadPhotoBtn" text="Choisir une photo" onAction="#handleUploadPhoto"/>
-        </VBox>
-
-        <Label text="Régions :" GridPane.rowIndex="7" GridPane.columnIndex="0"/>
-        <VBox spacing="5" GridPane.rowIndex="7" GridPane.columnIndex="1">
-            <HBox spacing="10" alignment="CENTER_LEFT">
-                <TextField fx:id="regionSearchField" promptText="Rechercher une région..." prefWidth="300"/>
-                <Button text="Ajouter" onAction="#handleAddRegion" style="-fx-background-color: #4CAF50; -fx-text-fill: white;"/>
-            </HBox>
-            <ListView fx:id="selectedRegionsListView" prefHeight="100" VBox.vgrow="ALWAYS">
-                <placeholder>
-                    <Label text="Aucune région sélectionnée"/>
-                </placeholder>
-            </ListView>
-            <HBox spacing="10">
-                <Button text="Supprimer" onAction="#handleRemoveRegion" style="-fx-background-color: #F44336; -fx-text-fill: white;"/>
-            </HBox>
-        </VBox>
-    </GridPane>
-
-    <HBox spacing="10" alignment="CENTER_RIGHT">
-        <Button fx:id="saveBtn" text="Enregistrer" onAction="#handleSave"
-                style="-fx-background-color: #4CAF50; -fx-text-fill: white;"/>
-    </HBox>
-</VBox>
+    </VBox>
+</StackPane>

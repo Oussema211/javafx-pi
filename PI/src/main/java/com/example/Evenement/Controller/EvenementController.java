@@ -20,6 +20,11 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
+import java.io.IOException;
 
 public class EvenementController {
     // Composants FXML
@@ -188,6 +193,24 @@ public class EvenementController {
         if (selectedRegion != null) {
             selectedRegions.remove(selectedRegion);
             selectedRegionsListView.refresh();
+        }
+    }
+
+    @FXML
+    private void handleShowRegions() {
+        try {
+            // Charger la vue de la liste des régions
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/Region/RegionList.fxml"));
+            Parent root = loader.load();
+            
+            // Créer une nouvelle fenêtre pour afficher la liste des régions
+            Stage stage = new Stage();
+            stage.setTitle("Liste des régions");
+            stage.setScene(new Scene(root));
+            stage.show();
+        } catch (IOException e) {
+            showAlert("Erreur", "Impossible d'ouvrir la liste des régions: " + e.getMessage(), Alert.AlertType.ERROR);
+            e.printStackTrace();
         }
     }
 
