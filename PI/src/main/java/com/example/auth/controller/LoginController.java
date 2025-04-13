@@ -11,20 +11,20 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.opencv.core.*;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.videoio.VideoCapture;
-import javafx.scene.layout.VBox;
-
+import org.opencv.videoio.Videoio;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.io.IOException;
-import java.net.URL;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -53,17 +53,24 @@ public class LoginController {
     public void initialize() {
         try {
             System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-
-            URL resource = getClass().getResource("/haarcascade_frontalface_default.xml");
-            if (resource == null) {
+            InputStream xmlStream = getClass().getResourceAsStream("/haarcascade_frontalface_default.xml");
+            if (xmlStream == null) {
                 System.err.println("ERROR: haarcascade_frontalface_default.xml not found in resources");
                 messageLabel.setText("Cannot load face detection file");
                 return;
             }
 
-            String haarCascadePath = Paths.get(resource.toURI()).toString();
-            faceDetector = new CascadeClassifier(haarCascadePath);
+            File tempFile = File.createTempFile("haarcascade_frontalface_default", ".xml");
+            tempFile.deleteOnExit();
+            try (FileOutputStream out = new FileOutputStream(tempFile)) {
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+                while ((bytesRead = xmlStream.read(buffer)) != -1) {
+                    out.write(buffer, 0, bytesRead);
+                }
+            }
 
+            faceDetector = new CascadeClassifier(tempFile.getAbsolutePath());
             if (faceDetector.empty()) {
                 System.err.println("ERROR: Failed to load haarcascade_frontalface_default.xml");
                 messageLabel.setText("Cannot load face detection");
@@ -80,17 +87,17 @@ public class LoginController {
 
     @FXML
     private void onLoginClicked() throws IOException {
-        String username = usernameField.getText().trim();
+        String email = usernameField.getText().trim();
         String password = passwordField.getText().trim();
 
-        if (username.isEmpty() || password.isEmpty()) {
-            messageLabel.setText("Please enter username and password");
+        if (email.isEmpty() || password.isEmpty()) {
+            messageLabel.setText("Please enter email and password");
             return;
         }
 
-        User user = authService.login(username, password);
+        User user = authService.login(email, password);
         if (user == null) {
-            messageLabel.setText("Invalid username or password");
+            messageLabel.setText("Invalid email or password");
             return;
         }
 
@@ -140,13 +147,39 @@ public class LoginController {
     }
 
     private void startFaceCapture() {
-        capture = new VideoCapture(0);
-        if (!capture.isOpened()) {
-            messageLabel.setText("Cannot open webcam");
+        // Try different camera indices and backends
+        boolean opened = false;
+        for (int i = 0; i < 3; i++) {
+            System.out.println("Trying camera index " + i + " with default backend...");
+            capture = new VideoCapture(i);
+            if (capture.isOpened()) {
+                opened = true;
+                break;
+            }
+            capture.release();
+        }
+
+        if (!opened) {
+            // Try DirectShow backend
+            for (int i = 0; i < 3; i++) {
+                System.out.println("Trying camera index " + i + " with DirectShow backend...");
+                capture = new VideoCapture(i, Videoio.CAP_DSHOW);
+                if (capture.isOpened()) {
+                    opened = true;
+                    break;
+                }
+                capture.release();
+            }
+        }
+
+        if (!opened) {
+            messageLabel.setText("Cannot open webcam. Please check if it's connected and not in use.");
+            System.err.println("ERROR: Failed to open webcam after trying multiple indices and backends.");
             return;
         }
 
-        // Create a new window for face capture
+        System.out.println("Webcam opened successfully.");
+        
         captureStage = new Stage();
         captureStage.setTitle("Face Capture");
         
@@ -166,27 +199,27 @@ public class LoginController {
         isCapturing = true;
         signInWithFaceButton.setText("Stop Face Capture");
 
-        // Create a timer to update the preview
         timer = Executors.newSingleThreadScheduledExecutor();
         timer.scheduleAtFixedRate(() -> {
             Mat frame = new Mat();
             if (capture.read(frame)) {
-                // Detect faces
+                if (frame.empty()) {
+                    System.err.println("Failed to grab frame from webcam.");
+                    return;
+                }
                 MatOfRect faces = new MatOfRect();
                 faceDetector.detectMultiScale(frame, faces);
                 
-                // Draw rectangles around faces
                 for (Rect rect : faces.toArray()) {
                     Imgproc.rectangle(frame, new Point(rect.x, rect.y), 
                         new Point(rect.x + rect.width, rect.y + rect.height), 
                         new Scalar(0, 255, 0), 3);
                 }
                 
-                // Convert to JavaFX image
                 Image fxImage = matToImage(frame);
-                
-                // Update on JavaFX thread
                 Platform.runLater(() -> captureView.setImage(fxImage));
+            } else {
+                System.err.println("Failed to read frame from webcam.");
             }
         }, 0, 33, TimeUnit.MILLISECONDS);
     }
@@ -206,16 +239,22 @@ public class LoginController {
         
         if (capture != null && capture.isOpened()) {
             capture.release();
+            System.out.println("Webcam released in stopFaceCapture.");
         }
         
         if (captureStage != null) {
             captureStage.close();
+            System.out.println("Webcam window closed.");
         }
     }
 
     private void captureAndVerifyFace() {
         Mat frame = new Mat();
         if (capture.read(frame)) {
+            if (frame.empty()) {
+                Platform.runLater(() -> messageLabel.setText("Failed to capture frame"));
+                return;
+            }
             MatOfRect faces = new MatOfRect();
             faceDetector.detectMultiScale(frame, faces);
             
@@ -223,15 +262,18 @@ public class LoginController {
                 Rect face = faces.toArray()[0];
                 Mat liveFace = new Mat(frame, face);
                 
-                String username = usernameField.getText().trim();
-                if (username.isEmpty()) {
-                    Platform.runLater(() -> messageLabel.setText("Please enter a username"));
+                String email = usernameField.getText().trim();
+                if (email.isEmpty()) {
+                    Platform.runLater(() -> messageLabel.setText("Please enter an email"));
                     return;
                 }
                 
-                File storedFaceFile = new File("faces/" + username + ".jpg");
+                System.out.println("Looking for face data with email: '" + email + "'");
+                File storedFaceFile = new File("faces/" + email + ".jpg");
+                System.out.println("Checking file at: " + storedFaceFile.getAbsolutePath());
                 if (!storedFaceFile.exists()) {
-                    Platform.runLater(() -> messageLabel.setText("No face data for " + username));
+                    Platform.runLater(() -> messageLabel.setText("No face data for " + email));
+                    System.out.println("Files in faces directory: " + Arrays.toString(new File("faces").list()));
                     return;
                 }
                 
@@ -241,25 +283,26 @@ public class LoginController {
                     return;
                 }
                 
+                Imgproc.resize(liveFace, liveFace, new Size(100, 100));
+                Imgproc.resize(storedFace, storedFace, new Size(100, 100));
+
                 double similarity = compareHistograms(liveFace, storedFace);
-                if (similarity > 0.7) {
-                    User user = authService.authenticate(username, null);
+                System.out.println("Similarity score: " + similarity);
+                if (similarity > 0.3) {
+                    User user = authService.authenticate(email, null);
                     if (user != null) {
                         sessionManager.setLoggedInUser(user);
-                        try {
-                            String fxmlFile = user.hasRole("ROLE_ADMIN") ? "/com/example/auth/dashboard.fxml" : "/com/example/reclamation/Reclamation.fxml";
-                            Platform.runLater(() -> {
-                                try {
-                                    loadScene(fxmlFile);
-                                } catch (IOException e) {
-                                    messageLabel.setText("Error loading dashboard");
-                                    e.printStackTrace();
-                                }
-                            });
-                        } catch (Exception e) {
-                            Platform.runLater(() -> messageLabel.setText("Authentication error"));
-                            e.printStackTrace();
-                        }
+                        String fxmlFile = user.hasRole("ROLE_ADMIN") ? "/com/example/auth/dashboard.fxml" : "/com/example/reclamation/Reclamation.fxml";
+                        Platform.runLater(() -> {
+                            try {
+                                // Close the webcam window before loading the new scene
+                                stopFaceCapture();
+                                loadScene(fxmlFile);
+                            } catch (IOException e) {
+                                messageLabel.setText("Error loading dashboard");
+                                e.printStackTrace();
+                            }
+                        });
                     } else {
                         Platform.runLater(() -> messageLabel.setText("Authentication failed"));
                     }
@@ -275,25 +318,24 @@ public class LoginController {
     }
 
     private double compareHistograms(Mat img1, Mat img2) {
-        // Convert to HSV color space
-        Mat hsv1 = new Mat(), hsv2 = new Mat();
-        Imgproc.cvtColor(img1, hsv1, Imgproc.COLOR_BGR2HSV);
-        Imgproc.cvtColor(img2, hsv2, Imgproc.COLOR_BGR2HSV);
+        Mat gray1 = new Mat(), gray2 = new Mat();
+        Imgproc.cvtColor(img1, gray1, Imgproc.COLOR_BGR2GRAY);
+        Imgproc.cvtColor(img2, gray2, Imgproc.COLOR_BGR2GRAY);
 
-        // Calculate histograms
+        Imgproc.equalizeHist(gray1, gray1);
+        Imgproc.equalizeHist(gray2, gray2);
+
         Mat hist1 = new Mat(), hist2 = new Mat();
         MatOfInt histSize = new MatOfInt(50);
-        MatOfFloat ranges = new MatOfFloat(0f, 180f);
+        MatOfFloat ranges = new MatOfFloat(0f, 256f);
         MatOfInt channels = new MatOfInt(0);
 
-        Imgproc.calcHist(Arrays.asList(hsv1), channels, new Mat(), hist1, histSize, ranges);
-        Imgproc.calcHist(Arrays.asList(hsv2), channels, new Mat(), hist2, histSize, ranges);
+        Imgproc.calcHist(Arrays.asList(gray1), channels, new Mat(), hist1, histSize, ranges);
+        Imgproc.calcHist(Arrays.asList(gray2), channels, new Mat(), hist2, histSize, ranges);
 
-        // Normalize histograms
         Core.normalize(hist1, hist1, 0, 1, Core.NORM_MINMAX, -1, new Mat());
         Core.normalize(hist2, hist2, 0, 1, Core.NORM_MINMAX, -1, new Mat());
 
-        // Compare histograms
         return Imgproc.compareHist(hist1, hist2, Imgproc.HISTCMP_CORREL);
     }
 
@@ -325,5 +367,9 @@ public class LoginController {
 
     public void shutdown() {
         stopFaceCapture();
+        if (capture != null && capture.isOpened()) {
+            capture.release();
+            System.out.println("Webcam released in shutdown (LoginController).");
+        }
     }
 }

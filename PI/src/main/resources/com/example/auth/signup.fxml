@@ -5,12 +5,9 @@
 <?import javafx.scene.image.*?>
 
 <StackPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.auth.controller.SignupController" styleClass="root">
-    <!-- Sign-Up Form -->
     <VBox styleClass="vbox" spacing="15">
-        <!-- Title -->
         <Label text="Sign Up" styleClass="label" style="-fx-font-size: 24px;" alignment="CENTER" />
 
-        <!-- First Name (Prenom) and Last Name (Nom) -->
         <VBox spacing="10">
             <HBox alignment="CENTER_LEFT" spacing="10">
                 <Label text="First Name" styleClass="label" />
@@ -22,7 +19,6 @@
             </HBox>
         </VBox>
 
-        <!-- Email and Username -->
         <VBox spacing="10">
             <HBox alignment="CENTER_LEFT" spacing="10">
                 <Label text="Email" styleClass="label" />
@@ -34,7 +30,6 @@
             </HBox>
         </VBox>
 
-        <!-- Password and Confirm Password -->
         <VBox spacing="10">
             <HBox alignment="CENTER_LEFT" spacing="10">
                 <Label text="Password" styleClass="label" />
@@ -46,43 +41,38 @@
             </HBox>
         </VBox>
 
-        <!-- Work (Travail) -->
         <HBox alignment="CENTER_LEFT" spacing="10">
             <Label text="Work" styleClass="label" />
             <TextField fx:id="travailField" prefWidth="250" promptText="Work/Occupation" styleClass="text-field" />
         </HBox>
 
-        <!-- Phone Number (Num Tel) -->
         <HBox alignment="CENTER_LEFT" spacing="10">
             <Label text="Phone Number" styleClass="label" />
             <TextField fx:id="numTelField" prefWidth="250" promptText="Phone Number" styleClass="text-field" />
         </HBox>
 
-        <!-- Photo Selection (Last Field) -->
         <VBox spacing="5" alignment="CENTER">
+            <Label text="Profile Photo" styleClass="label" />
             <HBox alignment="CENTER" spacing="10">
-                <Button fx:id="choosePhotoButton" text="Choose Photo" onAction="#onChoosePhotoClicked" styleClass="button" />
-                <ImageView fx:id="photoPreview" fitWidth="50" fitHeight="50" preserveRatio="true" />
+                <Button fx:id="chooseProfilePhotoButton" text="Choose Profile Photo" onAction="#onChooseProfilePhotoClicked" styleClass="button" />
+                <ImageView fx:id="profilePhotoPreview" fitWidth="50" fitHeight="50" preserveRatio="true" />
+            </HBox>
+        </VBox>
+
+        <VBox spacing="5" alignment="CENTER">
+            <Label text="Face Photo (for Recognition)" styleClass="label" />
+            <HBox alignment="CENTER" spacing="10">
+                <Button fx:id="chooseFacePhotoButton" text="Choose Face Photo" onAction="#onChooseFacePhotoClicked" styleClass="button" />
+                <Button fx:id="captureFaceButton" text="Capture Face" onAction="#captureFace" styleClass="button" />
+                <ImageView fx:id="facePhotoPreview" fitWidth="50" fitHeight="50" preserveRatio="true" />
             </HBox>
             <Label fx:id="photoErrorLabel" alignment="CENTER" visible="false" />
         </VBox>
 
-        <!-- Sign-Up Button -->
         <Button fx:id="signupButton" text="Sign Up" prefWidth="120" styleClass="button" onAction="#onSignupClicked" />
 
-        <!-- Message Label for Validation Feedback -->
         <Label fx:id="messageLabel" styleClass="message-label" alignment="CENTER" />
 
-        <!-- Login Link -->
         <Hyperlink fx:id="loginLink" text="Already have an account? Login" styleClass="hyperlink" onAction="#onLoginClicked" />
-        <!-- Photo Selection -->
-<VBox spacing="10" alignment="CENTER">
-    <HBox alignment="CENTER" spacing="10">
-        <Button fx:id="choosePhotoButton" text="Choose Photo" onAction="#onChoosePhotoClicked" styleClass="button" />
-        <ImageView fx:id="photoPreview" fitWidth="100" fitHeight="100" preserveRatio="true" />
-    </HBox>
-    <Label fx:id="photoErrorLabel" alignment="CENTER" visible="false" />
-</VBox>
-
     </VBox>
 </StackPane>

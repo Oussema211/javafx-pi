@@ -29,32 +29,34 @@ public class SignupController {
     @FXML private TextField prenomField;
     @FXML private TextField numTelField;
     @FXML private Label messageLabel;
-    @FXML private ImageView photoPreview;
-    @FXML private Button choosePhotoButton;
+    @FXML private ImageView profilePhotoPreview;
+    @FXML private Button chooseProfilePhotoButton;
+    @FXML private ImageView facePhotoPreview;
+    @FXML private Button chooseFacePhotoButton;
+    @FXML private Button captureFaceButton;
     @FXML private Label photoErrorLabel;
     @FXML private Button signupButton;
     @FXML private Hyperlink loginLink;
-    @FXML private Button captureFaceButton;
 
     private AuthService authService = new AuthService();
     private VideoCapture capture;
     private CascadeClassifier faceDetector;
     private boolean isCapturing = false;
-    private File selectedPhoto;
+    private File selectedProfilePhoto;
+    private File selectedFacePhoto;
+    private Mat capturedFace; // To store the captured face image
 
     @FXML
     public void initialize() {
         try {
             System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-            // ✅ Chargement sécurisé depuis les ressources
             InputStream xmlStream = getClass().getResourceAsStream("/haarcascade_frontalface_default.xml");
             if (xmlStream == null) {
                 System.err.println("ERROR: haarcascade_frontalface_default.xml not found in resources");
                 messageLabel.setText("Face detection file not found");
                 return;
             }
-    
-            // ✅ Copier dans un fichier temporaire lisible par OpenCV
+
             File tempFile = File.createTempFile("haarcascade_frontalface_default", ".xml");
             tempFile.deleteOnExit();
             try (FileOutputStream out = new FileOutputStream(tempFile)) {
@@ -64,7 +66,7 @@ public class SignupController {
                     out.write(buffer, 0, bytesRead);
                 }
             }
-    
+
             faceDetector = new CascadeClassifier(tempFile.getAbsolutePath());
             if (faceDetector.empty()) {
                 System.err.println("ERROR: Failed to load haarcascade_frontalface_default.xml");
@@ -72,9 +74,23 @@ public class SignupController {
             } else {
                 messageLabel.setText("Face detection loaded");
             }
-    
-            new File("faces").mkdirs();
-    
+
+            File facesDir = new File("faces");
+            System.out.println("Creating faces directory at: " + facesDir.getAbsolutePath());
+            if (facesDir.mkdirs()) {
+                System.out.println("Faces directory created successfully");
+            } else {
+                System.out.println("Faces directory already exists or failed to create");
+            }
+
+            File profileDir = new File("profile_photos");
+            System.out.println("Creating profile_photos directory at: " + profileDir.getAbsolutePath());
+            if (profileDir.mkdirs()) {
+                System.out.println("Profile_photos directory created successfully");
+            } else {
+                System.out.println("Profile_photos directory already exists or failed to create");
+            }
+
         } catch (UnsatisfiedLinkError e) {
             System.err.println("ERROR: Failed to load OpenCV: " + e.getMessage());
             messageLabel.setText("Cannot load face detection");
@@ -83,21 +99,37 @@ public class SignupController {
             messageLabel.setText("Cannot read face detection file");
         }
     }
-    
 
     @FXML
-    private void onChoosePhotoClicked() {
+    private void onChooseProfilePhotoClicked() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg"));
-        Stage stage = (Stage) choosePhotoButton.getScene().getWindow();
-        selectedPhoto = fileChooser.showOpenDialog(stage);
-        if (selectedPhoto != null) {
-            Image image = new Image(selectedPhoto.toURI().toString());
-            photoPreview.setImage(image);
+        Stage stage = (Stage) chooseProfilePhotoButton.getScene().getWindow();
+        selectedProfilePhoto = fileChooser.showOpenDialog(stage);
+        if (selectedProfilePhoto != null) {
+            Image image = new Image(selectedProfilePhoto.toURI().toString());
+            profilePhotoPreview.setImage(image);
             photoErrorLabel.setVisible(false);
-            messageLabel.setText("Photo selected");
+            messageLabel.setText("Profile photo selected");
         } else {
-            photoErrorLabel.setText("No photo selected");
+            photoErrorLabel.setText("No profile photo selected");
+            photoErrorLabel.setVisible(true);
+        }
+    }
+
+    @FXML
+    private void onChooseFacePhotoClicked() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg"));
+        Stage stage = (Stage) chooseFacePhotoButton.getScene().getWindow();
+        selectedFacePhoto = fileChooser.showOpenDialog(stage);
+        if (selectedFacePhoto != null) {
+            Image image = new Image(selectedFacePhoto.toURI().toString());
+            facePhotoPreview.setImage(image);
+            photoErrorLabel.setVisible(false);
+            messageLabel.setText("Face photo selected");
+        } else {
+            photoErrorLabel.setText("No face photo selected");
             photoErrorLabel.setVisible(true);
         }
     }
@@ -124,28 +156,80 @@ public class SignupController {
             return;
         }
 
-        if (selectedPhoto == null && !new File("faces/" + email + ".jpg").exists()) {
-            messageLabel.setText("Please select or capture a photo");
+        if (selectedProfilePhoto == null) {
+            messageLabel.setText("Please select a profile photo");
             return;
         }
 
-        if (selectedPhoto != null) {
-            try {
-                Mat image = Imgcodecs.imread(selectedPhoto.getAbsolutePath());
-                if (!image.empty()) {
-                    Imgcodecs.imwrite("faces/" + email + ".jpg", image);
-                }
-            } catch (Exception e) {
-                messageLabel.setText("Error saving photo");
-                return;
-            }
+        if (selectedFacePhoto == null && capturedFace == null) {
+            messageLabel.setText("Please select or capture a face photo");
+            return;
         }
 
-        boolean success = authService.signup(email, password, travail, username, nom, prenom, numTel, Arrays.asList("ROLE_USER"));
+        String profilePhotoPath = "profile_photos/" + email + "_profile.jpg";
+        try {
+            Mat profileImage = Imgcodecs.imread(selectedProfilePhoto.getAbsolutePath());
+            if (!profileImage.empty()) {
+                Imgcodecs.imwrite(profilePhotoPath, profileImage);
+                System.out.println("Profile photo saved at: " + new File(profilePhotoPath).getAbsolutePath());
+            } else {
+                System.out.println("Failed to load profile image: " + selectedProfilePhoto.getAbsolutePath());
+                messageLabel.setText("Failed to load profile photo");
+                return;
+            }
+        } catch (Exception e) {
+            messageLabel.setText("Error saving profile photo");
+            System.out.println("Error saving profile photo: " + e.getMessage());
+            return;
+        }
+
+        // Save the face image
+        String facePhotoPath = "faces/" + email + ".jpg";
+        try {
+            Mat faceImage = null;
+            if (selectedFacePhoto != null) {
+                faceImage = Imgcodecs.imread(selectedFacePhoto.getAbsolutePath());
+                if (!faceImage.empty()) {
+                    MatOfRect faces = new MatOfRect();
+                    faceDetector.detectMultiScale(faceImage, faces);
+                    if (!faces.empty()) {
+                        Rect face = faces.toArray()[0];
+                        faceImage = new Mat(faceImage, face);
+                    } else {
+                        messageLabel.setText("No face detected in chosen photo");
+                        return;
+                    }
+                } else {
+                    messageLabel.setText("Failed to load face photo");
+                    return;
+                }
+            } else if (capturedFace != null) {
+                faceImage = capturedFace;
+            }
+
+            if (faceImage != null) {
+                Imgproc.resize(faceImage, faceImage, new Size(100, 100));
+                Imgproc.cvtColor(faceImage, faceImage, Imgproc.COLOR_BGR2GRAY);
+                Imgproc.equalizeHist(faceImage, faceImage);
+                Imgcodecs.imwrite(facePhotoPath, faceImage);
+                System.out.println("Face image saved at: " + new File(facePhotoPath).getAbsolutePath());
+                if (!new File(facePhotoPath).exists()) {
+                    System.out.println("ERROR: Face image file does not exist after saving!");
+                    messageLabel.setText("Failed to save face photo");
+                    return;
+                }
+            }
+        } catch (Exception e) {
+            messageLabel.setText("Error saving face photo");
+            System.out.println("Error saving face photo: " + e.getMessage());
+            return;
+        }
+
+        boolean success = authService.signup(email, password, travail, profilePhotoPath, nom, prenom, numTel, Arrays.asList("ROLE_USER"));
         if (success) {
             messageLabel.setText("Signup successful! Please login.");
         } else {
-            messageLabel.setText("Signup failed. Email or username may already exist.");
+            messageLabel.setText("Signup failed. Email may already exist.");
         }
     }
 
@@ -184,8 +268,9 @@ public class SignupController {
                         Rect face = faces.toArray()[0];
                         Mat faceROI = new Mat(frame, face);
                         Imgproc.cvtColor(faceROI, faceROI, Imgproc.COLOR_BGR2RGB);
+                        Imgproc.resize(faceROI, faceROI, new Size(100, 100));
                         Image fxImage = matToImage(faceROI);
-                        photoPreview.setImage(fxImage);
+                        facePhotoPreview.setImage(fxImage);
                     }
                 }
             }).start();
@@ -197,17 +282,14 @@ public class SignupController {
                 faceDetector.detectMultiScale(frame, faces);
                 if (!faces.empty()) {
                     Rect face = faces.toArray()[0];
-                    Mat faceROI = new Mat(frame, face);
-                    String email = emailField.getText().trim();
-                    if (email.isEmpty()) {
-                        messageLabel.setText("Please enter an email");
-                        return;
-                    }
-                    Imgcodecs.imwrite("faces/" + email + ".jpg", faceROI);
-                    messageLabel.setText("Face saved for " + email);
+                    capturedFace = new Mat(frame, face);
+                    Imgproc.resize(capturedFace, capturedFace, new Size(100, 100));
+                    Imgproc.cvtColor(capturedFace, capturedFace, Imgproc.COLOR_BGR2GRAY);
+                    Imgproc.equalizeHist(capturedFace, capturedFace);
+                    messageLabel.setText("Face captured successfully");
                     photoErrorLabel.setVisible(false);
-                    Image fxImage = matToImage(faceROI);
-                    photoPreview.setImage(fxImage);
+                    Image fxImage = matToImage(capturedFace);
+                    facePhotoPreview.setImage(fxImage);
                 } else {
                     messageLabel.setText("No face detected");
                     photoErrorLabel.setVisible(true);
