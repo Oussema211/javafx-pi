@@ -3,28 +3,32 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.cell.PropertyValueFactory?>
 
 <VBox xmlns="http://javafx.com/javafx/8.0.171"
       xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.example.Evenement.Controller.RegionListController">
-    <padding>
-        <Insets top="10" right="10" bottom="10" left="10"/>
-    </padding>
-    <spacing>10</spacing>
+      fx:controller="com.example.Evenement.Controller.RegionListController"
+      spacing="20"
+      alignment="CENTER"
+      style="-fx-background-color: #f4f6f8; -fx-padding: 30;">
 
-    <TableView fx:id="regionTable">
+    <Label text="Liste des Régions"
+           style="-fx-font-size: 26px; -fx-text-fill: #2c3e50; -fx-font-weight: bold;"/>
+
+    <TableView fx:id="regionTable"
+               prefWidth="800"
+               style="-fx-background-color: white; -fx-border-radius: 10; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 4);">
         <columns>
-            <TableColumn text="Nom" fx:id="colNom"/>
-            <TableColumn text="Ville" fx:id="colVille"/>
-            <TableColumn text="Description" fx:id="colDescription"/>
-            <TableColumn text="Actions" fx:id="colActions"/>
+            <TableColumn text="Nom" fx:id="colNom" prefWidth="180"/>
+            <TableColumn text="Ville" fx:id="colVille" prefWidth="180"/>
+            <TableColumn text="Description" fx:id="colDescription" prefWidth="280"/>
+            <TableColumn text="Actions" fx:id="colActions" prefWidth="160"/>
         </columns>
     </TableView>
 
-    <HBox spacing="10">
-        <Button text="Ajouter une région" onAction="#handleAdd"/>
+    <HBox spacing="20" alignment="CENTER">
+        <Button text="Ajouter une région" onAction="#handleAdd"
+                style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 16;"/>
         <Button text="Ajouter un événement" onAction="#handleAddEvent"
-                style="-fx-background-color: #2196F3; -fx-text-fill: white;"/>
+                style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 16;"/>
     </HBox>
 </VBox>

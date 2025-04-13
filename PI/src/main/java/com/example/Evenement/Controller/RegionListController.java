@@ -48,9 +48,9 @@ public class RegionListController {
 
                     {
                         pane.setSpacing(5);
-                        editBtn.setStyle("-fx-background-color: #FFC107; -fx-text-fill: black;");
-                        deleteBtn.setStyle("-fx-background-color: #F44336; -fx-text-fill: white;");
-                        detailsBtn.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white;");
+                        editBtn.setStyle("-fx-background-color: #93441A; -fx-text-fill: white;");
+                        deleteBtn.setStyle("-fx-background-color: #B67332; -fx-text-fill: white;");
+                        detailsBtn.setStyle("-fx-background-color: #DAAB3A; -fx-text-fill: white;");
 
                         editBtn.setOnAction(event -> handleEdit(getTableView().getItems().get(getIndex())));
                         deleteBtn.setOnAction(event -> handleDelete(getTableView().getItems().get(getIndex())));

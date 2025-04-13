@@ -97,9 +97,9 @@ public class EvenementListController {
             private final HBox pane = new HBox(5, editBtn, deleteBtn, detailsBtn);
 
             {
-                editBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;");
-                deleteBtn.setStyle("-fx-background-color: #f44336; -fx-text-fill: white;");
-                detailsBtn.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white;");
+                editBtn.setStyle("-fx-background-color: #93441A; -fx-text-fill: white;");
+                deleteBtn.setStyle("-fx-background-color: #B67332; -fx-text-fill: white;");
+                detailsBtn.setStyle("-fx-background-color: #DAAB3A; -fx-text-fill: white;");
 
                 editBtn.setOnAction(event -> {
                     Evenement selectedEvent = getTableView().getItems().get(getIndex());

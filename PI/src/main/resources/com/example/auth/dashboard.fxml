@@ -43,34 +43,34 @@
                     <padding>
                         <Insets left="20" top="5" bottom="5"/>
                     </padding>
-                    
+
                     <Hyperlink text="Ajouter Région" onAction="#handleAddRegion" styleClass="sub-nav-link">
                         <graphic>
-                            <ImageView fitHeight="16" fitWidth="16">
+                            <ImageView fitHeight="20" fitWidth="20">
                                 <Image url="@../../../icons/add_region.png"/>
                             </ImageView>
                         </graphic>
                     </Hyperlink>
-                    
+
                     <Hyperlink text="Liste Régions" onAction="#handleListRegions" styleClass="sub-nav-link">
                         <graphic>
-                            <ImageView fitHeight="16" fitWidth="16">
+                            <ImageView fitHeight="20" fitWidth="20">
                                 <Image url="@../../../icons/list_regions.png"/>
                             </ImageView>
                         </graphic>
                     </Hyperlink>
-                    
+
                     <Hyperlink text="Ajouter Événement" onAction="#handleAddEvent" styleClass="sub-nav-link">
                         <graphic>
-                            <ImageView fitHeight="16" fitWidth="16">
+                            <ImageView fitHeight="20" fitWidth="20">
                                 <Image url="@../../../icons/add_event.png"/>
                             </ImageView>
                         </graphic>
                     </Hyperlink>
-                    
+
                     <Hyperlink text="Liste Événements" onAction="#handleListEvents" styleClass="sub-nav-link">
                         <graphic>
-                            <ImageView fitHeight="16" fitWidth="16">
+                            <ImageView fitHeight="20" fitWidth="20">
                                 <Image url="@../../../icons/list_events.png"/>
                             </ImageView>
                         </graphic>
