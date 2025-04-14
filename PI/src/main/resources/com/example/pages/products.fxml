@@ -121,9 +121,12 @@
 
     <TableView fx:id="productTableView" styleClass="product-table-view" VBox.vgrow="ALWAYS">
         <columns>
-            <TableColumn fx:id="imagePreviewColumn" prefWidth="50" text="Image Preview">
+            <TableColumn fx:id="imagePreviewColumn" prefWidth="78.39999389648438" text="Image">
+                <cellValueFactory>
+                    <PropertyValueFactory property="image" />
+                </cellValueFactory>
             </TableColumn>
-            <TableColumn fx:id="productColumn" prefWidth="150" text="Product">
+            <TableColumn fx:id="productColumn" prefWidth="122.4000244140625" text="Product">
                 <cellValueFactory>
                     <PropertyValueFactory property="nom" />
                 </cellValueFactory>

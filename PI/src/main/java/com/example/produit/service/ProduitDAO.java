@@ -29,7 +29,7 @@ public class ProduitDAO {
                 product.setDateCreation(rs.getTimestamp("date_creation").toLocalDateTime());
                 product.setImageName(rs.getString("image_name"));
 
-                int categoryId = rs.getInt("categorie_id");
+                UUID categoryId = (UUID) rs.getObject("categorie_id");
                 product.setCategory(CategorieDAO.getCategoryById(categoryId));
 
                 products.add(product);
@@ -48,7 +48,7 @@ public class ProduitDAO {
              PreparedStatement pstmt = conn.prepareStatement(query)) {
 
             pstmt.setString(1, product.getId().toString());
-            pstmt.setInt(2, product.getCategory().getId());
+            pstmt.setObject(2, product.getCategory() != null ? product.getCategory().getId() : null, java.sql.Types.OTHER); // UUID for categorie_id
             pstmt.setString(3, product.getNom());
             pstmt.setString(4, product.getDescription());
             pstmt.setFloat(5, product.getPrixUnitaire());
@@ -69,7 +69,7 @@ public class ProduitDAO {
         try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
              PreparedStatement pstmt = conn.prepareStatement(query)) {
 
-            pstmt.setInt(1, product.getCategory().getId());
+            pstmt.setObject(1, product.getCategory() != null ? product.getCategory().getId() : null, java.sql.Types.OTHER);
             pstmt.setString(2, product.getNom());
             pstmt.setString(3, product.getDescription());
             pstmt.setFloat(4, product.getPrixUnitaire());

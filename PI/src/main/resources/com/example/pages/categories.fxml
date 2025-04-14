@@ -1,6 +1,53 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?import javafx.scene.layout.VBox?>
+
+<?import java.lang.String?>
+<?import javafx.collections.FXCollections?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
-<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" styleClass="main-content">
-    <Label text="Category Management Content" styleClass="content-title"/>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.cell.PropertyValueFactory?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox spacing="10" styleClass="main-vbox" stylesheets="@../css/produits.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.produit.controller.CategorieController">
+
+    <HBox spacing="10" styleClass="title-box">
+        <Label styleClass="title-label" text="Categories" />
+        <Label styleClass="subtitle-label" text="Add, view and edit your categories all in one place. Need help?" />
+        <Region HBox.hgrow="ALWAYS" />
+        <Button styleClass="secondary-button" text="IMPORT" />
+        <Button fx:id="addCategoryButton" onAction="#handleAddCategory" styleClass="primary-button" text="ADD CATEGORY" />
+    </HBox>
+
+    <TableView fx:id="categoryTableView" styleClass="category-table-view" VBox.vgrow="ALWAYS">
+        <columns>
+            <TableColumn fx:id="nameColumn" prefWidth="200" text="Category Name">
+                <cellValueFactory>
+                    <PropertyValueFactory property="nom" />
+                </cellValueFactory>
+            </TableColumn>
+            <TableColumn fx:id="descriptionColumn" prefWidth="300" text="Description">
+                <cellValueFactory>
+                    <PropertyValueFactory property="description" />
+                </cellValueFactory>
+            </TableColumn>
+            <TableColumn fx:id="statusColumn" prefWidth="100" text="Status">
+                <cellValueFactory>
+                    <PropertyValueFactory property="status" />
+                </cellValueFactory>
+            </TableColumn>
+            <TableColumn fx:id="dateCreationColumn" prefWidth="150" text="Date Created">
+                <cellValueFactory>
+                    <PropertyValueFactory property="dateCreation" />
+                </cellValueFactory>
+            </TableColumn>
+            <TableColumn fx:id="actionsColumn" prefWidth="150" text="Actions" />
+        </columns>
+    </TableView>
 </VBox>
