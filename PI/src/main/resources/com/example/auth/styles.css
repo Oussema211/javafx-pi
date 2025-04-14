@@ -48,10 +48,7 @@
 }
 
 /* Styles pour la barre latérale */
-.sidebar {
-    -fx-background-color: #2c3e50;
-    -fx-padding: 15 10 15 10;
-}
+
 
 .nav-link {
     -fx-text-fill: #ecf0f1;
@@ -62,12 +59,12 @@
 }
 
 .nav-link:hover {
-    -fx-background-color: #34495e;
+    -fx-background-color: #B67332;
 }
 
 /* Styles pour le sous-menu */
 .sub-menu {
-    -fx-background-color: #34495e;
+    -fx-background-color: #93441A;
     -fx-background-radius: 0 0 5px 5px;
     -fx-padding: 5 0 5 0;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 10, 0, 0, 2);
@@ -82,7 +79,7 @@
 }
 
 .sub-nav-link:hover {
-    -fx-background-color: #2c3e50;
+    -fx-background-color: #B67332;
     -fx-text-fill: white;
 }
 
