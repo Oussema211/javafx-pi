@@ -14,8 +14,10 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
+import java.io.IOException;
+
 public class MainApp extends Application {
-    private SessionManager sessionManager = SessionManager.getInstance();
+    private final SessionManager sessionManager = SessionManager.getInstance();
     private static final boolean FULL_SCREEN = false; // Set to true for always full-screen, false for windowed
     private final AuthService authService = new AuthService();
     private final TagService tagService = new TagService();
@@ -23,9 +25,8 @@ public class MainApp extends Application {
     private final MessageReclamationService messageReclamationService = new MessageReclamationService();
 
     @Override
-    public void start(Stage primaryStage) throws Exception {
+    public void start(Stage primaryStage) throws IOException {
         System.out.println("DEBUG: Starting MainApp");
-        ResetLinkServer.startServer();
         String fxmlFile;
         User user = sessionManager.getLoggedInUser();
         if (user == null) {
@@ -34,11 +35,21 @@ public class MainApp extends Application {
             fxmlFile = user.hasRole("ROLE_ADMIN") ? "/com/example/auth/dashboard.fxml" : "/com/example/reclamation/Reclamation.fxml";
         }
         System.out.println("DEBUG: Loading FXML: " + fxmlFile);
-        Parent root = FXMLLoader.load(getClass().getResource(fxmlFile));
-        if (root == null) {
-            System.out.println("DEBUG: Failed to load " + fxmlFile + " - root is null");
-            return;
+
+        FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlFile));
+        Parent root;
+        try {
+            root = loader.load();
+        } catch (IOException e) {
+            System.err.println("ERROR: Failed to load " + fxmlFile + ": " + e.getMessage());
+            throw e;
         }
+
+        if (root == null) {
+            System.err.println("ERROR: Root is null after loading FXML: " + fxmlFile);
+            throw new IOException("Failed to load FXML: " + fxmlFile);
+        }
+
         Scene scene = new Scene(root, 400, 500);
 
         // Load stylesheet
@@ -51,12 +62,14 @@ public class MainApp extends Application {
 
         primaryStage.setTitle("Authentication System");
         primaryStage.setScene(scene);
-        primaryStage.setResizable(true); // Allow resizing and enable title bar controls
-        primaryStage.setFullScreen(FULL_SCREEN); // Set initial full-screen state
+        primaryStage.setResizable(true);
+        primaryStage.setFullScreen(FULL_SCREEN);
         primaryStage.show();
         System.out.println("DEBUG: MainApp started successfully");
+
         primaryStage.setOnCloseRequest(event -> {
             ResetLinkServer.stopServer();
+            System.out.println("DEBUG: Stopping MainApp");
         });
     }
 
