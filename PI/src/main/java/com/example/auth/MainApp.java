@@ -1,5 +1,6 @@
 package com.example.auth;
 
+import com.example.Stock.service.StockService;
 import com.example.auth.model.User;
 import com.example.auth.service.AuthService;
 import com.example.auth.utils.ResetLinkServer;
@@ -7,7 +8,6 @@ import com.example.auth.utils.SessionManager;
 import com.example.reclamation.service.MessageReclamationService;
 import com.example.reclamation.service.ReclamationService;
 import com.example.reclamation.service.TagService;
-
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -16,16 +16,23 @@ import javafx.stage.Stage;
 
 public class MainApp extends Application {
     private SessionManager sessionManager = SessionManager.getInstance();
-    private static final boolean FULL_SCREEN = false; // Set to true for always full-screen, false for windowed
+    private static final boolean FULL_SCREEN = false;
     private final AuthService authService = new AuthService();
     private final TagService tagService = new TagService();
     private final ReclamationService reclamationService = new ReclamationService();
+    private final StockService stockService = new StockService();
     private final MessageReclamationService messageReclamationService = new MessageReclamationService();
 
     @Override
     public void start(Stage primaryStage) throws Exception {
         System.out.println("DEBUG: Starting MainApp");
-        ResetLinkServer.startServer();
+        try {
+            ResetLinkServer.startServer(); // Essayez de démarrer le serveur
+        } catch (java.net.BindException e) {
+            System.err.println("Erreur : Le port est déjà utilisé. Essayez un autre port ou fermez l'application qui l'utilise.");
+            throw e; // Relance l'exception pour arrêter l'application proprement
+        }
+
         String fxmlFile;
         User user = sessionManager.getLoggedInUser();
         if (user == null) {
@@ -41,7 +48,6 @@ public class MainApp extends Application {
         }
         Scene scene = new Scene(root, 400, 500);
 
-        // Load stylesheet
         java.net.URL stylesheetUrl = getClass().getClassLoader().getResource("com/example/auth/styles.css");
         if (stylesheetUrl != null) {
             scene.getStylesheets().add(stylesheetUrl.toExternalForm());
@@ -51,13 +57,19 @@ public class MainApp extends Application {
 
         primaryStage.setTitle("Authentication System");
         primaryStage.setScene(scene);
-        primaryStage.setResizable(true); // Allow resizing and enable title bar controls
-        primaryStage.setFullScreen(FULL_SCREEN); // Set initial full-screen state
+        primaryStage.setResizable(true);
+        primaryStage.setFullScreen(FULL_SCREEN);
         primaryStage.show();
         System.out.println("DEBUG: MainApp started successfully");
+
         primaryStage.setOnCloseRequest(event -> {
             ResetLinkServer.stopServer();
         });
+    }
+
+    @Override
+    public void stop() {
+        ResetLinkServer.stopServer(); // Assurez-vous que le serveur s'arrête même en cas d'arrêt inattendu
     }
 
     public static void main(String[] args) {

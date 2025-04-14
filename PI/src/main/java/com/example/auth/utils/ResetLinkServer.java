@@ -19,7 +19,7 @@ public class ResetLinkServer {
     private static HttpServer server;
 
     public static void startServer() throws IOException {
-        server = HttpServer.create(new InetSocketAddress(8081), 0);
+        server = HttpServer.create(new InetSocketAddress(9000), 0);
         server.createContext("/reset-password", new ResetPasswordHandler());
         server.setExecutor(null); // Use default executor
         server.start();

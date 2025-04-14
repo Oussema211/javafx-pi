@@ -48,6 +48,11 @@
                     </ImageView>
                 </graphic>
             </Hyperlink>
+            <Hyperlink fx:id="StockButton" text="📦 Gestion Stock" graphicTextGap="10" styleClass="nav-link">
+
+            </Hyperlink>
+            <Hyperlink fx:id="EntrepotButton" text="📦 Gestion Entrepot" graphicTextGap="10" styleClass="nav-link">
+            </Hyperlink>
             <Hyperlink fx:id="settings" text="Settings" graphicTextGap="10" styleClass="nav-link">
                 <graphic>
                     <ImageView fitHeight="20" fitWidth="20">
