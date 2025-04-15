@@ -169,7 +169,10 @@ public class SignupController {
                 String targetDir = "src/main/resources/com/example/auth/images/users/";
                 File dir = new File(targetDir);
                 if (!dir.exists()) {
-                    dir.mkdirs();
+                    if (!dir.mkdirs()) {
+                        messageLabel.setText("Erreur : Impossible de créer le dossier pour les images.");
+                        return;
+                    }
                 }
 
                 String fileExtension = selectedPhoto.getName().substring(selectedPhoto.getName().lastIndexOf("."));
@@ -177,12 +180,16 @@ public class SignupController {
                 Path targetPath = Paths.get(targetDir, newFileName);
 
                 Files.copy(selectedPhoto.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+                System.out.println("Profile photo saved at: " + targetPath.toAbsolutePath());
 
                 photoUrl = "/com/example/auth/images/users/" + newFileName;
             } catch (IOException e) {
                 messageLabel.setText("Erreur lors de l’enregistrement de la photo : " + e.getMessage());
+                e.printStackTrace();
                 return;
             }
+        } else {
+            photoUrl = "/com/example/images/default_profile.jpg";
         }
 
         Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
@@ -214,6 +221,8 @@ public class SignupController {
             java.net.URL stylesheetUrl = getClass().getClassLoader().getResource("com/example/auth/styles.css");
             if (stylesheetUrl != null) {
                 scene.getStylesheets().add(stylesheetUrl.toExternalForm());
+            } else {
+                System.err.println("Stylesheet modern-theme.css not found!");
             }
 
             stage.setScene(scene);

@@ -70,6 +70,11 @@ public class User implements Serializable {
         return roles != null && role != null && roles.contains(role);
     }
 
+    // Added method to support ProfileController.java
+    public String getProfilePhotoPath() {
+        return getPhotoUrl();
+    }
+
     // Getters and setters
     public UUID getId() {
         return id;

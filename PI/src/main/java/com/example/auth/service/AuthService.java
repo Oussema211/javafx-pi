@@ -217,7 +217,37 @@ public class AuthService {
         }
     }
 
-    public boolean updatePasswordByEmail(String email, String newPassword) {
+    // Added to support ProfileController.java
+    public boolean updateUserEmail(String oldEmail, String newEmail) {
+        // Check if the new email already exists
+        String checkSql = "SELECT COUNT(*) FROM user WHERE email = ?";
+        try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+            checkStmt.setString(1, newEmail);
+            ResultSet rs = checkStmt.executeQuery();
+            if (rs.next() && rs.getInt(1) > 0) {
+                System.err.println("Email already exists: " + newEmail);
+                return false; // New email is already taken
+            }
+        } catch (SQLException e) {
+            System.err.println("Error checking email existence: " + e.getMessage());
+            return false;
+        }
+
+        // Update the email in the database
+        String sql = "UPDATE user SET email = ? WHERE email = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, newEmail);
+            pstmt.setString(2, oldEmail);
+            int rowsAffected = pstmt.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            System.err.println("Error updating email: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // Adjusted to support ProfileController.java
+    public boolean updateUserPassword(String email, String newPassword) {
         String hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
         String sql = "UPDATE user SET password = ? WHERE email = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -311,5 +341,42 @@ public class AuthService {
         } catch (SQLException e) {
             System.err.println("Error deleting token: " + e.getMessage());
         }
+    }
+
+    // Added to support face recognition login in LoginController.java
+    public User authenticate(String email, String password) {
+        String sql = "SELECT * FROM user WHERE email = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, email);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                // For face recognition, password may be null
+                if (password == null || BCrypt.checkpw(password, rs.getString("password"))) {
+                    Date dateInscri = null;
+                    try {
+                        dateInscri = rs.getDate("date_inscri");
+                    } catch (SQLException e) {
+                        System.err.println("Invalid date_inscri for user " + email + ", using current date: " + e.getMessage());
+                        dateInscri = new Date();
+                    }
+                    return new User(
+                            UUID.fromString(rs.getString("id")),
+                            rs.getString("email"),
+                            rs.getString("roles"),
+                            rs.getString("password"),
+                            rs.getString("travail"),
+                            dateInscri,
+                            rs.getString("photo_url"),
+                            rs.getBoolean("is_verified"),
+                            rs.getString("nom"),
+                            rs.getString("prenom"),
+                            rs.getString("num_tel")
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error during authentication: " + e.getMessage());
+        }
+        return null;
     }
 }

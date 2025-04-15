@@ -29,7 +29,7 @@ public class ProduitDAO {
                 product.setDateCreation(rs.getTimestamp("date_creation").toLocalDateTime());
                 product.setImageName(rs.getString("image_name"));
 
-                UUID categoryId = (UUID) rs.getObject("categorie_id");
+                UUID categoryId = UUID.fromString(rs.getString("categorie_id"));
                 product.setCategory(CategorieDAO.getCategoryById(categoryId));
 
                 products.add(product);

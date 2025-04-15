@@ -52,7 +52,7 @@ public class LoginController {
         sessionManager.setLoggedInUser(user);
 
         // Redirect based on user role
-        String fxmlFile = user.hasRole("ROLE_ADMIN") ? "/com/example/auth/dashboard.fxml" : "/com/example/reclamation/Reclamation.fxml";
+        String fxmlFile = user.hasRole("ROLE_ADMIN") ? "/com/example/auth/dashboard.fxml" : "/com/example/pages/dashboard.fxml";
         Stage stage = (Stage) usernameField.getScene().getWindow();
         boolean isFullScreen = stage.isFullScreen();
         Parent root = FXMLLoader.load(getClass().getResource(fxmlFile));
