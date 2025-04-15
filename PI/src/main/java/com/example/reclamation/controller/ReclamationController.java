@@ -129,15 +129,25 @@ public class ReclamationController {
         HBox card = new HBox(10);
         card.setPadding(new Insets(15));
         card.setStyle("-fx-background-color: white; -fx-background-radius: 15; " +
-                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 15, 0, 0, 5); " +
-                "-fx-cursor: hand;");
-        card.setOnMouseEntered(e -> card.setStyle(card.getStyle() + "-fx-translate-y: -5; " +
-                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 25, 0, 0, 8);"));
-        card.setOnMouseExited(e -> card.setStyle("-fx-background-color: white; -fx-background-radius: 15; " +
-                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 15, 0, 0, 5);"));
-
-        card.setOnMouseClicked(e -> handleReclamationClick(rec));
-
+                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 15, 0, 0, 5);");
+    
+        // Set cursor and click behavior only for non-CLOSED cards
+        if (rec.getStatut() != Status.CLOSED) {
+            card.setStyle(card.getStyle() + "-fx-cursor: hand;");
+            card.setOnMouseClicked(e -> handleReclamationClick(rec));
+            card.setOnMouseEntered(e -> card.setStyle(card.getStyle() + "-fx-translate-y: -5; " +
+                    "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 25, 0, 0, 8);"));
+            card.setOnMouseExited(e -> {
+                String baseStyle = "-fx-background-color: white; -fx-background-radius: 15; " +
+                        "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 15, 0, 0, 5); -fx-cursor: hand;";
+                if (rec.getStatut() == Status.RESOLVED) {
+                    card.setStyle(baseStyle.replace("-fx-background-color: white;", "-fx-background-color: #e6f5e6;"));
+                } else {
+                    card.setStyle(baseStyle);
+                }
+            });
+        }
+    
         StackPane profileContainer = new StackPane();
         String photoUrl = user != null && user.getPhotoUrl() != null ? "file:" + user.getPhotoUrl() : "file:images/admin.jpg";
         ImageView avatar = new ImageView(new Image(photoUrl, true));
@@ -145,7 +155,7 @@ public class ReclamationController {
         avatar.setFitHeight(50);
         avatar.setClip(new Circle(25, 25, 23));
         avatar.setStyle("-fx-border-color: white; -fx-border-width: 3; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);");
-
+    
         Circle status = new Circle(7.5);
         String statusColor = switch (rec.getStatut()) {
             case CLOSED -> "#ff5555";
@@ -156,7 +166,7 @@ public class ReclamationController {
         status.setStyle("-fx-fill: " + statusColor + "; -fx-stroke: white; -fx-stroke-width: 2;");
         StackPane.setAlignment(status, Pos.BOTTOM_RIGHT);
         profileContainer.getChildren().addAll(avatar, status);
-
+    
         VBox contentWrapper = new VBox(5);
         HBox titleBar = new HBox(10);
         Label title = new Label(rec.getTitle());
@@ -165,10 +175,10 @@ public class ReclamationController {
         tagLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: white; -fx-background-color: " + getTagColor(rec.getTagId()) + "; " +
                 "-fx-padding: 3 8; -fx-background-radius: 20;");
         titleBar.getChildren().addAll(title, tagLabel);
-
-        Label desc = new Label(rec.getDescription());
+    
+        Label desc = rec.getDescription() != null ? new Label(rec.getDescription()) : new Label("No description provided.");
         desc.setStyle("-fx-font-size: 14px; -fx-text-fill: #666; -fx-wrap-text: true;");
-
+    
         HBox metaInfo = new HBox(10);
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd MMM yyyy HH:mm");
         Label date = new Label(dateFormat.format(rec.getDateReclamation()));
@@ -176,9 +186,9 @@ public class ReclamationController {
         Label author = new Label("by " + (user != null ? user.getPrenom() : "Unknown"));
         author.setStyle("-fx-font-size: 12px; -fx-text-fill: #6C983B; -fx-font-weight: bold;");
         metaInfo.getChildren().addAll(date, author);
-
+    
         contentWrapper.getChildren().addAll(titleBar, desc, metaInfo);
-
+    
         HBox actionButtons = new HBox(5);
         User currentUser = sessionManager.getLoggedInUser();
         if (currentUser != null && rec.getUserId().equals(currentUser.getId())) {
@@ -187,25 +197,28 @@ public class ReclamationController {
             editBtn.setOnAction(e -> handleEdit(rec.getId()));
             editBtn.setOnMouseEntered(e -> editBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-background-radius: 50%; -fx-padding: 10;"));
             editBtn.setOnMouseExited(e -> editBtn.setStyle("-fx-background-color: #f5f5f5; -fx-background-radius: 50%; -fx-padding: 10;"));
-
+    
             Button deleteBtn = new Button("Delete");
             deleteBtn.setStyle("-fx-background-color: #f5f5f5; -fx-background-radius: 50%; -fx-padding: 10;");
             deleteBtn.setOnAction(e -> handleDelete(rec.getId()));
             deleteBtn.setOnMouseEntered(e -> deleteBtn.setStyle("-fx-background-color: #ff5555; -fx-text-fill: white; -fx-background-radius: 50%; -fx-padding: 10;"));
             deleteBtn.setOnMouseExited(e -> deleteBtn.setStyle("-fx-background-color: #f5f5f5; -fx-background-radius: 50%; -fx-padding: 10;"));
-
+    
             actionButtons.getChildren().addAll(editBtn, deleteBtn);
         }
-
+    
         card.getChildren().addAll(profileContainer, contentWrapper, actionButtons);
         HBox.setHgrow(contentWrapper, Priority.ALWAYS);
-
+    
+        // Apply status-specific styling
         if (rec.getStatut() == Status.CLOSED) {
-            card.setStyle(card.getStyle() + "-fx-background-color: #fff5f5; -fx-border-color: #ff5555; -fx-border-width: 0 0 0 5;");
+            card.setStyle("-fx-background-color: #ffe6e6; -fx-background-radius: 15; " +
+                    "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 15, 0, 0, 5);");
         } else if (rec.getStatut() == Status.RESOLVED) {
-            card.setStyle(card.getStyle() + "-fx-background-color: #f5fff5; -fx-border-color: #4CAF50; -fx-border-width: 0 0 0 5;");
+            card.setStyle("-fx-background-color: #e6f5e6; -fx-background-radius: 15; " +
+                    "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 15, 0, 0, 5); -fx-cursor: hand;");
         }
-
+    
         return card;
     }
 
@@ -301,65 +314,144 @@ public class ReclamationController {
     private void handleEdit(UUID reclamationId) {
         Dialog<Reclamation> dialog = new Dialog<>();
         dialog.setTitle("Edit Reclamation");
-
+    
         DialogPane dialogPane = dialog.getDialogPane();
         dialogPane.getStylesheets().add(getClass().getResource("/css/modern-dialog.css").toExternalForm());
-
+    
         ButtonType saveButtonType = new ButtonType("Save", ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
-
+    
         VBox content = new VBox(15);
         content.setStyle("-fx-padding: 20;");
-
+    
+        // Title field with error label
+        VBox titleGroup = new VBox(8);
         Label titleLabel = new Label("Title:");
         titleLabel.getStyleClass().add("form-label");
         TextField titleField = new TextField();
-        titleField.setPromptText("Enter title");
+        titleField.setPromptText("Enter title (min 5 letters)");
         titleField.getStyleClass().add("form-field");
-
+        Label titleError = new Label();
+        titleError.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
+        titleGroup.getChildren().addAll(titleLabel, titleField, titleError);
+    
+        // Description field with error label
+        VBox descGroup = new VBox(8);
         Label descLabel = new Label("Description:");
         descLabel.getStyleClass().add("form-label");
         TextArea descField = new TextArea();
-        descField.setPromptText("Enter description");
+        descField.setPromptText("Enter description (min 6 words)");
         descField.setPrefRowCount(4);
         descField.getStyleClass().add("form-field");
-
+        Label descError = new Label();
+        descError.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
+        descGroup.getChildren().addAll(descLabel, descField, descError);
+    
+        // Status field
+        VBox statusGroup = new VBox(8);
         Label statusLabel = new Label("Status:");
         statusLabel.getStyleClass().add("form-label");
         ComboBox<Status> statusCombo = new ComboBox<>();
         statusCombo.getItems().addAll(Status.values());
         statusCombo.setPromptText("Select status");
         statusCombo.getStyleClass().add("form-field");
-
+        statusGroup.getChildren().addAll(statusLabel, statusCombo);
+    
+        // Message label for database errors
+        Label messageLabel = new Label();
+        messageLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
+    
         Reclamation rec = reclamationService.getReclamationById(reclamationId);
         if (rec != null) {
             titleField.setText(rec.getTitle());
             descField.setText(rec.getDescription());
             statusCombo.setValue(rec.getStatut());
         }
-
-        content.getChildren().addAll(
-            titleLabel, titleField,
-            descLabel, descField,
-            statusLabel, statusCombo
-        );
+    
+        content.getChildren().addAll(titleGroup, descGroup, statusGroup, messageLabel);
         dialog.getDialogPane().setContent(content);
-
-        dialog.setResultConverter(dialogButton -> {
-            if (dialogButton == saveButtonType && rec != null) {
-                rec.setTitle(titleField.getText());
-                rec.setDescription(descField.getText());
-                rec.setStatut(statusCombo.getValue());
-                return rec;
-            }
-            return null;
+    
+        Button saveButton = (Button) dialog.getDialogPane().lookupButton(saveButtonType);
+        saveButton.getStyleClass().add("primary-button");
+    
+        // Button press animation
+        saveButton.setOnMousePressed(e -> {
+            ScaleTransition st = new ScaleTransition(Duration.millis(200), saveButton);
+            st.setFromX(1.0);
+            st.setFromY(1.0);
+            st.setToX(1.05);
+            st.setToY(1.05);
+            st.setCycleCount(2);
+            st.setAutoReverse(true);
+            st.play();
         });
-
-        dialog.showAndWait().ifPresent(updatedRec -> {
-            if (reclamationService.updateReclamation(updatedRec)) {
-                setupMainContainer();
+    
+        // Add an event filter to validate before allowing the dialog to proceed
+        saveButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
+            String title = titleField.getText().trim();
+            String description = descField.getText().trim();
+    
+            // Reset error messages
+            titleError.setText("");
+            descError.setText("");
+            messageLabel.setText("");
+    
+            // Track validation failures
+            boolean hasErrors = false;
+    
+            // Validate title length (at least 5 letters)
+            if (title.length() < 5) {
+                titleError.setText("Title must be at least 5 letters long.");
+                hasErrors = true;
+            }
+    
+            // Validate description word count (at least 6 words)
+            String[] words = description.split("\\s+");
+            if (description.isEmpty() || words.length < 6) {
+                descError.setText("Description must contain at least 6 words.");
+                hasErrors = true;
+            }
+    
+            // Prevent dialog from proceeding if there are errors
+            if (hasErrors) {
+                event.consume();
             }
         });
+    
+        // Handle action if validation passes
+        saveButton.setOnAction(e -> {
+            try {
+                if (rec != null) {
+                    rec.setTitle(titleField.getText().trim());
+                    rec.setDescription(descField.getText().trim());
+                    rec.setStatut(statusCombo.getValue());
+    
+                    boolean success = reclamationService.updateReclamation(rec);
+                    if (success) {
+                        titleError.setText("");
+                        descError.setText("");
+                        messageLabel.setText("");
+                        setupMainContainer();
+                        dialog.close();
+                    } else {
+                        messageLabel.setText("Failed to update reclamation. Check database constraints.");
+                    }
+                } else {
+                    messageLabel.setText("Reclamation not found.");
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                messageLabel.setText("An unexpected error occurred: " + ex.getMessage());
+            }
+        });
+    
+        // Fade in effect for the dialog content
+        FadeTransition fadeIn = new FadeTransition(Duration.millis(500), content);
+        fadeIn.setFromValue(0);
+        fadeIn.setToValue(1);
+        dialog.setOnShown(e -> fadeIn.play());
+    
+        dialog.show();
     }
 
     private void handleDelete(UUID reclamationId) {
@@ -374,8 +466,7 @@ public class ReclamationController {
     private void handleNewDiscussion() {
         User currentUser = sessionManager.getLoggedInUser();
         if (currentUser == null) {
-            Alert alert = new Alert(Alert.AlertType.WARNING, "You must be logged in to create a discussion.");
-            alert.showAndWait();
+            showAlert("Unauthorized", "You must be logged in to create a discussion.", Alert.AlertType.WARNING);
             return;
         }
     
@@ -395,17 +486,22 @@ public class ReclamationController {
     
         Label titleLabel = new Label("Submit Your Problem");
         titleLabel.getStyleClass().add("header-label");
+    
         Label subtitle = new Label("We value your feedback. Please describe your concern below.");
         subtitle.getStyleClass().add("subtitle-label");
     
+        // Title field with error label
         VBox titleGroup = new VBox(8);
         Label titleFieldLabel = new Label("Title:");
         titleFieldLabel.getStyleClass().add("form-label");
         TextField titleField = new TextField();
         titleField.setPromptText("Enter title (min 5 letters)");
         titleField.getStyleClass().add("form-field");
-        titleGroup.getChildren().addAll(titleFieldLabel, titleField);
+        Label titleError = new Label();
+        titleError.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
+        titleGroup.getChildren().addAll(titleFieldLabel, titleField, titleError);
     
+        // Description field with error label
         VBox descGroup = new VBox(8);
         Label descFieldLabel = new Label("Describe Your Problem:");
         descFieldLabel.getStyleClass().add("form-label");
@@ -413,8 +509,11 @@ public class ReclamationController {
         descField.setPromptText("Enter description (min 6 words)");
         descField.setPrefRowCount(6);
         descField.getStyleClass().add("form-field");
-        descGroup.getChildren().addAll(descFieldLabel, descField);
+        Label descError = new Label();
+        descError.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
+        descGroup.getChildren().addAll(descFieldLabel, descField, descError);
     
+        // Tag field
         VBox tagGroup = new VBox(8);
         Label tagFieldLabel = new Label("Tag:");
         tagFieldLabel.getStyleClass().add("form-label");
@@ -424,14 +523,17 @@ public class ReclamationController {
         tagCombo.getStyleClass().add("form-field");
         tagGroup.getChildren().addAll(tagFieldLabel, tagCombo);
     
+        // Message label for database errors
         Label messageLabel = new Label();
-        messageLabel.getStyleClass().add("message-label");
+        messageLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
     
+        // Add all components to content
         content.getChildren().addAll(titleLabel, subtitle, titleGroup, descGroup, tagGroup, messageLabel);
     
         Button createButton = (Button) dialog.getDialogPane().lookupButton(createButtonType);
         createButton.getStyleClass().add("primary-button");
     
+        // Button press animation
         createButton.setOnMousePressed(e -> {
             ScaleTransition st = new ScaleTransition(Duration.millis(200), createButton);
             st.setFromX(1.0);
@@ -443,72 +545,91 @@ public class ReclamationController {
             st.play();
         });
     
-        dialog.getDialogPane().setContent(content);
-    
-        createButton.setOnAction(e -> {
-            String title = titleField.getText().trim();
-            String description = descField.getText().trim();
-            String tagName = tagCombo.getValue();
-    
-            // Collect all validation errors
-            List<String> errors = new ArrayList<>();
-    
-            // Validate title length (at least 5 letters)
-            if (title.length() < 5) {
-                errors.add("Title must be at least 5 letters long.");
-            }
-    
-            // Validate description word count (at least 6 words)
-            String[] words = description.split("\\s+");
-            if (words.length < 6 || description.isEmpty()) {
-                errors.add("Description must contain at least 6 words.");
-            }
-    
-            // Display errors if any
-            if (!errors.isEmpty()) {
-                messageLabel.setText(String.join("\n", errors));
-                messageLabel.setStyle("-fx-text-fill: #e74c3c;");
-                return;
-            }
-    
-            Tag selectedTag = tagName != null ? tagService.getTagByName(tagName) : null;
-            UUID tagId = selectedTag != null ? selectedTag.getId() : null;
-            UUID userId = currentUser.getId();
-    
-            boolean success = reclamationService.addReclamation(
-                userId,
-                tagId,
-                1,
-                title,
-                description,
-                Status.WAITING
-            );
-    
-            if (success) {
-                messageLabel.setText("Reclamation added successfully!");
-                messageLabel.setStyle("-fx-text-fill: #2ecc71;");
-                setupMainContainer();
-                titleField.clear();
-                descField.clear();
-                tagCombo.getSelectionModel().clearSelection();
-    
-                PauseTransition delay = new PauseTransition(Duration.seconds(1));
-                delay.setOnFinished(event -> dialog.close());
-                delay.play();
-            } else {
-                messageLabel.setText("Failed to add reclamation. Check user ID or database constraints.");
-                messageLabel.setStyle("-fx-text-fill: #e74c3c;");
-                // Dialog remains open
-            }
-        });
-    
+        // Fade in effect for the dialog content
         FadeTransition fadeIn = new FadeTransition(Duration.millis(500), content);
         fadeIn.setFromValue(0);
         fadeIn.setToValue(1);
         dialog.setOnShown(e -> fadeIn.play());
     
+        dialog.getDialogPane().setContent(content);
+    
+        // Add an event filter to validate before allowing the dialog to proceed
+        createButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
+            String title = titleField.getText().trim();
+            String description = descField.getText().trim();
+    
+            // Reset error messages
+            titleError.setText("");
+            descError.setText("");
+            messageLabel.setText("");
+    
+            // Track validation failures
+            boolean hasErrors = false;
+    
+            // Validate title length (at least 5 letters)
+            if (title.length() < 5) {
+                titleError.setText("Title must be at least 5 letters long.");
+                hasErrors = true;
+            }
+    
+            // Validate description word count (at least 6 words)
+            String[] words = description.split("\\s+");
+            if (description.isEmpty() || words.length < 6) {
+                descError.setText("Description must contain at least 6 words.");
+                hasErrors = true;
+            }
+    
+            // Prevent dialog from proceeding if there are errors
+            if (hasErrors) {
+                event.consume();
+            }
+        });
+    
+        // Handle action if validation passes
+        createButton.setOnAction(e -> {
+            try {
+                String title = titleField.getText().trim();
+                String description = descField.getText().trim();
+                String tagName = tagCombo.getValue();
+    
+                Tag selectedTag = tagName != null ? tagService.getTagByName(tagName) : null;
+                UUID tagId = selectedTag != null ? selectedTag.getId() : null;
+    
+                boolean success = reclamationService.addReclamation(
+                    currentUser.getId(),
+                    tagId,
+                    1,
+                    title,
+                    description,
+                    Status.WAITING
+                );
+    
+                if (success) {
+                    titleError.setText("");
+                    descError.setText("");
+                    messageLabel.setText("");
+                    setupMainContainer();
+                    dialog.close();
+                } else {
+                    messageLabel.setText("Failed to add reclamation. Check user ID or database constraints.");
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                messageLabel.setText("An unexpected error occurred: " + ex.getMessage());
+            }
+        });
+    
         dialog.show();
     }
+    
+    private void showAlert(String title, String message, Alert.AlertType type) {
+        Alert alert = new Alert(type);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+    
 
     private void handleWriteReview() {
         System.out.println("Opening write review form - not implemented yet.");
