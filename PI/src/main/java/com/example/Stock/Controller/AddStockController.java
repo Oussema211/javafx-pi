@@ -39,53 +39,49 @@ public class AddStockController {
     }
 
     public void initialize() {
-        try{
+        try {
+            // Load products
             List<Produit> allProduits = produitService.getAllProducts();
+            System.out.println("All products: " + (allProduits != null ? allProduits.size() : "null"));
             if (allProduits == null || allProduits.isEmpty()) {
                 statusLabel.setText("Aucun produit disponible");
                 return;
             }
 
+            // Load stocks
             List<UUID> produitsInStock = stockService.getAllStocks().stream()
                     .map(Stock::getProduitId)
                     .collect(Collectors.toList());
+            System.out.println("Products in stock: " + produitsInStock.size());
 
-            List<Produit> availableProduits = allProduits.stream()
-                    .filter(p -> !produitsInStock.contains(p.getId()))
-                    .collect(Collectors.toList());
+            // Filter available products
+            List<Produit> availableProduits = allProduits; // Temporarily remove filter for testing
+            // List<Produit> availableProduits = allProduits.stream()
+            //     .filter(p -> !produitsInStock.contains(p.getId()))
+            //     .collect(Collectors.toList());
+            System.out.println("Available products: " + availableProduits.size());
 
             if (availableProduits.isEmpty()) {
-                statusLabel.setText("Tous les produits sont déjà en stock");
+                statusLabel.setText("Aucun produit disponible après filtrage");
             } else {
                 produitCombo.setItems(FXCollections.observableArrayList(availableProduits));
+                produitCombo.setCellFactory(param -> new ListCell<>() {
+                    @Override
+                    protected void updateItem(Produit item, boolean empty) {
+                        super.updateItem(item, empty);
+                        setText(empty || item == null ? null : item.getNom());
+                    }
+                });
+                produitCombo.setButtonCell(new ListCell<>() {
+                    @Override
+                    protected void updateItem(Produit item, boolean empty) {
+                        super.updateItem(item, empty);
+                        setText(empty || item == null ? "Sélectionner un produit" : item.getNom());
+                    }
+                });
             }
 
-            produitCombo.setCellFactory(param -> new ListCell<>() {
-                @Override
-                protected void updateItem(Produit item, boolean empty) {
-                    super.updateItem(item, empty);
-                    if (empty || item == null) {
-                        setText(null);
-                    } else {
-                        setText(item.getNom() + " (" + String.format("%.2f €", item.getPrixUnitaire()) + ")");
-                    }
-                }
-            });
-
-            produitCombo.setButtonCell(new ListCell<>() {
-                @Override
-                protected void updateItem(Produit item, boolean empty) {
-                    super.updateItem(item, empty);
-                    if (empty || item == null) {
-                        setText("Sélectionner un produit");
-                    } else {
-                        setText(item.getNom() + " (" + String.format("%.2f €", item.getPrixUnitaire()) + ")");
-                    }
-                }
-            });
-
-
-            // Configurer la liste des entrepôts
+            // Load entrepots
             entrepotList.setItems(FXCollections.observableArrayList(entrepotService.getAllEntrepots()));
             entrepotList.setCellFactory(param -> new ListCell<>() {
                 @Override
@@ -95,14 +91,11 @@ public class AddStockController {
                 }
             });
 
-            // Configurer la date par défaut
             dateEntreePicker.setValue(LocalDate.now());
-
-            // Configurer les boutons
             saveBtn.setOnAction(e -> saveStock());
             cancelBtn.setOnAction(e -> closeWindow());
         } catch (Exception e) {
-            statusLabel.setText("Erreur de chargement des données");
+            statusLabel.setText("Erreur: " + e.getMessage());
             e.printStackTrace();
         }
     }
