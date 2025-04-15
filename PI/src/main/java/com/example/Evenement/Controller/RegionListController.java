@@ -75,7 +75,7 @@ public class RegionListController {
     @FXML
     private void handleAdd() {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/AjouterRegion.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/Evenement/AjouterRegion.fxml"));
             Parent root = loader.load();
             Stage stage = new Stage();
             stage.setTitle("Ajouter une région");
@@ -92,7 +92,7 @@ public class RegionListController {
     @FXML
     private void handleAddEvent() {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/EvenementForm.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/Evenement/EvenementForm.fxml"));
             Parent root = loader.load();
 
             // Passer la région sélectionnée si nécessaire
