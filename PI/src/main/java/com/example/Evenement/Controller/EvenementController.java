@@ -200,7 +200,7 @@ public class EvenementController {
     private void handleShowRegions() {
         try {
             // Charger la vue de la liste des régions
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/Region/RegionList.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/Evenement/RegionList.fxml"));
             Parent root = loader.load();
             
             // Créer une nouvelle fenêtre pour afficher la liste des régions
