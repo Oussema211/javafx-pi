@@ -1,32 +1,22 @@
 package com.example.produit.model;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class Categorie {
-
     private UUID id;
-    private UUID parentId;
     private String nom;
-    private String slug;
-    private Integer lft;
-    private Integer rgt;
-    private Integer lvl;
-    private String imgUrl;
     private String description;
+    private LocalDateTime dateCreation;
 
     public Categorie() {
     }
 
-    public Categorie(UUID id, UUID parentId, String nom, String slug, Integer lft, Integer rgt, Integer lvl, String imgUrl, String description) {
+    public Categorie(UUID id, String nom, String description, LocalDateTime dateCreation) {
         this.id = id;
-        this.parentId = parentId;
         this.nom = nom;
-        this.slug = slug;
-        this.lft = lft;
-        this.rgt = rgt;
-        this.lvl = lvl;
-        this.imgUrl = imgUrl;
         this.description = description;
+        this.dateCreation = dateCreation;
     }
 
     public UUID getId() {
@@ -37,60 +27,12 @@ public class Categorie {
         this.id = id;
     }
 
-    public UUID getParentId() {
-        return parentId;
-    }
-
-    public void setParentId(UUID parentId) {
-        this.parentId = parentId;
-    }
-
     public String getNom() {
         return nom;
     }
 
     public void setNom(String nom) {
         this.nom = nom;
-    }
-
-    public String getSlug() {
-        return slug;
-    }
-
-    public void setSlug(String slug) {
-        this.slug = slug;
-    }
-
-    public Integer getLft() {
-        return lft;
-    }
-
-    public void setLft(Integer lft) {
-        this.lft = lft;
-    }
-
-    public Integer getRgt() {
-        return rgt;
-    }
-
-    public void setRgt(Integer rgt) {
-        this.rgt = rgt;
-    }
-
-    public Integer getLvl() {
-        return lvl;
-    }
-
-    public void setLvl(Integer lvl) {
-        this.lvl = lvl;
-    }
-
-    public String getImgUrl() {
-        return imgUrl;
-    }
-
-    public void setImgUrl(String imgUrl) {
-        this.imgUrl = imgUrl;
     }
 
     public String getDescription() {
@@ -101,18 +43,21 @@ public class Categorie {
         this.description = description;
     }
 
+    public LocalDateTime getDateCreation() {
+        return dateCreation;
+    }
+
+    public void setDateCreation(LocalDateTime dateCreation) {
+        this.dateCreation = dateCreation;
+    }
+
     @Override
     public String toString() {
         return "Categorie{" +
                 "id=" + id +
-                ", parentId=" + parentId +
                 ", nom='" + nom + '\'' +
-                ", slug='" + slug + '\'' +
-                ", lft=" + lft +
-                ", rgt=" + rgt +
-                ", lvl=" + lvl +
-                ", imgUrl='" + imgUrl + '\'' +
                 ", description='" + description + '\'' +
+                ", dateCreation=" + dateCreation +
                 '}';
     }
 }

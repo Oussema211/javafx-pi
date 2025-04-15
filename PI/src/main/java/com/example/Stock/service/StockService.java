@@ -27,10 +27,8 @@ public class StockService {
             // Supprimer les tables existantes (pour le développement)
 
 
-            // Création des tables dans le bon ordre
             createEntrepotTable();
             createCategorieTable();
-            createProduitTable();
             createStockTable();
             createStockEntrepotTable();
 
@@ -66,22 +64,9 @@ public class StockService {
         executeUpdate(query);
     }
 
-    private void createProduitTable() throws SQLException {
-        String query = "CREATE TABLE produit (" +
-                "id CHAR(36) PRIMARY KEY, " +
-                "nom VARCHAR(100) NOT NULL, " +
-                "description TEXT, " +
-                "quantite INTEGER DEFAULT 0, " +
-                "prix_unitaire DECIMAL(10,2), " +
-                "categorie_id CHAR(36), " +
-                "user_id CHAR(36) NOT NULL, " +
-                "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
-                "FOREIGN KEY (categorie_id) REFERENCES categorie(id) ON DELETE SET NULL)";
-        executeUpdate(query);
-    }
 
     private void createStockTable() throws SQLException {
-        String query = "CREATE TABLE stock (" +
+        String query = "CREATE TABLE stock if not exit (" +
                 "id CHAR(36) PRIMARY KEY, " +
                 "produit_id CHAR(36) NOT NULL, " +
                 "date_entree TIMESTAMP NOT NULL, " +

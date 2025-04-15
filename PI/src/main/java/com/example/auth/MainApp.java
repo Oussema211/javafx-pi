@@ -1,6 +1,5 @@
 package com.example.auth;
 
-import com.example.Stock.service.StockService;
 import com.example.auth.model.User;
 import com.example.auth.service.AuthService;
 import com.example.auth.utils.ResetLinkServer;
@@ -8,31 +7,26 @@ import com.example.auth.utils.SessionManager;
 import com.example.reclamation.service.MessageReclamationService;
 import com.example.reclamation.service.ReclamationService;
 import com.example.reclamation.service.TagService;
+
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
+import java.io.IOException;
+
 public class MainApp extends Application {
-    private SessionManager sessionManager = SessionManager.getInstance();
-    private static final boolean FULL_SCREEN = false;
+    private final SessionManager sessionManager = SessionManager.getInstance();
+    private static final boolean FULL_SCREEN = false; // Set to true for always full-screen, false for windowed
     private final AuthService authService = new AuthService();
     private final TagService tagService = new TagService();
     private final ReclamationService reclamationService = new ReclamationService();
-    private final StockService stockService = new StockService();
     private final MessageReclamationService messageReclamationService = new MessageReclamationService();
 
     @Override
-    public void start(Stage primaryStage) throws Exception {
+    public void start(Stage primaryStage) throws IOException {
         System.out.println("DEBUG: Starting MainApp");
-        try {
-            ResetLinkServer.startServer(); // Essayez de démarrer le serveur
-        } catch (java.net.BindException e) {
-            System.err.println("Erreur : Le port est déjà utilisé. Essayez un autre port ou fermez l'application qui l'utilise.");
-            throw e; // Relance l'exception pour arrêter l'application proprement
-        }
-
         String fxmlFile;
         User user = sessionManager.getLoggedInUser();
         if (user == null) {
@@ -41,13 +35,24 @@ public class MainApp extends Application {
             fxmlFile = user.hasRole("ROLE_ADMIN") ? "/com/example/auth/dashboard.fxml" : "/com/example/reclamation/Reclamation.fxml";
         }
         System.out.println("DEBUG: Loading FXML: " + fxmlFile);
-        Parent root = FXMLLoader.load(getClass().getResource(fxmlFile));
-        if (root == null) {
-            System.out.println("DEBUG: Failed to load " + fxmlFile + " - root is null");
-            return;
+
+        FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlFile));
+        Parent root;
+        try {
+            root = loader.load();
+        } catch (IOException e) {
+            System.err.println("ERROR: Failed to load " + fxmlFile + ": " + e.getMessage());
+            throw e;
         }
+
+        if (root == null) {
+            System.err.println("ERROR: Root is null after loading FXML: " + fxmlFile);
+            throw new IOException("Failed to load FXML: " + fxmlFile);
+        }
+
         Scene scene = new Scene(root, 400, 500);
 
+        // Load stylesheet
         java.net.URL stylesheetUrl = getClass().getClassLoader().getResource("com/example/auth/styles.css");
         if (stylesheetUrl != null) {
             scene.getStylesheets().add(stylesheetUrl.toExternalForm());
@@ -64,12 +69,8 @@ public class MainApp extends Application {
 
         primaryStage.setOnCloseRequest(event -> {
             ResetLinkServer.stopServer();
+            System.out.println("DEBUG: Stopping MainApp");
         });
-    }
-
-    @Override
-    public void stop() {
-        ResetLinkServer.stopServer(); // Assurez-vous que le serveur s'arrête même en cas d'arrêt inattendu
     }
 
     public static void main(String[] args) {

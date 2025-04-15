@@ -12,6 +12,7 @@
       prefWidth="550" prefHeight="600" spacing="20"
       style="-fx-background-color: #f8f9fa; -fx-padding: 25;">
 
+
     <!-- En-tête avec icône Unicode -->
     <HBox alignment="CENTER_LEFT" spacing="10">
         <Label text="📦" style="-fx-font-size: 30px;"/>
@@ -94,5 +95,11 @@
                 <DropShadow color="rgba(0,0,0,0.15)" radius="5" spread="0.2"/>
             </effect>
         </Button>
+
     </HBox>
+    <Label fx:id="statusLabel"
+           text=""
+           style="-fx-text-fill: red; -fx-font-weight: bold;"
+           wrapText="true"/>
+
 </VBox>

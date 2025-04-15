@@ -2,13 +2,10 @@ package com.example.produit.model;
 
 import javafx.beans.property.*;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
 
 public class Produit {
 
-    // Fields as JavaFX properties
     private final ObjectProperty<UUID> id = new SimpleObjectProperty<>();
     private final ObjectProperty<Categorie> category = new SimpleObjectProperty<>();
     private final ObjectProperty<UUID> userId = new SimpleObjectProperty<>();
@@ -19,15 +16,14 @@ public class Produit {
     private final IntegerProperty quantite = new SimpleIntegerProperty();
     private final FloatProperty rate = new SimpleFloatProperty();
     private final StringProperty imageName = new SimpleStringProperty();
-    private Set<UUID> stockIds = new HashSet<>();
+
     public Produit() {}
 
     public Produit(UUID id, Categorie category, UUID userId, String nom, String description,
-                   float prixUnitaire, LocalDateTime dateCreation, int quantite, Float rate, UUID stocksIds,String imageName) {
+                   float prixUnitaire, LocalDateTime dateCreation, int quantite, Float rate, String imageName) {
         setId(id);
         setCategory(category);
         setUserId(userId);
-        setStockIds(stockIds);
         setNom(nom);
         setDescription(description);
         setPrixUnitaire(prixUnitaire);
@@ -77,22 +73,6 @@ public class Produit {
     public String getImageName() { return imageName.get(); }
     public void setImageName(String imageName) { this.imageName.set(imageName); }
     public StringProperty imageNameProperty() { return imageName; }
-    public Set<UUID> getStockIds() {
-        return stockIds;
-    }
-
-    public void setStockIds(Set<UUID> stockIds) {
-        this.stockIds = stockIds;
-    }
-
-    // Helper methods
-    public void addStockId(UUID stockId) {
-        this.stockIds.add(stockId);
-    }
-
-    public void removeStockId(UUID stockId) {
-        this.stockIds.remove(stockId);
-    }
 
     @Override
     public String toString() {
