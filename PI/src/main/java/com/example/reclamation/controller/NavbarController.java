@@ -6,14 +6,13 @@ import javafx.fxml.Initializable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
-import javafx.scene.control.Button;
 import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
 
-import com.example.auth.utils.SessionManager; 
+import com.example.auth.utils.SessionManager;
 
 public class NavbarController implements Initializable {
 
@@ -52,7 +51,6 @@ public class NavbarController implements Initializable {
         accountLabel.setOnMouseExited(e -> accountLabel.setStyle(defaultStyle));
         logoutButton.setOnMouseEntered(e -> logoutButton.setStyle(hoverStyle));
         logoutButton.setOnMouseExited(e -> logoutButton.setStyle(defaultStyle));
-
     }
 
     private void setupClickActions() {
@@ -61,7 +59,19 @@ public class NavbarController implements Initializable {
         exploreLabel.setOnMouseClicked(e -> System.out.println("Explore clicked"));
         moreLabel.setOnMouseClicked(e -> System.out.println("More clicked"));
         cartLabel.setOnMouseClicked(e -> System.out.println("Cart clicked"));
-        accountLabel.setOnMouseClicked(e -> System.out.println("My Account clicked"));
+
+        accountLabel.setOnMouseClicked(e -> {
+            try {
+                Parent root = FXMLLoader.load(getClass().getResource("/com/example/auth/profile.fxml"));
+                Scene scene = new Scene(root);
+                Stage stage = (Stage) accountLabel.getScene().getWindow();
+                scene.getStylesheets().add(getClass().getClassLoader().getResource("com/example/auth/style.css").toExternalForm());
+                stage.setScene(scene);
+                stage.show();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        });
     }
 
     @FXML
