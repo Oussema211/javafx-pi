@@ -42,7 +42,7 @@ public class ReclamationController {
     @FXML private GridPane contentContainer;
     @FXML private VBox mainContainer;
     @FXML private VBox sidebar;
-
+    @FXML private NavbarController navbarController;
     private Stage primaryStage;
 
     public void setPrimaryStage(Stage stage) {
@@ -52,7 +52,7 @@ public class ReclamationController {
     @FXML
     public void initialize() {
         root.setPadding(new Insets(20));
-        root.setStyle("-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #f5f7fa, #c3cfe2);");
+        root.setStyle("-fx-background-color: #f5f7fa");
 
         ColumnConstraints col1 = new ColumnConstraints();
         col1.setPercentWidth(75);
@@ -211,14 +211,14 @@ public class ReclamationController {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/reclamation/ReclamationMessages.fxml"));
             Parent messagesRoot = loader.load();
-
+    
             ReclamationMessagesController controller = loader.getController();
-            controller.setPrimaryStage(primaryStage);
+            controller.setPrimaryStage(primaryStage); 
             controller.setSelectedReclamation(reclamation);
-
-            Scene messagesScene = new Scene(messagesRoot, primaryStage.getWidth(), primaryStage.getHeight());
-            primaryStage.setScene(messagesScene);
-            primaryStage.setTitle("Reclamation Messages - " + reclamation.getTitle());
+            Stage stage = (Stage) root.getScene().getWindow();
+            Scene messagesScene = new Scene(messagesRoot, stage.getWidth(), stage.getHeight());
+            stage.setScene(messagesScene);
+            stage.setTitle("Reclamation Messages - " + reclamation.getTitle());
         } catch (IOException e) {
             e.printStackTrace();
             Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to load messages page.");

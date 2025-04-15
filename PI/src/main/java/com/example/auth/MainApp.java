@@ -1,11 +1,12 @@
 package com.example.auth;
 
+import java.net.URL;
+
 import com.example.auth.model.User;
 import com.example.auth.service.AuthService;
 import com.example.reclamation.service.MessageReclamationService;
 import com.example.reclamation.service.ReclamationService;
 import com.example.reclamation.service.TagService;
-
 import utils.SessionManager;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -32,13 +33,21 @@ public class MainApp extends Application {
             fxmlFile = user.hasRole("ROLE_ADMIN") ? "/com/example/auth/dashboard.fxml" : "/com/example/reclamation/Reclamation.fxml";
         }
         System.out.println("DEBUG: Loading FXML: " + fxmlFile);
-        Parent root = FXMLLoader.load(getClass().getResource(fxmlFile));
+        
+        // Debug the resource path
+        URL resourceUrl = getClass().getResource(fxmlFile);
+        if (resourceUrl == null) {
+            System.out.println("ERROR: Resource not found for FXML: " + fxmlFile);
+            throw new IllegalStateException("Cannot find FXML file: " + fxmlFile);
+        }
+        
+        Parent root = FXMLLoader.load(resourceUrl); // Use URL directly
         if (root == null) {
             System.out.println("DEBUG: Failed to load " + fxmlFile + " - root is null");
             return;
         }
-        Scene scene = new Scene(root, 400, 500);
-
+        Scene scene = new Scene(root, 800, 600);
+    
         // Load stylesheet
         java.net.URL stylesheetUrl = getClass().getClassLoader().getResource("com/example/auth/styles.css");
         if (stylesheetUrl != null) {
@@ -46,15 +55,14 @@ public class MainApp extends Application {
         } else {
             System.out.println("DEBUG: Could not find styles.css in MainApp");
         }
-
+    
         primaryStage.setTitle("Authentication System");
         primaryStage.setScene(scene);
-        primaryStage.setResizable(true); // Allow resizing and enable title bar controls
-        primaryStage.setFullScreen(FULL_SCREEN); // Set initial full-screen state
+        primaryStage.setResizable(true);
+        primaryStage.setFullScreen(FULL_SCREEN);
         primaryStage.show();
         System.out.println("DEBUG: MainApp started successfully");
     }
-
     public static void main(String[] args) {
         launch(args);
     }

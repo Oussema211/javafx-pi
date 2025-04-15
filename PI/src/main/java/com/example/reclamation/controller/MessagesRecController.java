@@ -4,11 +4,8 @@ import com.example.reclamation.model.MessageReclamation;
 import com.example.reclamation.model.Reclamation;
 import com.example.reclamation.service.MessageReclamationService;
 
-import javafx.animation.Animation;
 import javafx.animation.FadeTransition;
-import javafx.animation.ParallelTransition;
 import javafx.animation.PauseTransition;
-import javafx.animation.ScaleTransition;
 import javafx.animation.TranslateTransition;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -57,45 +54,53 @@ public class MessagesRecController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         setupUI();
         setupAnimations();
+        setupButtonHover();
+        setupInputAutoResize();
     }
     
     private void setupUI() {
-        // Styling
-        titleLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
-        dateLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 12px;");
-        
-        // Message input area
-        messageInput.setStyle("-fx-background-color: #ffffff; -fx-border-color: #bdc3c7; " +
-                "-fx-border-radius: 15; -fx-background-radius: 15; -fx-padding: 10;");
+        // Message input
         messageInput.setWrapText(true);
-        
-        // Send button
-        sendButton.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; " +
-                "-fx-font-weight: bold; -fx-background-radius: 15;");
-        sendButton.setOnMouseEntered(e -> sendButton.setStyle("-fx-background-color: #2980b9; -fx-text-fill: white; " +
-                "-fx-font-weight: bold; -fx-background-radius: 15;"));
-        sendButton.setOnMouseExited(e -> sendButton.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; " +
-                "-fx-font-weight: bold; -fx-background-radius: 15;"));
-        
-        // Input container
-        inputContainer.setStyle("-fx-background-color: #ecf0f1; -fx-padding: 10; -fx-background-radius: 15;");
         HBox.setHgrow(messageInput, Priority.ALWAYS);
-        
-        // Messages container
-        messagesContainer.setStyle("-fx-background-color: #f5f6fa;");
-        messagesContainer.setPadding(new Insets(10));
-        messagesContainer.setSpacing(15);
         
         // Scroll pane
         scrollPane.setFitToWidth(true);
-        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scrollPane.setStyle("-fx-background: #f5f6fa; -fx-border-color: #f5f6fa;");
     }
     
     private void setupAnimations() {
-        // Auto-scroll to bottom when new messages are added
-        messagesContainer.heightProperty().addListener((observable, oldValue, newValue) -> {
+        // Auto-scroll to bottom
+        messagesContainer.heightProperty().addListener((obs, old, newVal) -> {
             scrollPane.setVvalue(1.0);
+        });
+        
+        // Fade-in for container
+        FadeTransition fade = new FadeTransition(Duration.millis(400), messagesContainer);
+        fade.setFromValue(0);
+        fade.setToValue(1);
+        fade.play();
+    }
+
+    private void setupButtonHover() {
+        sendButton.setOnMouseEntered(e -> sendButton.setStyle(
+            "-fx-background-color: #2563eb; -fx-text-fill: white; -fx-font: bold 16px 'Arial'; " +
+            "-fx-background-radius: 50; -fx-min-width: 36; -fx-min-height: 36; -fx-padding: 0;"
+        ));
+        sendButton.setOnMouseExited(e -> sendButton.setStyle(
+            "-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font: bold 16px 'Arial'; " +
+            "-fx-background-radius: 50; -fx-min-width: 36; -fx-min-height: 36; -fx-padding: 0;"
+        ));
+    }
+
+    private void setupInputAutoResize() {
+        messageInput.textProperty().addListener((obs, old, newVal) -> {
+            // Reset height
+            messageInput.setPrefHeight(36);
+            // Calculate required rows
+            String[] lines = newVal.split("\n");
+            int rows = Math.min(lines.length, 3); // Cap at 3 lines
+            if (rows > 1) {
+                messageInput.setPrefHeight(36 + (rows - 1) * 18);
+            }
         });
     }
 
@@ -104,7 +109,7 @@ public class MessagesRecController implements Initializable {
         this.currentUserId = currentUserId;
         
         titleLabel.setText(reclamation.getTitle());
-        dateLabel.setText("Created on " + formatDate(reclamation.getDateReclamation()));
+        dateLabel.setText(formatDate(reclamation.getDateReclamation()));
         
         loadMessages();
     }
@@ -129,69 +134,67 @@ public class MessagesRecController implements Initializable {
         
         // Message content
         Text messageText = new Text(message.getContenu());
-        messageText.setFont(Font.font("Segoe UI", 14));
-        messageText.setStyle("-fx-fill: " + (isCurrentUser ? "white" : "#2c3e50") + ";");
+        messageText.setFont(Font.font("Arial", 13));
+        messageText.setStyle("-fx-fill: " + (isCurrentUser ? "white" : "#1e3a8a") + ";");
         
         // Time label
-        Text timeText = new Text(" " + messageTime.format(TIME_FORMATTER));
-        timeText.setFont(Font.font("Segoe UI", 10));
-        timeText.setStyle("-fx-fill: " + (isCurrentUser ? "#dfe6e9" : "#7f8c8d") + ";");
+        Text timeText = new Text(messageTime.format(TIME_FORMATTER));
+        timeText.setFont(Font.font("Arial", 10));
+        timeText.setStyle("-fx-fill: #94a3b8;");
         
         // Message container
-        TextFlow textFlow = new TextFlow(messageText, timeText);
+        TextFlow textFlow = new TextFlow(messageText);
         textFlow.setMaxWidth(300);
-        textFlow.setPadding(new Insets(10));
+        textFlow.setPadding(new Insets(8, 12, 8, 12));
+        String borderRadius = isCurrentUser ? 
+            "-fx-background-radius: 15 15 5 15;" : 
+            "-fx-background-radius: 15 15 15 5;";
         textFlow.setStyle(
-            "-fx-background-color: " + (isCurrentUser ? "#3498db" : "#ffffff") + ";" +
-            "-fx-background-radius: 15;" +
-            "-fx-border-radius: 15;" +
-            "-fx-border-color: " + (isCurrentUser ? "#2980b9" : "#bdc3c7") + ";" +
-            "-fx-border-width: 1;" +
-            "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 2);"
+            "-fx-background-color: " + (isCurrentUser ? "#3b82f6" : "#ffffff") + ";" +
+            borderRadius +
+            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0, 0, 1);"
         );
 
-        // Message wrapper
-        VBox messageBox = new VBox(textFlow);
-        messageBox.setAlignment(isCurrentUser ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
-        messageBox.setPadding(new Insets(5));
-        messageBox.setUserData(message); // Store message data for potential future use
+        // Time container
+        VBox timeBox = new VBox(timeText);
+        timeBox.setAlignment(isCurrentUser ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+        timeBox.setPadding(new Insets(2, 12, 0, 12));
         
-        // Add animation
-        animateMessageAppearance(messageBox, isCurrentUser);
+        // Message wrapper
+        VBox messageBox = new VBox(textFlow, timeBox);
+        messageBox.setAlignment(isCurrentUser ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+        messageBox.setPadding(new Insets(4));
+        messageBox.setUserData(message);
+        
+        // Animation
+        animateMessageAppearance(messageBox);
         
         messagesContainer.getChildren().add(messageBox);
     }
     
-    private void animateMessageAppearance(VBox messageBox, boolean isCurrentUser) {
-        // Initial state
+    private void animateMessageAppearance(VBox messageBox) {
         messageBox.setOpacity(0);
-        messageBox.setTranslateX(isCurrentUser ? 20 : -20);
-        
-        // Fade in animation
         FadeTransition fade = new FadeTransition(Duration.millis(300), messageBox);
         fade.setFromValue(0);
         fade.setToValue(1);
         
-        // Slide animation
         TranslateTransition slide = new TranslateTransition(Duration.millis(300), messageBox);
-        slide.setFromX(isCurrentUser ? 20 : -20);
-        slide.setToX(0);
+        slide.setFromY(5);
+        slide.setToY(0);
         
-        // Combine animations
-        ParallelTransition transition = new ParallelTransition(fade, slide);
-        transition.play();
+        fade.play();
+        slide.play();
     }
     
     private String formatDate(Date date) {
         LocalDateTime localDate = new java.sql.Timestamp(date.getTime()).toLocalDateTime();
-        return localDate.format(DATE_FORMATTER) + " at " + localDate.format(TIME_FORMATTER);
+        return localDate.format(DATE_FORMATTER);
     }
 
     @FXML
     private void handleSendMessage() {
         String content = messageInput.getText().trim();
         if (!content.isEmpty()) {
-            // Add typing indicator
             addTypingIndicator();
             
             boolean success = messageService.addMessage(
@@ -202,7 +205,7 @@ public class MessagesRecController implements Initializable {
             
             if (success) {
                 messageInput.clear();
-                loadMessages(); // Refresh the messages view
+                loadMessages();
             } else {
                 showAlert("Error", "Failed to send message", Alert.AlertType.ERROR);
             }
@@ -212,41 +215,36 @@ public class MessagesRecController implements Initializable {
     private void addTypingIndicator() {
         VBox indicator = new VBox();
         indicator.setAlignment(Pos.CENTER_LEFT);
-        indicator.setPadding(new Insets(5));
+        indicator.setPadding(new Insets(4));
         
-        HBox dots = new HBox(5);
+        HBox dots = new HBox(4);
         dots.setAlignment(Pos.CENTER);
         
         for (int i = 0; i < 3; i++) {
-            Circle dot = new Circle(4, Color.web("#7f8c8d"));
+            Circle dot = new Circle(2.5, Color.web("#94a3b8"));
             dots.getChildren().add(dot);
-            
-            // Animation for each dot
-            ScaleTransition st = new ScaleTransition(Duration.millis(500), dot);
-            st.setByY(0.5);
-            st.setByX(0.5);
-            st.setAutoReverse(true);
-            st.setCycleCount(Animation.INDEFINITE);
-            st.setDelay(Duration.millis(i * 150));
-            st.play();
+            FadeTransition ft = new FadeTransition(Duration.millis(500), dot);
+            ft.setFromValue(0.3);
+            ft.setToValue(1);
+            ft.setAutoReverse(true);
+            ft.setCycleCount(-1);
+            ft.setDelay(Duration.millis(i * 150));
+            ft.play();
         }
         
         TextFlow flow = new TextFlow(dots);
-        flow.setMaxWidth(100);
-        flow.setPadding(new Insets(10));
+        flow.setMaxWidth(60);
+        flow.setPadding(new Insets(6, 10, 6, 10));
         flow.setStyle(
             "-fx-background-color: #ffffff;" +
-            "-fx-background-radius: 15;" +
-            "-fx-border-radius: 15;" +
-            "-fx-border-color: #bdc3c7;" +
-            "-fx-border-width: 1;"
+            "-fx-background-radius: 12;" +
+            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0, 0, 1);"
         );
         
         indicator.getChildren().add(flow);
         messagesContainer.getChildren().add(indicator);
         
-        // Auto-remove after animation
-        PauseTransition delay = new PauseTransition(Duration.seconds(1));
+        PauseTransition delay = new PauseTransition(Duration.millis(600));
         delay.setOnFinished(event -> messagesContainer.getChildren().remove(indicator));
         delay.play();
     }
@@ -256,15 +254,9 @@ public class MessagesRecController implements Initializable {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(content);
-        
-        // Custom dialog pane style
-        DialogPane dialogPane = alert.getDialogPane();
-        dialogPane.setStyle("-fx-background-color: #ffffff;");
-        dialogPane.setHeaderText(null);
-        dialogPane.lookup(".content.label").setStyle(
-            "-fx-font-size: 14px; -fx-text-fill: #2c3e50; -fx-font-family: 'Segoe UI';"
-        );
-        
+        alert.getDialogPane().setStyle("-fx-background-color: " +
+                (type == Alert.AlertType.ERROR ? "#fee2e2" : "#d1fae5") +
+                "; -fx-border-color: " + (type == Alert.AlertType.ERROR ? "#ef4444" : "#10b981") + "; -fx-border-width: 2; -fx-font-family: 'Arial';");
         alert.showAndWait();
     }
 }
