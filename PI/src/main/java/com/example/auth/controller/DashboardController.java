@@ -38,6 +38,10 @@ public class DashboardController {
 
     @FXML private Label welcomeLabel;
     @FXML private Label emailLabel;
+    @FXML
+    private Hyperlink StockButton;
+    @FXML
+    private Hyperlink EntrepotButton;
 
 
     private void loadContent(String fxmlPath) {
@@ -68,6 +72,8 @@ public class DashboardController {
         productButton.setOnAction(event -> loadContent("/com/example/pages/products.fxml"));
         categoryButton.setOnAction(event -> loadContent("/com/example/pages/categories.fxml"));
         userButton.setOnAction(event -> loadContent("/com/example/auth/adminDashboard.fxml"));
+        StockButton.setOnAction(event -> loadStockContent());
+        EntrepotButton.setOnAction(event -> loadEntrepotContent());
         settings.setOnAction(event -> loadContent("/com/example/pages/settings.fxml"));
         logoutButton.setOnAction(event -> {
             try {
@@ -103,4 +109,43 @@ public class DashboardController {
             e.printStackTrace();
         }
     }
+    private void loadStockContent() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/Stock/view/dashboard.fxml"));
+            Parent stockRoot = loader.load();
+
+            // Créer une nouvelle scène ou remplacer le contenu actuel
+            Scene currentScene = StockButton.getScene();
+
+            // Option 1: Remplacer le contenu du BorderPane
+            borderPane.setCenter(stockRoot);
+
+            // Option 2: Changer toute la scène (décommentez si nécessaire)
+            // currentScene.setRoot(stockRoot);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Erreur lors du chargement de l'interface de gestion des stocks");
+        }
+    }
+
+    private void loadEntrepotContent() {
+        try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/Entrepot/view/Entrepotdashboard.fxml"));
+            Parent entrepotRoot = loader.load();
+
+            // Créer une nouvelle scène ou remplacer le contenu actuel
+            Scene currentScene = EntrepotButton.getScene();
+
+            // Option 1: Remplacer le contenu du BorderPane
+            borderPane.setCenter(entrepotRoot);
+
+
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Erreur lors du chargement de l'interface de gestion des entrepots");
+        }
+    }
+
 }

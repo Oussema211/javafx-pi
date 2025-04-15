@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.String?>
-<?import javafx.collections.FXCollections?>
-<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
@@ -25,6 +21,13 @@
         <Button fx:id="addCategoryButton" onAction="#handleAddCategory" styleClass="primary-button" text="ADD CATEGORY" />
     </HBox>
 
+
+    <HBox styleClass="results-header">
+        <Label fx:id="resultsCountLabel" styleClass="results-count" text="SHOWING 0 CATEGORIES" />
+        <Label styleClass="time-filter" text="1H" />
+        <Button styleClass="export-button" text="EXPORT LIST" />
+    </HBox>
+
     <TableView fx:id="categoryTableView" styleClass="category-table-view" VBox.vgrow="ALWAYS">
         <columns>
             <TableColumn fx:id="nameColumn" prefWidth="200" text="Category Name">
@@ -35,11 +38,6 @@
             <TableColumn fx:id="descriptionColumn" prefWidth="300" text="Description">
                 <cellValueFactory>
                     <PropertyValueFactory property="description" />
-                </cellValueFactory>
-            </TableColumn>
-            <TableColumn fx:id="statusColumn" prefWidth="100" text="Status">
-                <cellValueFactory>
-                    <PropertyValueFactory property="status" />
                 </cellValueFactory>
             </TableColumn>
             <TableColumn fx:id="dateCreationColumn" prefWidth="150" text="Date Created">

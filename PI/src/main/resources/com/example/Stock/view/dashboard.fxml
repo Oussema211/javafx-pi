@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+    <?import javafx.scene.layout.*?>
+    <?import javafx.scene.control.*?>
+    <?import javafx.scene.image.ImageView?>
+    <?import javafx.geometry.Insets?>
+
+    <?import javafx.scene.control.cell.PropertyValueFactory?>
+    <VBox fx:controller="com.example.Stock.Controller.StockController"
+          xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+          prefHeight="700.0" prefWidth="1200.0" spacing="10" style="-fx-background-color: linear-gradient(to bottom right, #e0f7fa, #ffffff);">
+
+        <!-- Top Bar -->
+        <HBox fx:id="topBar" alignment="CENTER_RIGHT" spacing="15"
+              style="-fx-background-color: white; -fx-border-color: #e0e0e0; -fx-border-width: 0 0 1 0; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 0, 3);">
+            <padding><Insets top="15" right="20" bottom="15" left="20" /></padding>
+            <Label text="📊 Gestion des Stocks" style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #2c3e50; -fx-effect: dropshadow(one-pass-box, rgba(0,0,0,0.2), 2, 0.0, 1, 1);" HBox.hgrow="ALWAYS" alignment="CENTER_RIGHT" />
+            <Button fx:id="ajouterBtn" text="➕ Ajouter" onAction="#handleAjouter"
+                    style="-fx-background-color: linear-gradient(to right, #00c6ff, #0072ff); -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 8 20; -fx-background-radius: 30; -fx-cursor: hand;" />
+            <Button fx:id="excelBtn" text="📥 Excel" onAction="#handleExportExcel"
+                    style="-fx-background-color: linear-gradient(to right, #28a745, #218838); -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 8 20; -fx-background-radius: 30; -fx-cursor: hand;" />
+            <Button fx:id="pdfBtn" text="📝 PDF" onAction="#handleExportPDF"
+                    style="-fx-background-color: linear-gradient(to right, #ff416c, #ff4b2b); -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 8 20; -fx-background-radius: 30; -fx-cursor: hand;" />
+        </HBox>
+
+        <!-- Sidebar + Main Content -->
+        <HBox spacing="0">
+            <!-- Sidebar -->
+
+
+
+            <!-- Main Content -->
+            <VBox spacing="20" prefWidth="1300" style="-fx-padding: 20;">
+                <!-- Filters -->
+                <HBox fx:id="filters" alignment="CENTER_LEFT" spacing="15" style="-fx-background-color: #ffffff; -fx-background-radius: 12; -fx-border-color: #dee2e6; -fx-border-width: 1; -fx-border-radius: 12;">
+                    <padding><Insets top="15" right="15" bottom="15" left="15" /></padding>
+                    <TextField fx:id="searchField" promptText="🔍 Rechercher un stock..." prefWidth="250.0" style="-fx-background-radius: 25; -fx-border-radius: 25; -fx-border-color: #ced4da; -fx-padding: 8;" />
+                    <ComboBox fx:id="categorieFilter" promptText="Catégorie" prefWidth="180.0" style="-fx-background-radius: 20; -fx-border-radius: 20;" />
+                    <DatePicker fx:id="dateEntreeFilter" promptText="Date Entrée" style="-fx-background-radius: 20; -fx-border-radius: 20;" />
+                    <ComboBox fx:id="entrepotFilter" promptText="Entrepôt" prefWidth="180.0" style="-fx-background-radius: 20; -fx-border-radius: 20;" />
+                    <Button fx:id="resetBtn" text="♻ Réinitialiser" onAction="#resetFilters"
+                            style="-fx-background-color: #6c757d; -fx-text-fill: white; -fx-font-size: 14px; -fx-padding: 8 20; -fx-background-radius: 30;" />
+                </HBox>
+
+                <!-- Stock Table -->
+                <TableView fx:id="stockTable"
+                           style="-fx-background-color: #ffffff; -fx-background-radius: 12; -fx-border-color: #e0e0e0; -fx-border-width: 1; -fx-border-radius: 12;">
+                    <columns>
+                        <TableColumn fx:id="colId" text="🆔 ID"  />
+                        <TableColumn fx:id="colProduit" text="🛒 Produit" />
+                        <TableColumn fx:id="colImage" text="🖼️ Image" >
+                            <cellValueFactory>
+                                <PropertyValueFactory property="produit.imageName" />
+                            </cellValueFactory>
+                        </TableColumn>
+                        <TableColumn fx:id="colQuantite" text="📦 Quantité"  />
+                        <TableColumn fx:id="colDateEntree" text="📅 Date Entrée"  />
+                        <TableColumn fx:id="colSeuil" text="⚠️ Seuil Alerte"  />
+                        <TableColumn fx:id="colEntrepot" text="🏭 Entrepôt" />
+                        <TableColumn fx:id="colCategorie" text="🏷️ Catégorie"  />
+                        <TableColumn fx:id="colActions" text="⚙️ Actions"  />
+                    </columns>
+                    <columnResizePolicy>
+                        <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                    </columnResizePolicy>
+                </TableView>
+            </VBox>
+        </HBox>
+    </VBox>
+
+

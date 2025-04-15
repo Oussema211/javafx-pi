@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.effect.*?>
+<?import javafx.scene.shape.*?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      prefWidth="550" prefHeight="600" spacing="20"
+      style="-fx-background-color: #f8f9fa; -fx-padding: 25;"
+      fx:controller="com.example.Stock.Controller.EditStockController">
+
+    <!-- En-tête avec icône -->
+    <HBox alignment="CENTER_LEFT" spacing="10">
+        <Label text="📦" style="-fx-font-size: 30px;"/>
+        <Label fx:id="titleLabel" text="Modifier Stock"
+               style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: linear-gradient(to right, #2c3e50, #3498db);"/>
+    </HBox>
+
+    <!-- Carte de formulaire avec ombre portée -->
+    <StackPane>
+        <Rectangle arcWidth="15" arcHeight="15" fill="WHITE"
+                   stroke="#e0e0e0" strokeType="INSIDE" strokeWidth="1">
+            <effect>
+                <DropShadow color="rgba(0,0,0,0.1)" radius="10" spread="0.2"/>
+            </effect>
+        </Rectangle>
+
+        <GridPane hgap="15" vgap="20">
+            <padding>
+                <Insets top="20" right="20" bottom="20" left="20"/>
+            </padding>
+
+            <columnConstraints>
+                <ColumnConstraints percentWidth="35" halignment="RIGHT"/>
+                <ColumnConstraints percentWidth="65"/>
+            </columnConstraints>
+
+            <!-- Date Entrée -->
+            <Label text="📅 Date Entrée" GridPane.columnIndex="0" GridPane.rowIndex="0"
+                   style="-fx-font-weight: bold; -fx-text-fill: #495057;"/>
+            <DatePicker fx:id="dateEntreePicker" GridPane.columnIndex="1" GridPane.rowIndex="0"
+                        style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #ced4da; -fx-padding: 8;"/>
+
+            <!-- Date Sortie -->
+            <Label text="📤 Date Sortie (optionnel)" GridPane.columnIndex="0" GridPane.rowIndex="1"
+                   style="-fx-font-weight: bold; -fx-text-fill: #495057;"/>
+            <DatePicker fx:id="dateSortiePicker" GridPane.columnIndex="1" GridPane.rowIndex="1"
+                        style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #ced4da; -fx-padding: 8;"/>
+
+            <!-- Seuil Alerte -->
+            <Label text="⚠️ Seuil Alerte" GridPane.columnIndex="0" GridPane.rowIndex="2"
+                   style="-fx-font-weight: bold; -fx-text-fill: #495057;"/>
+            <TextField fx:id="seuilAlertField" GridPane.columnIndex="1" GridPane.rowIndex="2"
+                       style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #ced4da; -fx-padding: 8;"/>
+
+            <!-- Séparateur avec icône -->
+            <HBox alignment="CENTER" spacing="10" GridPane.columnIndex="0" GridPane.rowIndex="3" GridPane.columnSpan="2">
+                <Line endX="100" stroke="#dee2e6"/>
+                <Label text="🏭" style="-fx-font-size: 18px; -fx-opacity: 0.7;"/>
+                <Line endX="100" stroke="#dee2e6"/>
+            </HBox>
+
+            <!-- Entrepôts -->
+            <Label text="Entrepôts" GridPane.columnIndex="0" GridPane.rowIndex="4"
+                   style="-fx-font-weight: bold; -fx-text-fill: #495057;" GridPane.columnSpan="2"/>
+
+            <Label text="Sélectionnez un ou plusieurs entrepôts:"
+                   GridPane.columnIndex="0" GridPane.rowIndex="5" GridPane.columnSpan="2"
+                   style="-fx-font-size: 12px; -fx-text-fill: #6c757d;"/>
+
+            <ListView fx:id="entrepotList" GridPane.columnIndex="0" GridPane.rowIndex="6" GridPane.columnSpan="2"
+                      style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #ced4da; -fx-pref-height: 150;"/>
+        </GridPane>
+    </StackPane>
+
+    <!-- Boutons avec styles améliorés -->
+    <HBox spacing="15" alignment="CENTER_RIGHT">
+        <Button fx:id="cancelBtn" text="✖ Annuler"
+                style="-fx-background-color: #6c757d; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 25; -fx-background-radius: 8; -fx-cursor: hand;">
+            <effect>
+                <DropShadow color="rgba(0,0,0,0.1)" radius="5" spread="0.1"/>
+            </effect>
+        </Button>
+
+        <Button fx:id="saveBtn" text="💾 Enregistrer"
+                style="-fx-background-color: linear-gradient(to right, #28a745, #20c997); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 25; -fx-background-radius: 8; -fx-cursor: hand;">
+            <effect>
+                <DropShadow color="rgba(0,0,0,0.15)" radius="5" spread="0.2"/>
+            </effect>
+        </Button>
+    </HBox>
+</VBox>

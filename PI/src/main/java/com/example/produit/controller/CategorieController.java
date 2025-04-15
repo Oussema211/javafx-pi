@@ -15,6 +15,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -24,10 +25,8 @@ public class CategorieController {
     @FXML private TableView<Categorie> categoryTableView;
     @FXML private TableColumn<Categorie, String> nameColumn;
     @FXML private TableColumn<Categorie, String> descriptionColumn;
-    @FXML private TableColumn<Categorie, String> statusColumn;
     @FXML private TableColumn<Categorie, LocalDateTime> dateCreationColumn;
     @FXML private TableColumn<Categorie, Void> actionsColumn;
-
 
     @FXML private Label resultsCountLabel;
 
@@ -47,7 +46,6 @@ public class CategorieController {
     private void configureTableColumns() {
         nameColumn.setCellValueFactory(new PropertyValueFactory<>("nom"));
         descriptionColumn.setCellValueFactory(new PropertyValueFactory<>("description"));
-        statusColumn.setCellValueFactory(new PropertyValueFactory<>("status"));
         dateCreationColumn.setCellValueFactory(new PropertyValueFactory<>("dateCreation"));
     }
 
@@ -133,9 +131,13 @@ public class CategorieController {
         dialog.setTitle(category == null ? "New Category" : "Edit Category");
 
         TextField nameField = new TextField();
+        nameField.getStyleClass().add("modal-text-field");
         TextArea descriptionField = new TextArea();
+        descriptionField.getStyleClass().add("modal-text-field");
         ComboBox<String> statusCombo = new ComboBox<>(FXCollections.observableArrayList("Active", "Inactive", "Draft"));
+        statusCombo.getStyleClass().add("modal-combo-box");
         TextField tagsField = new TextField();
+        tagsField.getStyleClass().add("modal-text-field");
 
         if (category != null) {
             nameField.setText(category.getNom());
@@ -144,6 +146,7 @@ public class CategorieController {
             statusCombo.getSelectionModel().select("Active");
         }
 
+        // Create the form layout
         GridPane grid = new GridPane();
         grid.setHgap(10);
         grid.setVgap(10);
@@ -151,10 +154,26 @@ public class CategorieController {
         grid.addRow(1, new Label("Description:"), descriptionField);
         grid.addRow(2, new Label("Status:"), statusCombo);
         grid.addRow(3, new Label("Tags:"), tagsField);
-        dialog.getDialogPane().setContent(grid);
 
+        // Apply modal-label class to all labels
+        grid.getChildren().forEach(node -> {
+            if (node instanceof Label) {
+                node.getStyleClass().add("modal-label");
+            }
+        });
+
+        // Wrap grid in a VBox for styling
+        VBox modalContent = new VBox(grid);
+        modalContent.getStyleClass().add("modal-vbox");
+        dialog.getDialogPane().setContent(modalContent);
+
+        // Add buttons with styling
         ButtonType saveButtonType = new ButtonType("Save", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
+
+        // Style the buttons
+        dialog.getDialogPane().lookupButton(saveButtonType).getStyleClass().add("modal-save-button");
+        dialog.getDialogPane().lookupButton(ButtonType.CANCEL).getStyleClass().add("modal-cancel-button");
 
         dialog.setResultConverter(buttonType -> {
             if (buttonType == saveButtonType) {
