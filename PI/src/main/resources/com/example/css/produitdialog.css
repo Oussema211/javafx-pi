@@ -1,0 +1,120 @@
+.dialog-pane {
+    -fx-padding: 20px;
+    -fx-background-radius: 12px;
+    -fx-background-color: #ffffff;
+    -fx-border-color: #e5e7eb;
+    -fx-border-width: 1px;
+    -fx-font-family: 'Inter', -apple-system, sans-serif;
+    -fx-alignment: center;
+}
+
+.dialog-pane .label {
+    -fx-font-size: 14px;
+    -fx-text-fill: #111827;
+    -fx-font-weight: 600;
+    -fx-padding: 8px 0;
+    -fx-wrap-text: true;
+    -fx-line-spacing: 1.2;
+}
+
+.dialog-pane .text-field,
+.dialog-pane .text-area,
+.dialog-pane .combo-box {
+    -fx-pref-width: 300px;
+    -fx-padding: 8px 12px;
+    -fx-background-color: #f9fafb;
+    -fx-border-color: #e5e7eb;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-font-size: 13px;
+    -fx-text-fill: #374151;
+    -fx-font-family: 'Inter', sans-serif;
+}
+
+.dialog-pane .text-area {
+    -fx-pref-row-count: 3;
+    -fx-wrap-text: true;
+    -fx-control-inner-background: #f9fafb;
+    -fx-faint-focus-color: transparent;
+    -fx-focus-color: transparent;
+}
+
+.dialog-pane .text-area .content {
+    -fx-background-color: #f9fafb;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+}
+
+.dialog-pane .text-area .scroll-pane {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.dialog-pane .text-area .scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+
+.dialog-pane .button {
+    -fx-background-color: #000;
+    -fx-text-fill: white;
+    -fx-font-weight: 600;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 8px 16px;
+    -fx-font-size: 13px;
+    -fx-font-family: 'Inter', sans-serif;
+    -fx-alignment: center;
+    -fx-cursor: hand;
+}
+
+.dialog-pane .image-view {
+    -fx-border-color: #e5e7eb;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 6px;
+    -fx-background-color: #ffffff;
+}
+
+.dialog-pane .combo-box {
+    -fx-background-color: #f9fafb;
+}
+
+.dialog-pane .combo-box .arrow-button {
+    -fx-background-color: transparent;
+}
+
+.dialog-pane .combo-box .arrow {
+    -fx-background-color: #374151;
+}
+
+.dialog-pane .combo-box .list-cell {
+    -fx-padding: 6px 10px;
+    -fx-text-fill: #374151;
+}
+
+.dialog-pane .combo-box-popup .list-view {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #e5e7eb;
+    -fx-border-width: 1px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-pref-width: 300px;
+}
+
+.dialog-pane .combo-box-popup .list-cell {
+    -fx-background-color: #ffffff;
+    -fx-padding: 8px 12px;
+    -fx-text-fill: #374151;
+}
+
+.dialog-pane .combo-box-popup .list-cell:filled:selected,
+.dialog-pane .combo-box-popup .list-cell:filled:selected:hover {
+    -fx-background-color: #f3f4f6;
+    -fx-text-fill: #111827;
+}
+
+.dialog-pane .combo-box-popup .list-cell:filled:hover {
+    -fx-background-color: #f9fafb;
+}
