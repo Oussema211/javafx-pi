@@ -1,5 +1,7 @@
 package com.example.auth;
 
+import java.net.URL;
+
 import com.example.auth.model.User;
 import com.example.auth.service.AuthService;
 import com.example.auth.utils.ResetLinkServer;
@@ -7,7 +9,6 @@ import com.example.auth.utils.SessionManager;
 import com.example.reclamation.service.MessageReclamationService;
 import com.example.reclamation.service.ReclamationService;
 import com.example.reclamation.service.TagService;
-
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -59,7 +60,7 @@ public class MainApp extends Application {
         } else {
             System.out.println("DEBUG: Could not find styles.css in MainApp");
         }
-
+    
         primaryStage.setTitle("Authentication System");
         primaryStage.setScene(scene);
         primaryStage.setResizable(true);
@@ -72,7 +73,6 @@ public class MainApp extends Application {
             System.out.println("DEBUG: Stopping MainApp");
         });
     }
-
     public static void main(String[] args) {
         launch(args);
     }

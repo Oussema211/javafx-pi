@@ -24,6 +24,8 @@ public class DashboardController {
     @FXML
     private Hyperlink dashboardButton;
     @FXML
+    private Hyperlink reclamation;
+    @FXML
     private Hyperlink achat;
     @FXML
     private Hyperlink productButton;
@@ -68,6 +70,7 @@ public class DashboardController {
         emailLabel.setText("Email: " + user.getEmail());
 
         dashboardButton.setOnAction(event -> loadContent("/com/example/pages/dashboard.fxml"));
+        reclamation.setOnAction(event -> loadContent("/com/example/pages/reclamation.fxml"));
         achat.setOnAction(event -> loadContent("/com/example/pages/purchasing.fxml"));
         productButton.setOnAction(event -> loadContent("/com/example/pages/products.fxml"));
         categoryButton.setOnAction(event -> loadContent("/com/example/pages/categories.fxml"));

@@ -2,15 +2,25 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.Parent?>
 
-<BorderPane fx:id="root" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" 
+<BorderPane fx:id="root" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.example.reclamation.controller.ReclamationController">
+    
+    <!-- Load Navbar into top of BorderPane -->
+    <top>
+        <fx:include source="../frontPages/Navbar.fxml"/>
+    </top>
+
+    <!-- Center content with top margin -->
     <center>
-        <GridPane fx:id="contentContainer" hgap="20" vgap="20">
-            <children>
-                <VBox fx:id="mainContainer" GridPane.columnIndex="0" />
-                <VBox fx:id="sidebar" GridPane.columnIndex="1" />
-            </children>
-        </GridPane>
+        <VBox style="-fx-padding: 20 0 0 0;"> <!-- 20px top padding -->
+            <GridPane fx:id="contentContainer" hgap="20" vgap="20">
+                <children>
+                    <VBox fx:id="mainContainer" GridPane.columnIndex="0" />
+                    <VBox fx:id="sidebar" GridPane.columnIndex="1" />
+                </children>
+            </GridPane>
+        </VBox>
     </center>
 </BorderPane>

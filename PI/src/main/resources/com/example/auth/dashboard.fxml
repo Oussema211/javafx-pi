@@ -18,6 +18,13 @@
                     </ImageView>
                 </graphic>
             </Hyperlink>
+            <Hyperlink fx:id="reclamation" text="Reclamation management" graphicTextGap="10" styleClass="nav-link">
+                <graphic>
+                    <ImageView fitHeight="20" fitWidth="20">
+                        <Image url="@../../../icons/review.png"/>
+                    </ImageView>
+                </graphic>
+            </Hyperlink>
 
             <Hyperlink fx:id="achat" text="Purchasing management" graphicTextGap="10" styleClass="nav-link">
                 <graphic>
