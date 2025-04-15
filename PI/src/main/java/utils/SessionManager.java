@@ -11,7 +11,7 @@ public class SessionManager {
     private AuthService authService = new AuthService();
     private static final String SESSION_FILE = "session.dat";
 
-    private SessionManager() {
+    public SessionManager() {
         // Load session on startup
         loadSession();
     }

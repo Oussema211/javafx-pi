@@ -10,6 +10,7 @@ import com.example.reclamation.service.TagService;
 import utils.SessionManager;
 
 import javafx.animation.FadeTransition;
+import javafx.animation.PauseTransition;
 import javafx.animation.ScaleTransition;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -18,6 +19,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.ButtonBar.ButtonData;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
@@ -27,6 +29,7 @@ import javafx.util.Duration;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -133,7 +136,6 @@ public class ReclamationController {
         card.setOnMouseExited(e -> card.setStyle("-fx-background-color: white; -fx-background-radius: 15; " +
                 "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 15, 0, 0, 5);"));
 
-        // Add click handler to navigate to ReclamationMessages
         card.setOnMouseClicked(e -> handleReclamationClick(rec));
 
         StackPane profileContainer = new StackPane();
@@ -146,10 +148,10 @@ public class ReclamationController {
 
         Circle status = new Circle(7.5);
         String statusColor = switch (rec.getStatut()) {
-            case CLOSED -> "#ff5555";  // Red for closed
-            case RESOLVED -> "#4CAF50"; // Green for resolved
-            case REVIEW -> "#FF9800";   // Orange for review
-            case WAITING -> "#999";     // Gray for waiting
+            case CLOSED -> "#ff5555";
+            case RESOLVED -> "#4CAF50";
+            case REVIEW -> "#FF9800";
+            case WAITING -> "#999";
         };
         status.setStyle("-fx-fill: " + statusColor + "; -fx-stroke: white; -fx-stroke-width: 2;");
         StackPane.setAlignment(status, Pos.BOTTOM_RIGHT);
@@ -211,9 +213,9 @@ public class ReclamationController {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/reclamation/ReclamationMessages.fxml"));
             Parent messagesRoot = loader.load();
-    
+
             ReclamationMessagesController controller = loader.getController();
-            controller.setPrimaryStage(primaryStage); 
+            controller.setPrimaryStage(primaryStage);
             controller.setSelectedReclamation(reclamation);
             Stage stage = (Stage) root.getScene().getWindow();
             Scene messagesScene = new Scene(messagesRoot, stage.getWidth(), stage.getHeight());
@@ -225,8 +227,6 @@ public class ReclamationController {
             alert.showAndWait();
         }
     }
-
-    // Rest of the methods remain unchanged...
 
     private void setupSidebar() {
         sidebar.getChildren().clear();
@@ -302,17 +302,34 @@ public class ReclamationController {
         Dialog<Reclamation> dialog = new Dialog<>();
         dialog.setTitle("Edit Reclamation");
 
-        ButtonType saveButtonType = new ButtonType("Save", ButtonBar.ButtonData.OK_DONE);
+        DialogPane dialogPane = dialog.getDialogPane();
+        dialogPane.getStylesheets().add(getClass().getResource("/css/modern-dialog.css").toExternalForm());
+
+        ButtonType saveButtonType = new ButtonType("Save", ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
 
-        VBox content = new VBox(10);
+        VBox content = new VBox(15);
+        content.setStyle("-fx-padding: 20;");
+
+        Label titleLabel = new Label("Title:");
+        titleLabel.getStyleClass().add("form-label");
         TextField titleField = new TextField();
-        titleField.setPromptText("Title");
+        titleField.setPromptText("Enter title");
+        titleField.getStyleClass().add("form-field");
+
+        Label descLabel = new Label("Description:");
+        descLabel.getStyleClass().add("form-label");
         TextArea descField = new TextArea();
-        descField.setPromptText("Description");
+        descField.setPromptText("Enter description");
+        descField.setPrefRowCount(4);
+        descField.getStyleClass().add("form-field");
+
+        Label statusLabel = new Label("Status:");
+        statusLabel.getStyleClass().add("form-label");
         ComboBox<Status> statusCombo = new ComboBox<>();
         statusCombo.getItems().addAll(Status.values());
-        statusCombo.setPromptText("Status");
+        statusCombo.setPromptText("Select status");
+        statusCombo.getStyleClass().add("form-field");
 
         Reclamation rec = reclamationService.getReclamationById(reclamationId);
         if (rec != null) {
@@ -321,7 +338,11 @@ public class ReclamationController {
             statusCombo.setValue(rec.getStatut());
         }
 
-        content.getChildren().addAll(new Label("Title:"), titleField, new Label("Description:"), descField, new Label("Status:"), statusCombo);
+        content.getChildren().addAll(
+            titleLabel, titleField,
+            descLabel, descField,
+            statusLabel, statusCombo
+        );
         dialog.getDialogPane().setContent(content);
 
         dialog.setResultConverter(dialogButton -> {
@@ -357,222 +378,60 @@ public class ReclamationController {
             alert.showAndWait();
             return;
         }
-
+    
         Dialog<Reclamation> dialog = new Dialog<>();
         dialog.setTitle("New Discussion");
-
+    
+        DialogPane dialogPane = dialog.getDialogPane();
+        dialogPane.getStylesheets().add(getClass().getResource("/css/modern-dialog.css").toExternalForm());
+    
         ButtonType createButtonType = new ButtonType("Create", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(createButtonType, ButtonType.CANCEL);
-
-        VBox content = new VBox(25);
-        content.setPadding(new Insets(40));
+    
+        VBox content = new VBox(15);
+        content.setStyle("-fx-padding: 20;");
         content.setAlignment(Pos.CENTER);
         content.setMaxWidth(700);
-        content.setStyle(
-            "-fx-background-color: linear-gradient(to bottom right, white, #f5f6fa);" +
-            "-fx-background-radius: 20;" +
-            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 30, 0, 0, 10);"
-        );
-
+    
         Label titleLabel = new Label("Submit Your Problem");
-        titleLabel.setStyle(
-            "-fx-font-family: 'Poppins';" +
-            "-fx-font-size: 2.2em;" +
-            "-fx-font-weight: bold;" +
-            "-fx-text-fill: #1a1a1a;" +
-            "-fx-padding: 0 0 15 0;"
-        );
-
+        titleLabel.getStyleClass().add("header-label");
         Label subtitle = new Label("We value your feedback. Please describe your concern below.");
-        subtitle.setStyle(
-            "-fx-font-family: 'Poppins';" +
-            "-fx-font-size: 1.1em;" +
-            "-fx-text-fill: #666;" +
-            "-fx-padding: 0 0 30 0;"
-        );
-
+        subtitle.getStyleClass().add("subtitle-label");
+    
         VBox titleGroup = new VBox(8);
         Label titleFieldLabel = new Label("Title:");
-        titleFieldLabel.setStyle(
-            "-fx-font-family: 'Poppins';" +
-            "-fx-font-size: 1.1em;" +
-            "-fx-font-weight: bold;" +
-            "-fx-text-fill: #1a1a1a;"
-        );
+        titleFieldLabel.getStyleClass().add("form-label");
         TextField titleField = new TextField();
-        titleField.setPromptText("Title");
-        titleField.setStyle(
-            "-fx-font-family: 'Poppins';" +
-            "-fx-font-size: 1.2em;" +
-            "-fx-font-weight: 500;" +
-            "-fx-background-color: white;" +
-            "-fx-background-radius: 10;" +
-            "-fx-border-color: #2ecc71;" +
-            "-fx-border-width: 2;" +
-            "-fx-padding: 15;" +
-            "-fx-effect: innershadow(gaussian, rgba(0,0,0,0.05), 5, 0, 0, 2);"
-        );
-        titleField.focusedProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal) {
-                titleField.setStyle(
-                    "-fx-font-family: 'Poppins';" +
-                    "-fx-font-size: 1.2em;" +
-                    "-fx-font-weight: 500;" +
-                    "-fx-background-color: white;" +
-                    "-fx-background-radius: 10;" +
-                    "-fx-border-color: #27ae60;" +
-                    "-fx-border-width: 2;" +
-                    "-fx-padding: 15;" +
-                    "-fx-effect: dropshadow(gaussian, rgba(46,204,113,0.2), 4, 0, 0, 0);"
-                );
-            } else {
-                titleField.setStyle(
-                    "-fx-font-family: 'Poppins';" +
-                    "-fx-font-size: 1.2em;" +
-                    "-fx-font-weight: 500;" +
-                    "-fx-background-color: white;" +
-                    "-fx-background-radius: 10;" +
-                    "-fx-border-color: #2ecc71;" +
-                    "-fx-border-width: 2;" +
-                    "-fx-padding: 15;" +
-                    "-fx-effect: innershadow(gaussian, rgba(0,0,0,0.05), 5, 0, 0, 2);"
-                );
-            }
-        });
+        titleField.setPromptText("Enter title (min 5 letters)");
+        titleField.getStyleClass().add("form-field");
         titleGroup.getChildren().addAll(titleFieldLabel, titleField);
-
+    
         VBox descGroup = new VBox(8);
         Label descFieldLabel = new Label("Describe Your Problem:");
-        descFieldLabel.setStyle(
-            "-fx-font-family: 'Poppins';" +
-            "-fx-font-size: 1.1em;" +
-            "-fx-font-weight: bold;" +
-            "-fx-text-fill: #1a1a1a;"
-        );
+        descFieldLabel.getStyleClass().add("form-label");
         TextArea descField = new TextArea();
-        descField.setPromptText("Description");
-        descField.setPrefHeight(220);
-        descField.setStyle(
-            "-fx-font-family: 'Poppins';" +
-            "-fx-font-size: 1em;" +
-            "-fx-background-color: white;" +
-            "-fx-background-radius: 10;" +
-            "-fx-border-width: 0;" +
-            "-fx-padding: 15;" +
-            "-fx-effect: innershadow(gaussian, rgba(0,0,0,0.05), 5, 0, 0, 2);"
-        );
-        descField.focusedProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal) {
-                descField.setStyle(
-                    "-fx-font-family: 'Poppins';" +
-                    "-fx-font-size: 1em;" +
-                    "-fx-background-color: white;" +
-                    "-fx-background-radius: 10;" +
-                    "-fx-border-width: 0;" +
-                    "-fx-padding: 15;" +
-                    "-fx-effect: dropshadow(gaussian, rgba(46,204,113,0.2), 4, 0, 0, 0);"
-                );
-            } else {
-                descField.setStyle(
-                    "-fx-font-family: 'Poppins';" +
-                    "-fx-font-size: 1em;" +
-                    "-fx-background-color: white;" +
-                    "-fx-background-radius: 10;" +
-                    "-fx-border-width: 0;" +
-                    "-fx-padding: 15;" +
-                    "-fx-effect: innershadow(gaussian, rgba(0,0,0,0.05), 5, 0, 0, 2);"
-                );
-            }
-        });
+        descField.setPromptText("Enter description (min 6 words)");
+        descField.setPrefRowCount(6);
+        descField.getStyleClass().add("form-field");
         descGroup.getChildren().addAll(descFieldLabel, descField);
-
+    
         VBox tagGroup = new VBox(8);
         Label tagFieldLabel = new Label("Tag:");
-        tagFieldLabel.setStyle(
-            "-fx-font-family: 'Poppins';" +
-            "-fx-font-size: 1.1em;" +
-            "-fx-font-weight: bold;" +
-            "-fx-text-fill: #1a1a1a;"
-        );
+        tagFieldLabel.getStyleClass().add("form-label");
         ComboBox<String> tagCombo = new ComboBox<>();
         tagCombo.getItems().addAll(tagService.getAllTags().stream().map(Tag::getName).toList());
         tagCombo.setPromptText("Tag (optional)");
-        tagCombo.setStyle(
-            "-fx-font-family: 'Poppins';" +
-            "-fx-font-size: 1em;" +
-            "-fx-background-color: white;" +
-            "-fx-background-radius: 10;" +
-            "-fx-border-width: 0;" +
-            "-fx-padding: 15;" +
-            "-fx-effect: innershadow(gaussian, rgba(0,0,0,0.05), 5, 0, 0, 2);"
-        );
-        tagCombo.focusedProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal) {
-                tagCombo.setStyle(
-                    "-fx-font-family: 'Poppins';" +
-                    "-fx-font-size: 1em;" +
-                    "-fx-background-color: white;" +
-                    "-fx-background-radius: 10;" +
-                    "-fx-border-width: 0;" +
-                    "-fx-padding: 15;" +
-                    "-fx-effect: dropshadow(gaussian, rgba(46,204,113,0.2), 4, 0, 0, 0);"
-                );
-            } else {
-                tagCombo.setStyle(
-                    "-fx-font-family: 'Poppins';" +
-                    "-fx-font-size: 1em;" +
-                    "-fx-background-color: white;" +
-                    "-fx-background-radius: 10;" +
-                    "-fx-border-width: 0;" +
-                    "-fx-padding: 15;" +
-                    "-fx-effect: innershadow(gaussian, rgba(0,0,0,0.05), 5, 0, 0, 2);"
-                );
-            }
-        });
+        tagCombo.getStyleClass().add("form-field");
         tagGroup.getChildren().addAll(tagFieldLabel, tagCombo);
-
+    
         Label messageLabel = new Label();
-        messageLabel.setStyle(
-            "-fx-font-family: 'Poppins';" +
-            "-fx-font-size: 1em;" +
-            "-fx-text-fill: #e74c3c;" +
-            "-fx-font-weight: 500;"
-        );
-
+        messageLabel.getStyleClass().add("message-label");
+    
         content.getChildren().addAll(titleLabel, subtitle, titleGroup, descGroup, tagGroup, messageLabel);
-
+    
         Button createButton = (Button) dialog.getDialogPane().lookupButton(createButtonType);
-        createButton.setStyle(
-            "-fx-font-family: 'Poppins';" +
-            "-fx-font-size: 1.1em;" +
-            "-fx-font-weight: bold;" +
-            "-fx-background-color: #2ecc71;" +
-            "-fx-text-fill: white;" +
-            "-fx-background-radius: 50;" +
-            "-fx-padding: 15 30;" +
-            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 15, 0, 0, 4);"
-        );
-        createButton.setOnMouseEntered(e -> createButton.setStyle(
-            "-fx-font-family: 'Poppins';" +
-            "-fx-font-size: 1.1em;" +
-            "-fx-font-weight: bold;" +
-            "-fx-background-color: #27ae60;" +
-            "-fx-text-fill: white;" +
-            "-fx-background-radius: 50;" +
-            "-fx-padding: 15 30;" +
-            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 20, 0, 0, 6);"
-        ));
-        createButton.setOnMouseExited(e -> createButton.setStyle(
-            "-fx-font-family: 'Poppins';" +
-            "-fx-font-size: 1.1em;" +
-            "-fx-font-weight: bold;" +
-            "-fx-background-color: #2ecc71;" +
-            "-fx-text-fill: white;" +
-            "-fx-background-radius: 50;" +
-            "-fx-padding: 15 30;" +
-            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 15, 0, 0, 4);"
-        ));
-
+        createButton.getStyleClass().add("primary-button");
+    
         createButton.setOnMousePressed(e -> {
             ScaleTransition st = new ScaleTransition(Duration.millis(200), createButton);
             st.setFromX(1.0);
@@ -583,24 +442,39 @@ public class ReclamationController {
             st.setAutoReverse(true);
             st.play();
         });
-
+    
         dialog.getDialogPane().setContent(content);
-
+    
         createButton.setOnAction(e -> {
             String title = titleField.getText().trim();
             String description = descField.getText().trim();
             String tagName = tagCombo.getValue();
-
-            if (title.isEmpty() || description.isEmpty()) {
-                messageLabel.setText("Please fill in all required fields (Title and Description)");
+    
+            // Collect all validation errors
+            List<String> errors = new ArrayList<>();
+    
+            // Validate title length (at least 5 letters)
+            if (title.length() < 5) {
+                errors.add("Title must be at least 5 letters long.");
+            }
+    
+            // Validate description word count (at least 6 words)
+            String[] words = description.split("\\s+");
+            if (words.length < 6 || description.isEmpty()) {
+                errors.add("Description must contain at least 6 words.");
+            }
+    
+            // Display errors if any
+            if (!errors.isEmpty()) {
+                messageLabel.setText(String.join("\n", errors));
                 messageLabel.setStyle("-fx-text-fill: #e74c3c;");
                 return;
             }
-
+    
             Tag selectedTag = tagName != null ? tagService.getTagByName(tagName) : null;
             UUID tagId = selectedTag != null ? selectedTag.getId() : null;
             UUID userId = currentUser.getId();
-
+    
             boolean success = reclamationService.addReclamation(
                 userId,
                 tagId,
@@ -609,7 +483,7 @@ public class ReclamationController {
                 description,
                 Status.WAITING
             );
-
+    
             if (success) {
                 messageLabel.setText("Reclamation added successfully!");
                 messageLabel.setStyle("-fx-text-fill: #2ecc71;");
@@ -617,21 +491,22 @@ public class ReclamationController {
                 titleField.clear();
                 descField.clear();
                 tagCombo.getSelectionModel().clearSelection();
-
-                javafx.animation.PauseTransition delay = new javafx.animation.PauseTransition(Duration.seconds(1));
+    
+                PauseTransition delay = new PauseTransition(Duration.seconds(1));
                 delay.setOnFinished(event -> dialog.close());
                 delay.play();
             } else {
                 messageLabel.setText("Failed to add reclamation. Check user ID or database constraints.");
                 messageLabel.setStyle("-fx-text-fill: #e74c3c;");
+                // Dialog remains open
             }
         });
-
+    
         FadeTransition fadeIn = new FadeTransition(Duration.millis(500), content);
         fadeIn.setFromValue(0);
         fadeIn.setToValue(1);
         dialog.setOnShown(e -> fadeIn.play());
-
+    
         dialog.show();
     }
 
