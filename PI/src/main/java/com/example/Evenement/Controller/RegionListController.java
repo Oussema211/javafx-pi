@@ -113,7 +113,7 @@ public class RegionListController {
 
     private void handleEdit(Region region) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/AjouterRegion.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/Evenement/AjouterRegion.fxml"));
             Parent root = loader.load();
 
             RegionController controller = loader.getController();

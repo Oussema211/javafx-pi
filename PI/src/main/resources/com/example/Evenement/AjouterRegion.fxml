@@ -44,12 +44,14 @@
                            GridPane.rowIndex="2" GridPane.columnIndex="1"/>
             </GridPane>
 
-            <!-- Boutons -->
+            <!-- Boutons centrés -->
             <HBox spacing="15" alignment="CENTER">
                 <Button text="Enregistrer" onAction="#handleSave"
                         style="-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-padding: 10 20;"/>
-                <Button text="Afficher les régions" onAction="#handleShowRegions"
-                        style="-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-padding: 10 20;"/>
+                <Button text="Annuler" onAction="#handleCancel"
+                        style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-padding: 10 20;"/>
+                <Button text="Liste des régions" onAction="#handleShowList"
+                        style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-padding: 10 20;"/>
             </HBox>
         </VBox>
     </VBox>
