@@ -16,6 +16,8 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+
+import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -130,20 +132,28 @@ public class CategorieController {
         Dialog<Categorie> dialog = new Dialog<>();
         dialog.setTitle(category == null ? "New Category" : "Edit Category");
 
+        DialogPane dialogPane = dialog.getDialogPane();
+        URL cssUrl = getClass().getResource("/com/example/css/categoriedialog.css");
+        if (cssUrl != null) {
+            dialogPane.getStylesheets().add(cssUrl.toExternalForm());
+            System.out.println("bitch it works");
+        } else {
+            System.err.println("Warning: CSS file /com/example/css/produits.css not found. Using default styles.");
+            dialogPane.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-padding: 10;");
+        }
+
         TextField nameField = new TextField();
         nameField.getStyleClass().add("modal-text-field");
         TextArea descriptionField = new TextArea();
         descriptionField.getStyleClass().add("modal-text-field");
-        ComboBox<String> statusCombo = new ComboBox<>(FXCollections.observableArrayList("Active", "Inactive", "Draft"));
-        statusCombo.getStyleClass().add("modal-combo-box");
-        TextField tagsField = new TextField();
-        tagsField.getStyleClass().add("modal-text-field");
+        Label dateCreationLabel = new Label();
 
         if (category != null) {
             nameField.setText(category.getNom());
             descriptionField.setText(category.getDescription());
+            dateCreationLabel.setText(category.getDateCreation().toString());
         } else {
-            statusCombo.getSelectionModel().select("Active");
+            dateCreationLabel.setText(LocalDateTime.now().toString());
         }
 
         // Create the form layout
@@ -152,17 +162,14 @@ public class CategorieController {
         grid.setVgap(10);
         grid.addRow(0, new Label("Name:"), nameField);
         grid.addRow(1, new Label("Description:"), descriptionField);
-        grid.addRow(2, new Label("Status:"), statusCombo);
-        grid.addRow(3, new Label("Tags:"), tagsField);
+        grid.addRow(2, new Label("Date Creation:"), dateCreationLabel);
 
-        // Apply modal-label class to all labels
         grid.getChildren().forEach(node -> {
             if (node instanceof Label) {
                 node.getStyleClass().add("modal-label");
             }
         });
 
-        // Wrap grid in a VBox for styling
         VBox modalContent = new VBox(grid);
         modalContent.getStyleClass().add("modal-vbox");
         dialog.getDialogPane().setContent(modalContent);
@@ -181,9 +188,8 @@ public class CategorieController {
                     Categorie newCategory = category != null ? category : new Categorie();
                     newCategory.setNom(nameField.getText());
                     newCategory.setDescription(descriptionField.getText());
-
-                    User currentUser = sessionManager.getLoggedInUser();
                     if (category == null) {
+                        newCategory.setDateCreation(LocalDateTime.now());
                         newCategory.setId(UUID.randomUUID());
                         CategorieDAO.saveCategory(newCategory);
                         categoryList.add(newCategory);

@@ -31,14 +31,10 @@ public class ProduitDAO {
                             rs.getTimestamp("date_creation").toLocalDateTime() : null);
                     product.setImageName(rs.getString("image_name"));
 
-
-                UUID categoryId = UUID.fromString(rs.getString("categorie_id"));
-                product.setCategory(CategorieDAO.getCategoryById(categoryId));
-
                     String categoryIdStr = rs.getString("categorie_id");
                     if (categoryIdStr != null && !categoryIdStr.trim().isEmpty()) {
                         try {
-                            categoryId = UUID.fromString(categoryIdStr);
+                            UUID categoryId = UUID.fromString(categoryIdStr);
                             product.setCategory(CategorieDAO.getCategoryById(categoryId));
                         } catch (IllegalArgumentException e) {
                             System.err.println("Invalid UUID format for categorie_id: " + categoryIdStr);
@@ -47,7 +43,6 @@ public class ProduitDAO {
                     } else {
                         product.setCategory(null);
                     }
-
 
                     products.add(product);
                 } catch (Exception e) {

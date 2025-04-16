@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<VBox alignment="CENTER" spacing="20" style="-fx-background-color: linear-gradient(to bottom, #e8f0fe, #f7fafc);" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.reclamation.controller.ReclamationDashboardController">
+    <Text text="Reclamations Dashboard" style="-fx-font: bold 28px 'Arial'; -fx-fill: #1e3a8a; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 5, 0, 0, 2);"/>
+    <Label fx:id="welcomeLabel" text="Welcome, Admin!" style="-fx-font: normal 18px 'Arial'; -fx-text-fill: #475569;"/>
+    
+    <HBox spacing="10" alignment="CENTER">
+        <TextField fx:id="searchField" promptText="Search by Title or Status..." style="-fx-background-color: #ffffff; -fx-border-color: #cbd5e1; -fx-border-radius: 20; -fx-background-radius: 20; -fx-padding: 8 15; -fx-font-family: 'Arial'; -fx-font-size: 14; -fx-pref-width: 300;"/>
+        <Button fx:id="clearSearchButton" text="Clear" style="-fx-background-color: #ef4444; -fx-text-fill: white; -fx-font-family: 'Arial'; -fx-font-weight: bold; -fx-background-radius: 15; -fx-padding: 8 15;" onAction="#clearSearch"/>
+    </HBox>
+    
+    <ScrollPane fitToWidth="true" style="-fx-background-color: transparent; -fx-border-color: transparent;">
+        <FlowPane fx:id="reclamationsFlowPane" hgap="20" vgap="20" alignment="TOP_CENTER" style="-fx-padding: 20;"/>
+    </ScrollPane>
+    
+    <Button text="Logout" onAction="#handleLogout" style="-fx-background-color: #1e3a8a; -fx-text-fill: white; -fx-font-family: 'Arial'; -fx-font-weight: bold; -fx-background-radius: 15; -fx-padding: 10 20;"/>
+</VBox>

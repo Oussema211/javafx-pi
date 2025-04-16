@@ -2,19 +2,81 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
-
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.image.Image?>
-<BorderPane fx:id="borderPane" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.auth.controller.DashboardController" styleClass="black-background"
+<?import javafx.geometry.Insets?>
+
+<BorderPane fx:id="borderPane" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.example.auth.controller.DashboardController" styleClass="black-background"
             stylesheets="@../styles.css">
 
     <left>
-        <VBox fx:id="sidebar" spacing="10" prefWidth="220" styleClass="sidebar">
+        <VBox fx:id="sidebar" spacing="5" prefWidth="220" styleClass="sidebar">
             <VBox VBox.vgrow="ALWAYS"/>
+
+            <!-- Menu principal -->
             <Hyperlink fx:id="dashboardButton" text="Dashboard" graphicTextGap="10" styleClass="nav-link">
                 <graphic>
                     <ImageView fitHeight="20" fitWidth="20">
                         <Image url="@../../../icons/grid_view.png"/>
+                    </ImageView>
+                </graphic>
+            </Hyperlink>
+
+            <!-- Bouton Gestion Événement avec flèche déroulante -->
+            <VBox spacing="0">
+                <Hyperlink fx:id="eventManagementButton" text="Événements" graphicTextGap="10" styleClass="nav-link">
+                    <graphic>
+                        <ImageView fx:id="dropdownArrow" fitHeight="20" fitWidth="20">
+                            <Image url="@../../../icons/calendrier.png"/>
+                        </ImageView>
+                    </graphic>
+                </Hyperlink>
+
+                <!-- Sous-menu Gestion Événement -->
+                <VBox fx:id="eventSubMenu" styleClass="sub-menu" spacing="2" managed="false">
+                    <padding>
+                        <Insets left="20" top="5" bottom="5"/>
+                    </padding>
+
+                    <Hyperlink text="Ajouter Région" onAction="#handleAddRegion" styleClass="sub-nav-link">
+                        <graphic>
+                            <ImageView fitHeight="20" fitWidth="20">
+                                <Image url="@../../../icons/region_add.png"/>
+                            </ImageView>
+                        </graphic>
+                    </Hyperlink>
+
+                    <Hyperlink text="Liste Régions" onAction="#handleListRegions" styleClass="sub-nav-link">
+                        <graphic>
+                            <ImageView fitHeight="20" fitWidth="20">
+                                <Image url="@../../../icons/region_list.png"/>
+                            </ImageView>
+                        </graphic>
+                    </Hyperlink>
+
+                    <Hyperlink text="Ajouter Événement" onAction="#handleAddEvent" styleClass="sub-nav-link">
+                        <graphic>
+                            <ImageView fitHeight="20" fitWidth="20">
+                                <Image url="@../../../icons/event_add.png"/>
+                            </ImageView>
+                        </graphic>
+                    </Hyperlink>
+
+                    <Hyperlink text="Liste Événements" onAction="#handleListEvents" styleClass="sub-nav-link">
+                        <graphic>
+                            <ImageView fitHeight="20" fitWidth="20">
+                                <Image url="@../../../icons/event_list.png"/>
+                            </ImageView>
+                        </graphic>
+                    </Hyperlink>
+                </VBox>
+            </VBox>
+
+            <Hyperlink fx:id="reclamation" text="Reclamation management" graphicTextGap="10" styleClass="nav-link">
+                <graphic>
+                    <ImageView fitHeight="20" fitWidth="20">
+                        <Image url="@../../../icons/review.png"/>
                     </ImageView>
                 </graphic>
             </Hyperlink>
@@ -34,6 +96,7 @@
                     </ImageView>
                 </graphic>
             </Hyperlink>
+
             <Hyperlink fx:id="categoryButton" text="Gestion Categorie" styleClass="nav-link">
                 <graphic>
                     <ImageView fitHeight="20" fitWidth="20">
@@ -41,6 +104,7 @@
                     </ImageView>
                 </graphic>
             </Hyperlink>
+
             <Hyperlink fx:id="userButton" text="Gestion Utilisateur" graphicTextGap="10" styleClass="nav-link">
                 <graphic>
                     <ImageView fitHeight="20" fitWidth="20">
@@ -48,11 +112,23 @@
                     </ImageView>
                 </graphic>
             </Hyperlink>
-            <Hyperlink fx:id="StockButton" text="📦 Gestion Stock" graphicTextGap="10" styleClass="nav-link">
 
+            <Hyperlink fx:id="StockButton" text="📦 Gestion Stock" graphicTextGap="10" styleClass="nav-link">
+                <graphic>
+                    <ImageView fitHeight="20" fitWidth="20">
+                        <Image url="@../../../icons/stock.png"/>
+                    </ImageView>
+                </graphic>
             </Hyperlink>
+
             <Hyperlink fx:id="EntrepotButton" text="📦 Gestion Entrepot" graphicTextGap="10" styleClass="nav-link">
+                <graphic>
+                    <ImageView fitHeight="20" fitWidth="20">
+                        <Image url="@../../../icons/warehouse.png"/>
+                    </ImageView>
+                </graphic>
             </Hyperlink>
+
             <Hyperlink fx:id="settings" text="Settings" graphicTextGap="10" styleClass="nav-link">
                 <graphic>
                     <ImageView fitHeight="20" fitWidth="20">
@@ -62,6 +138,7 @@
             </Hyperlink>
 
             <VBox VBox.vgrow="ALWAYS"/>
+
             <Hyperlink fx:id="logoutButton" text="Logout" graphicTextGap="10" styleClass="nav-link">
                 <graphic>
                     <ImageView fitHeight="20" fitWidth="20">
@@ -71,14 +148,12 @@
             </Hyperlink>
         </VBox>
     </left>
+
     <center>
-        <VBox styleClass="main-content">
-            <Text text="Dashboard" style="-fx-font: bold 24px 'System';"/>
-            <Label fx:id="welcomeLabel" text="Welcome, User!" style="-fx-font: 18px 'System';"/>
-            <Label fx:id="emailLabel" text="Email: " style="-fx-font: 14px 'System';"/>
-            <Button text="Logout" onAction="#handleLogout"/>
+        <VBox fx:id="mainContent" styleClass="main-content">
+            <Text text="Dashboard" styleClass="dashboard-title" style="-fx-font: bold 24px 'System';"/>
+            <Label fx:id="welcomeLabel" text="Welcome, User!" styleClass="welcome-label" style="-fx-font: 18px 'System';"/>
+            <Label fx:id="emailLabel" text="Email: " styleClass="email-label" style="-fx-font: 14px 'System';"/>
         </VBox>
     </center>
-
-
 </BorderPane>

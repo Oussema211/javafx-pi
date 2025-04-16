@@ -4,6 +4,9 @@
 
 <BorderPane fx:id="root" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.example.reclamation.controller.ReclamationMessagesController">
+            <top>
+        <fx:include source="../frontPages/Navbar.fxml"/>
+    </top>
     <center>
         <VBox fx:id="mainContainer" alignment="TOP_CENTER" spacing="15"/>
     </center>

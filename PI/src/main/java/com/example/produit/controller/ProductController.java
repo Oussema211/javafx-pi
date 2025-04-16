@@ -20,6 +20,7 @@ import javafx.scene.layout.HBox;
 import javafx.stage.FileChooser;
 import java.io.File;
 
+import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.Optional;
@@ -191,7 +192,16 @@ public class ProductController {
         Dialog<Produit> dialog = new Dialog<>();
         dialog.setTitle(product == null ? "New Product" : "Edit Product");
 
-        // Fields for product details
+        DialogPane dialogPane = dialog.getDialogPane();
+        URL cssUrl = getClass().getResource("/com/example/css/produitdialog.css");
+        if (cssUrl != null) {
+            dialogPane.getStylesheets().add(cssUrl.toExternalForm());
+            System.out.println("bitch it works");
+        } else {
+            System.err.println("Warning: CSS file /com/example/css/produits.css not found. Using default styles.");
+            dialogPane.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-padding: 10;");
+        }
+        dialogPane.getStyleClass().add("dialog-pane");
         TextField nameField = new TextField();
         TextArea descriptionField = new TextArea();
         ComboBox<String> categoryCombo = new ComboBox<>(FXCollections.observableArrayList(

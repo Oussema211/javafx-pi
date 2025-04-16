@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" 
+      fx:controller="com.example.reclamation.controller.MessagesRecController"
+      spacing="0" style="-fx-background-color: #f7fafc;">
+    
+    <!-- Header Section -->
+    <HBox style="-fx-background-color: #ffffff; -fx-padding: 12 16; -fx-border-color: #e2e8f0; -fx-border-width: 0 0 1 0; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 1);">
+        <VBox>
+            <Label fx:id="titleLabel" style="-fx-font: bold 16px 'Arial'; -fx-text-fill: #1e3a8a;"/>
+            <Label fx:id="dateLabel" style="-fx-font: normal 12px 'Arial'; -fx-text-fill: #64748b;"/>
+        </VBox>
+    </HBox>
+    
+    <!-- Messages Area -->
+    <ScrollPane fx:id="scrollPane" fitToWidth="true" hbarPolicy="NEVER" vvalue="1.0"
+                style="-fx-background: transparent; -fx-border-color: transparent;">
+        <VBox fx:id="messagesContainer" spacing="6" style="-fx-padding: 12; -fx-background-color: transparent;"/>
+    </ScrollPane>
+    
+    <!-- Input Area -->
+    <HBox fx:id="inputContainer" style="-fx-background-color: #ffffff; -fx-padding: 8 12; -fx-spacing: 8; -fx-border-color: #e2e8f0; -fx-border-width: 1 0 0 0;" 
+          alignment="CENTER">
+        <TextArea fx:id="messageInput" promptText="Message..." 
+                  style="-fx-background-color: #f1f5f9; -fx-border-color: transparent; -fx-background-radius: 20; -fx-padding: 8 16; -fx-font: normal 14px 'Arial'; -fx-pref-height: 36; -fx-max-height: 100;" />
+        <Button fx:id="sendButton" text="➤" onAction="#handleSendMessage" 
+                style="-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font: bold 16px 'Arial'; -fx-background-radius: 50; -fx-min-width: 36; -fx-min-height: 36; -fx-padding: 0;" />
+    </HBox>
+</VBox>
