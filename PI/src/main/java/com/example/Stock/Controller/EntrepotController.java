@@ -3,58 +3,65 @@ package com.example.Stock.Controller;
 import com.example.Stock.Model.Entrepot;
 import com.example.Stock.service.EntrepotService;
 import com.example.auth.utils.SessionManager;
-import javafx.beans.property.SimpleDoubleProperty;
-import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.property.SimpleStringProperty;
+import javafx.animation.FadeTransition;
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.util.Callback;
+import javafx.util.Duration;
 
 import java.io.IOException;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class EntrepotController {
 
-    // Références FXML
-    @FXML private TableView<Entrepot> entrepotTable;
-    @FXML private TableColumn<Entrepot, String> colId;
-    @FXML private TableColumn<Entrepot, String> colNom;
-    @FXML private TableColumn<Entrepot, String> colAdresse;
-    @FXML private TableColumn<Entrepot, String> colVille;
-    @FXML private TableColumn<Entrepot, Double> colEspace;
-    @FXML private TableColumn<Entrepot, Void> colActions;
-
+    // FXML References
     @FXML private TextField searchField;
     @FXML private ComboBox<String> villeFilter;
     @FXML private ComboBox<String> espaceFilter;
     @FXML private Button resetBtn;
-
     @FXML private Button ajouterBtn;
     @FXML private Button excelBtn;
     @FXML private Button pdfBtn;
+    @FXML private ListView<Entrepot> entrepotList;
+    @FXML private Button sortByNameBtn;
+    @FXML private Button sortByVilleBtn;
+    @FXML private Button sortByEspaceBtn;
 
     private final EntrepotService entrepotService = new EntrepotService();
     private final ObservableList<Entrepot> entrepotData = FXCollections.observableArrayList();
 
     @FXML
     public void initialize() {
-        loadRealData();
-        configureTable();
-        configureFilters();
-        applyFilters();
+        Platform.runLater(() -> {
+            loadRealData();
+            configureList();
+            configureFilters();
+            applyFilters();
+            FadeTransition fade = new FadeTransition(Duration.millis(1000), entrepotList);
+            fade.setFromValue(0.0);
+            fade.setToValue(1.0);
+            fade.play();
+            sortByNameBtn.setOnAction(e -> sortListByName());
+            sortByVilleBtn.setOnAction(e -> sortListByVille());
+            sortByEspaceBtn.setOnAction(e -> sortListByEspace());
+        });
     }
 
     private void loadRealData() {
@@ -63,113 +70,122 @@ public class EntrepotController {
     }
 
     public void refreshEntrepotData() {
-        entrepotData.clear();
-        entrepotData.addAll(entrepotService.getAllEntrepots());
-        entrepotTable.refresh();
-        configureFilters(); // Recharger les filtres après mise à jour
+        loadRealData();
+        entrepotList.refresh();
+        configureFilters();
     }
 
-    private void configureTable() {
-        // Colonne ID
-        colId.setCellValueFactory(cellData ->
-                new SimpleStringProperty(cellData.getValue().getId().toString().substring(0, 8)));
-
-        // Colonne Nom
-        colNom.setCellValueFactory(cellData ->
-                new SimpleStringProperty(cellData.getValue().getNom()));
-
-        // Colonne Adresse
-        colAdresse.setCellValueFactory(cellData ->
-                new SimpleStringProperty(cellData.getValue().getAdresse()));
-
-        // Colonne Ville
-        colVille.setCellValueFactory(cellData ->
-                new SimpleStringProperty(cellData.getValue().getVille()));
-
-        // Colonne Espace
-        colEspace.setCellValueFactory(cellData ->
-                new SimpleDoubleProperty(cellData.getValue().getEspace()).asObject());
-
-        // Colonne Actions
-        colActions.setCellFactory(new Callback<>() {
+    private void configureList() {
+        entrepotList.setCellFactory(param -> new ListCell<Entrepot>() {
             @Override
-            public TableCell<Entrepot, Void> call(TableColumn<Entrepot, Void> param) {
-                return new TableCell<>() {
-                    private final Button editBtn = new Button("✏️");
-                    private final Button deleteBtn = new Button("🗑️");
-                    private final HBox box = new HBox(5, editBtn, deleteBtn);
+            protected void updateItem(Entrepot entrepot, boolean empty) {
+                super.updateItem(entrepot, empty);
+                if (empty || entrepot == null) {
+                    setGraphic(null);
+                    setText(null);
+                    setStyle("");
+                    return;
+                }
 
-                    {
-                        box.setAlignment(Pos.CENTER);
-                        editBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white;");
-                        deleteBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;");
+                HBox mainContainer = new HBox(15);
+                mainContainer.setAlignment(Pos.CENTER_LEFT);
+                mainContainer.setPadding(new Insets(15));
+                mainContainer.getStyleClass().add("entrepot-cell");
 
-                        editBtn.setOnAction(e -> {
-                            Entrepot entrepot = getTableView().getItems().get(getIndex());
-                            editEntrepot(entrepot);
-                        });
 
-                        deleteBtn.setOnAction(e -> {
-                            Entrepot entrepot = getTableView().getItems().get(getIndex());
-                            deleteEntrepot(entrepot);
-                        });
+                ImageView imageView = new ImageView();
+                imageView.setFitHeight(60);
+                imageView.setFitWidth(60);
+                imageView.setPreserveRatio(true);
+                imageView.setSmooth(true);
+
+                // Center ImageView in Pane
+                imageView.setLayoutX(5);
+                imageView.setLayoutY(5);
+
+                VBox infoBox = new VBox(8);
+                infoBox.setMaxWidth(Double.MAX_VALUE);
+                HBox.setHgrow(infoBox, Priority.ALWAYS);
+
+                Label nameLabel = new Label(entrepot.getNom());
+                nameLabel.getStyleClass().add("entrepot-name");
+
+                HBox detailsBox = new HBox(20);
+                detailsBox.setAlignment(Pos.CENTER_LEFT);
+
+                Label adresseLabel = new Label("📍 " + (entrepot.getAdresse() != null ? entrepot.getAdresse() : "Non spécifiée"));
+                adresseLabel.getStyleClass().add("entrepot-detail");
+
+                Label villeLabel = new Label("🏙️ " + (entrepot.getVille() != null ? entrepot.getVille() : "Non spécifiée"));
+                villeLabel.getStyleClass().add("entrepot-detail");
+
+                Label espaceLabel = new Label("📏 " + entrepot.getEspace() + " m²");
+                espaceLabel.getStyleClass().add("entrepot-detail");
+
+                detailsBox.getChildren().addAll(adresseLabel, villeLabel, espaceLabel);
+                infoBox.getChildren().addAll(nameLabel, detailsBox);
+
+                HBox actionBox = new HBox(10);
+                actionBox.setAlignment(Pos.CENTER_RIGHT);
+
+                Button editBtn = new Button("✏️ Modifier");
+                editBtn.getStyleClass().add("action-button");
+
+                Button deleteBtn = new Button("🗑️ Supprimer");
+                deleteBtn.getStyleClass().add("action-button-danger");
+
+                mainContainer.getChildren().addAll(imageView, infoBox, actionBox);
+                actionBox.getChildren().addAll(editBtn, deleteBtn);
+
+                // Event handlers after node construction
+                editBtn.setOnAction(e -> editEntrepot(entrepot));
+                deleteBtn.setOnAction(e -> deleteEntrepot(entrepot));
+
+                // Animation
+                mainContainer.setTranslateY(20);
+                mainContainer.setOpacity(0);
+                Platform.runLater(() -> {
+                    Timeline timeline = new Timeline(
+                            new KeyFrame(Duration.millis(300), new KeyValue(mainContainer.translateYProperty(), 0)),
+                            new KeyFrame(Duration.millis(300), new KeyValue(mainContainer.opacityProperty(), 1))
+                    );
+                    timeline.play();
+                });
+
+                // Tooltip
+                Tooltip tooltip = new Tooltip("Entrepôt: " + entrepot.getNom() + "\nAdresse: " +
+                        (entrepot.getAdresse() != null ? entrepot.getAdresse() : "Non spécifiée"));
+                tooltip.setShowDelay(Duration.millis(200));
+                Tooltip.install(mainContainer, tooltip);
+
+                // Context Menu
+                ContextMenu contextMenu = new ContextMenu();
+                MenuItem editItem = new MenuItem("Modifier");
+                editItem.setOnAction(e -> editEntrepot(entrepot));
+                MenuItem deleteItem = new MenuItem("Supprimer");
+                deleteItem.setOnAction(e -> deleteEntrepot(entrepot));
+                contextMenu.getItems().addAll(editItem, deleteItem);
+                setContextMenu(contextMenu);
+
+                mainContainer.setOnMouseClicked(e -> {
+                    if (e.getClickCount() == 2) {
+                        editEntrepot(entrepot);
                     }
+                });
 
-                    @Override
-                    protected void updateItem(Void item, boolean empty) {
-                        super.updateItem(item, empty);
-                        setGraphic(empty ? null : box);
-                    }
-                };
+                setGraphic(mainContainer);
             }
         });
-
-        entrepotTable.setItems(entrepotData);
-    }
-
-    private Callback<TableColumn<Entrepot, Void>, TableCell<Entrepot, Void>> createActionCellFactory() {
-        return new Callback<>() {
-            @Override
-            public TableCell<Entrepot, Void> call(TableColumn<Entrepot, Void> param) {
-                return new TableCell<>() {
-                    private final Button editBtn = new Button("✏️");
-                    private final Button deleteBtn = new Button("🗑️");
-                    private final HBox box = new HBox(5, editBtn, deleteBtn);
-
-                    {
-                        box.setAlignment(javafx.geometry.Pos.CENTER);
-                        editBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white;");
-                        deleteBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;");
-
-                        editBtn.setOnAction(e -> {
-                            Entrepot entrepot = getTableView().getItems().get(getIndex());
-                            editEntrepot(entrepot);
-                        });
-
-                        deleteBtn.setOnAction(e -> {
-                            Entrepot entrepot = getTableView().getItems().get(getIndex());
-                            deleteEntrepot(entrepot);
-                        });
-                    }
-
-                    @Override
-                    protected void updateItem(Void item, boolean empty) {
-                        super.updateItem(item, empty);
-                        setGraphic(empty ? null : box);
-                    }
-                };
-            }
-        };
+        entrepotList.setItems(entrepotData);
+        entrepotList.getStyleClass().add("stock-list");
     }
 
     private void configureFilters() {
-        // Récupérer les villes distinctes
         Set<String> villes = entrepotData.stream()
                 .map(Entrepot::getVille)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        // Configurer les ComboBox
         villeFilter.getItems().clear();
         villeFilter.getItems().add("Toutes les villes");
         villeFilter.getItems().addAll(villes);
@@ -179,7 +195,6 @@ public class EntrepotController {
         espaceFilter.getItems().addAll("Tous", "< 100 m²", "100-500 m²", "500-1000 m²", "> 1000 m²");
         espaceFilter.setValue("Tous");
 
-        // Ajouter les listeners
         searchField.textProperty().addListener((obs, old, val) -> applyFilters());
         villeFilter.valueProperty().addListener((obs, old, val) -> applyFilters());
         espaceFilter.valueProperty().addListener((obs, old, val) -> applyFilters());
@@ -190,36 +205,41 @@ public class EntrepotController {
         String selectedVille = villeFilter.getValue();
         String selectedEspace = espaceFilter.getValue();
 
-        ObservableList<Entrepot> filteredList = entrepotData.filtered(entrepot -> {
-            // Filtre par texte
-            if (!searchText.isEmpty() &&
-                    !entrepot.getNom().toLowerCase().contains(searchText) &&
-                    !entrepot.getAdresse().toLowerCase().contains(searchText) &&
-                    (entrepot.getVille() == null || !entrepot.getVille().toLowerCase().contains(searchText))) {
-                return false;
-            }
+        List<Entrepot> filteredList = entrepotData.stream()
+                .filter(entrepot -> {
+                    // Filtre par texte
+                    if (!searchText.isEmpty() &&
+                            !entrepot.getNom().toLowerCase().contains(searchText) &&
+                            (entrepot.getAdresse() == null || !entrepot.getAdresse().toLowerCase().contains(searchText)) &&
+                            (entrepot.getVille() == null || !entrepot.getVille().toLowerCase().contains(searchText))) {
+                        return false;
+                    }
 
-            // Filtre par ville
-            if (!"Toutes les villes".equals(selectedVille) &&
-                    (entrepot.getVille() == null || !entrepot.getVille().equals(selectedVille))) {
-                return false;
-            }
+                    // Filtre par ville
+                    if (!"Toutes les villes".equals(selectedVille) &&
+                            (entrepot.getVille() == null || !entrepot.getVille().equals(selectedVille))) {
+                        return false;
+                    }
 
-            // Filtre par espace
-            if (!"Tous".equals(selectedEspace)) {
-                double espace = entrepot.getEspace();
-                switch (selectedEspace) {
-                    case "< 100 m²": if (espace >= 100) return false; break;
-                    case "100-500 m²": if (espace < 100 || espace > 500) return false; break;
-                    case "500-1000 m²": if (espace < 500 || espace > 1000) return false; break;
-                    case "> 1000 m²": if (espace <= 1000) return false; break;
-                }
-            }
+                    // Filtre par espace
+                    if (!"Tous".equals(selectedEspace)) {
+                        double espace = entrepot.getEspace();
+                        switch (selectedEspace) {
+                            case "< 100 m²":
+                                return espace < 100;
+                            case "100-500 m²":
+                                return espace >= 100 && espace <= 500;
+                            case "500-1000 m²":
+                                return espace > 500 && espace <= 1000;
+                            case "> 1000 m²":
+                                return espace > 1000;
+                        }
+                    }
+                    return true;
+                })
+                .collect(Collectors.toList());
 
-            return true;
-        });
-
-        entrepotTable.setItems(filteredList);
+        entrepotList.setItems(FXCollections.observableArrayList(filteredList));
     }
 
     @FXML
@@ -233,6 +253,10 @@ public class EntrepotController {
     private void editEntrepot(Entrepot entrepot) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/Entrepot/view/EditEntrepotForm.fxml"));
+            if (loader.getLocation() == null) {
+                showAlert("Erreur", "Fichier EditEntrepotForm.fxml introuvable", Alert.AlertType.ERROR);
+                return;
+            }
             Parent root = loader.load();
 
             EditEntrepotController controller = loader.getController();
@@ -245,9 +269,9 @@ public class EntrepotController {
             dialogStage.setScene(new Scene(root));
             dialogStage.setResizable(false);
             dialogStage.showAndWait();
-
         } catch (IOException e) {
-            showAlert("Erreur", "Impossible d'ouvrir la fenêtre de modification", Alert.AlertType.ERROR);
+            e.printStackTrace();
+            showAlert("Erreur", "Impossible d'ouvrir la fenêtre de modification: " + e.getMessage(), Alert.AlertType.ERROR);
         }
     }
 
@@ -268,10 +292,15 @@ public class EntrepotController {
             }
         }
     }
+
     @FXML
     private void handleAjouter() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/Entrepot/view/AddEntrepotForm.fxml"));
+            if (loader.getLocation() == null) {
+                showAlert("Erreur", "Fichier AddEntrepotForm.fxml introuvable", Alert.AlertType.ERROR);
+                return;
+            }
             Parent root = loader.load();
 
             AddEntrepotController controller = loader.getController();
@@ -283,7 +312,6 @@ public class EntrepotController {
             dialogStage.setScene(new Scene(root));
             dialogStage.setResizable(false);
             dialogStage.showAndWait();
-
         } catch (IOException e) {
             e.printStackTrace();
             showAlert("Erreur", "Impossible d'ouvrir le formulaire d'ajout: " + e.getMessage(), Alert.AlertType.ERROR);
@@ -292,14 +320,14 @@ public class EntrepotController {
 
     @FXML
     private void handleExportExcel() {
-        // Implémentez l'export Excel
-        System.out.println("Export vers Excel");
+        // TODO: Implement Excel export
+        showAlert("Information", "Export vers Excel non implémenté", Alert.AlertType.INFORMATION);
     }
 
     @FXML
     private void handleExportPDF() {
-        // Implémentez l'export PDF
-        System.out.println("Export vers PDF");
+        // TODO: Implement PDF export
+        showAlert("Information", "Export vers PDF non implémenté", Alert.AlertType.INFORMATION);
     }
 
     private void showAlert(String title, String message, Alert.AlertType type) {
@@ -308,5 +336,26 @@ public class EntrepotController {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    private void sortListByName() {
+        List<Entrepot> sortedList = entrepotData.stream()
+                .sorted(Comparator.comparing(Entrepot::getNom, String.CASE_INSENSITIVE_ORDER))
+                .collect(Collectors.toList());
+        entrepotList.setItems(FXCollections.observableArrayList(sortedList));
+    }
+
+    private void sortListByVille() {
+        List<Entrepot> sortedList = entrepotData.stream()
+                .sorted(Comparator.comparing(entrepot -> entrepot.getVille() != null ? entrepot.getVille() : "", String.CASE_INSENSITIVE_ORDER))
+                .collect(Collectors.toList());
+        entrepotList.setItems(FXCollections.observableArrayList(sortedList));
+    }
+
+    private void sortListByEspace() {
+        List<Entrepot> sortedList = entrepotData.stream()
+                .sorted(Comparator.comparingDouble(Entrepot::getEspace))
+                .collect(Collectors.toList());
+        entrepotList.setItems(FXCollections.observableArrayList(sortedList));
     }
 }
