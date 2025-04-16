@@ -27,8 +27,8 @@ public class ProfileController {
     @FXML private Button backButton;
     @FXML private Button saveSettingsButton;
 
-    private SessionManager sessionManager = SessionManager.getInstance();
-    private AuthService authService = new AuthService();
+    private final SessionManager sessionManager = SessionManager.getInstance();
+    private final AuthService authService = new AuthService();
     private User currentUser;
 
     @FXML
@@ -45,17 +45,34 @@ public class ProfileController {
         workLabel.setText("Work: " + (currentUser.getTravail() != null ? currentUser.getTravail() : "N/A"));
         phoneLabel.setText("Phone: " + (currentUser.getNumTel() != null ? currentUser.getNumTel() : "N/A"));
 
-        // Load profile picture as a resource
+        // Load profile picture
+        loadProfilePicture();
+
+        // Set form fields
+        emailField.setText(currentUser.getEmail());
+        passwordField.setText("");
+    }
+
+    private void loadProfilePicture() {
         String profilePhotoPath = currentUser.getProfilePhotoPath();
+        System.out.println("Profile photo path: " + profilePhotoPath);
+
         if (profilePhotoPath != null && !profilePhotoPath.isEmpty()) {
-            System.out.println("Attempting to load profile picture from resource: " + profilePhotoPath);
             try {
-                // Load the image as a resource from the classpath
+                // Verify resource exists
+                if (getClass().getResource(profilePhotoPath) == null) {
+                    System.err.println("Resource not found: " + profilePhotoPath);
+                    loadFallbackImage();
+                    return;
+                }
+
+                // Load the image as a resource
                 Image image = new Image(getClass().getResourceAsStream(profilePhotoPath));
                 if (!image.isError()) {
                     profilePicture.setImage(image);
+                    System.out.println("Profile picture loaded successfully");
                 } else {
-                    System.err.println("Error loading profile image: Image is corrupted or invalid.");
+                    System.err.println("Error loading profile image: Image is corrupted or invalid");
                     loadFallbackImage();
                 }
             } catch (Exception e) {
@@ -63,46 +80,65 @@ public class ProfileController {
                 loadFallbackImage();
             }
         } else {
-            System.err.println("Profile photo path is null or empty.");
+            System.err.println("Profile photo path is null or empty");
             loadFallbackImage();
         }
-
-        // Set form fields
-        emailField.setText(currentUser.getEmail());
-        passwordField.setText("");
     }
 
-    // Load a fallback image if the user's profile picture fails to load
     private void loadFallbackImage() {
+        String fallbackPath = "/com/example/images/default_profile.jpg";
+        System.out.println("Attempting to load fallback image: " + fallbackPath);
+
         try {
-            // Attempt to load the fallback image as a resource
-            Image fallbackImage = new Image(getClass().getResourceAsStream("/com/example/images/default_profile.jpg"));
+            // Verify resource exists
+            if (getClass().getResource(fallbackPath) == null) {
+                System.err.println("Fallback resource not found: " + fallbackPath);
+                applyCssFallback();
+                return;
+            }
+
+            // Load fallback image
+            Image fallbackImage = new Image(getClass().getResourceAsStream(fallbackPath));
             if (!fallbackImage.isError()) {
                 profilePicture.setImage(fallbackImage);
+                System.out.println("Fallback image loaded successfully");
             } else {
-                System.err.println("Fallback image is corrupted or invalid.");
-                messageLabel.setText("Unable to load profile picture.");
-                // Use CSS fallback
-                profilePicture.setStyle("-fx-background-color: #cccccc; -fx-border-radius: 50%; -fx-background-radius: 50%;");
+                System.err.println("Fallback image is corrupted or invalid");
+                applyCssFallback();
             }
         } catch (Exception e) {
             System.err.println("Error loading fallback image: " + e.getMessage());
-            messageLabel.setText("Unable to load profile picture.");
-            // Use CSS fallback
-            profilePicture.setStyle("-fx-background-color: #cccccc; -fx-border-radius: 50%; -fx-background-radius: 50%;");
+            applyCssFallback();
         }
+    }
+
+    private void applyCssFallback() {
+        messageLabel.setText("Unable to load profile picture");
+        profilePicture.setImage(null); // Clear any existing image
+        profilePicture.setStyle("-fx-background-color: #cccccc; -fx-border-radius: 50%; -fx-background-radius: 50%;");
+        System.out.println("Applied CSS fallback for profile picture");
     }
 
     @FXML
     private void goToDashboard() throws IOException {
+        System.out.println("Navigating to Dashboard");
         Stage stage = (Stage) backButton.getScene().getWindow();
         boolean isFullScreen = stage.isFullScreen();
-        Parent root = FXMLLoader.load(getClass().getResource("/com/example/pages/dashboard.fxml"));
-        Scene scene = new Scene(root, 400, 500);
-        scene.getStylesheets().add(getClass().getClassLoader().getResource("com/example/auth/style.css").toExternalForm());
+
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/auth/DashboardFront.fxml"));
+        if (loader.getLocation() == null) {
+            System.err.println("DashboardFront.fxml not found at /com/example/auth/DashboardFront.fxml");
+            throw new IOException("DashboardFront.fxml resource not found");
+        }
+
+        Parent root = loader.load();
+        Scene scene = new Scene(root);
+        scene.getStylesheets().add(getClass().getClassLoader().getResource("com/example/auth/styles.css").toExternalForm());
         stage.setScene(scene);
+        stage.setTitle("Dashboard");
         stage.setFullScreen(isFullScreen);
         stage.show();
+        System.out.println("Navigated to dashboard");
     }
 
     @FXML

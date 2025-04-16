@@ -22,6 +22,7 @@ public class NavbarController implements Initializable {
     @FXML private Label moreLabel;
     @FXML private Label cartLabel;
     @FXML private Label accountLabel;
+    @FXML private Label profileLabel;
     @FXML private Label logoutButton;
 
     private final String defaultStyle = "-fx-font: normal 14px 'Arial'; -fx-text-fill: #000000; -fx-cursor: hand;";
@@ -48,6 +49,8 @@ public class NavbarController implements Initializable {
         cartLabel.setOnMouseExited(e -> cartLabel.setStyle(defaultStyle));
         accountLabel.setOnMouseEntered(e -> accountLabel.setStyle(hoverStyle));
         accountLabel.setOnMouseExited(e -> accountLabel.setStyle(defaultStyle));
+        profileLabel.setOnMouseEntered(e -> profileLabel.setStyle(hoverStyle));
+        profileLabel.setOnMouseExited(e -> profileLabel.setStyle(defaultStyle));
         logoutButton.setOnMouseEntered(e -> logoutButton.setStyle(hoverStyle));
         logoutButton.setOnMouseExited(e -> logoutButton.setStyle(defaultStyle));
     }
@@ -71,18 +74,40 @@ public class NavbarController implements Initializable {
                 ex.printStackTrace();
             }
         });
+
+        profileLabel.setOnMouseClicked(e -> {
+            try {
+                Parent root = FXMLLoader.load(getClass().getResource("/com/example/auth/profile.fxml"));
+                Scene scene = new Scene(root);
+                Stage stage = (Stage) profileLabel.getScene().getWindow();
+                scene.getStylesheets().add(getClass().getClassLoader().getResource("com/example/auth/style.css").toExternalForm());
+                stage.setScene(scene);
+                stage.show();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        });
+    }
+
+    @FXML
+    private void handleProfileClick() {
+        try {
+            Parent root = FXMLLoader.load(getClass().getResource("/com/example/auth/profile.fxml"));
+            Scene scene = new Scene(root);
+            Stage stage = (Stage) profileLabel.getScene().getWindow();
+            scene.getStylesheets().add(getClass().getClassLoader().getResource("com/example/auth/style.css").toExternalForm());
+            stage.setScene(scene);
+            stage.show();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void navigateToReclamation() {
         try {
-            // Get the current stage
             Stage stage = (Stage) exploreLabel.getScene().getWindow();
-            
-            // Load the Reclamation.fxml file
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/reclamation/Reclamation.fxml"));
             Parent root = loader.load();
-            
-            // Set the new scene
             Scene scene = new Scene(root);
             stage.setScene(scene);
             stage.setTitle("Reclamations");

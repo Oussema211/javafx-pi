@@ -1,6 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.control.Label?>
-<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" styleClass="main-content">
-    <Label text="Category Management Content" styleClass="content-title"/>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.produit.controller.ProductCardController" styleClass="main-content" spacing="20" stylesheets="@products.css">
+    <Label text="Products" styleClass="content-title"/>
+    <ScrollPane fx:id="scrollPane" fitToWidth="true" styleClass="product-scroll">
+        <VBox fx:id="productContainer" styleClass="product-container" spacing="20"/>
+    </ScrollPane>
+    <HBox fx:id="paginationControls" spacing="10" alignment="CENTER">
+        <Button fx:id="prevButton" text="Previous" styleClass="pagination-button" onAction="#handlePrevious"/>
+        <Label fx:id="pageLabel" text="Page 1" styleClass="page-label"/>
+        <Button fx:id="nextButton" text="Next" styleClass="pagination-button" onAction="#handleNext"/>
+    </HBox>
 </VBox>
