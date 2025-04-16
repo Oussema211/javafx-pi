@@ -589,35 +589,24 @@ public class ReclamationController {
             st.setAutoReverse(true);
             st.play();
         });
-
-        // Fade in effect for the dialog content
         FadeTransition fadeIn = new FadeTransition(Duration.millis(500), content);
         fadeIn.setFromValue(0);
         fadeIn.setToValue(1);
         dialog.setOnShown(e -> fadeIn.play());
 
         dialog.getDialogPane().setContent(content);
-
-        // Add an event filter to validate before allowing the dialog to proceed
         createButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
             String title = titleField.getText().trim();
             String description = descField.getText().trim();
-
-            // Reset error messages
             titleError.setText("");
             descError.setText("");
             messageLabel.setText("");
-
-            // Track validation failures
             boolean hasErrors = false;
-
-            // Validate title length (at least 5 letters)
             if (title.length() < 5) {
                 titleError.setText("Title must be at least 5 letters long.");
                 hasErrors = true;
             }
 
-            // Validate description word count (at least 6 words)
             String[] words = description.split("\\s+");
             if (description.isEmpty() || words.length < 6) {
                 descError.setText("Description must contain at least 6 words.");

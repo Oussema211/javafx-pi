@@ -111,5 +111,8 @@ public class DashboardFrontController {
     public void setPrimaryStage(Stage stage) {
         this.primaryStage = stage;
     }
+    public BorderPane getBorderPane() {
+        return borderPane;
+    }
     
 }
