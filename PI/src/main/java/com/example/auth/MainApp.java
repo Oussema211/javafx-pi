@@ -30,7 +30,7 @@ public class MainApp extends Application {
         if (user == null) {
             fxmlFile = "/com/example/auth/login.fxml";
         } else {
-            fxmlFile = user.hasRole("ROLE_ADMIN") ? "/com/example/auth/dashboard.fxml" : "/com/example/reclamation/Reclamation.fxml";
+            fxmlFile = user.hasRole("ROLE_ADMIN") ? "/com/example/auth/dashboard.fxml" : "/com/example/frontPages/pages/dashboard.fxml";
         }
         System.out.println("DEBUG: Loading FXML: " + fxmlFile);
         
