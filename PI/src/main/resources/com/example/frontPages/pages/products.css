@@ -1,0 +1,177 @@
+/* Product Container */
+.product-container {
+    -fx-background-color: transparent;
+    -fx-spacing: 30px;
+    -fx-padding: 30px;
+}
+
+/* Product Card */
+.product-card {
+    -fx-background-color: rgba(236, 236, 236, 0.9);
+    -fx-background-radius: 24px;
+    -fx-border-color: #e2e8f0;
+    -fx-border-width: 1px;
+    -fx-border-radius: 24px;
+    -fx-padding: 24px;
+    -fx-alignment: TOP_CENTER;
+    -fx-spacing: 16px;
+    -fx-pref-width: 340px;
+    -fx-min-height: 520px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.02), 10, 0, 0, 2);
+}
+
+/* Product Image */
+.image-view {
+    -fx-min-width: 280px;
+    -fx-min-height: 280px;
+    -fx-pref-width: 300px;
+    -fx-pref-height: 300px;
+    -fx-max-width: 300px;
+    -fx-max-height: 300px;
+    -fx-fit-width: 300px;
+    -fx-fit-height: 300px;
+    -fx-preserve-ratio: true;
+    -fx-smooth: true;
+    -fx-border-radius: 12px;
+    -fx-background-radius: 12px;
+}
+
+/* Image Container */
+.image-container {
+    -fx-background-color: white;
+    -fx-background-radius: 16px;
+    -fx-border-color: #e2e8f0;
+    -fx-border-width: 1px;
+    -fx-border-radius: 16px;
+    -fx-padding: 20px;
+    -fx-alignment: CENTER;
+    -fx-min-height: 340px;
+    -fx-min-width: 340px;
+}
+
+/* Product Name */
+.product-name {
+    -fx-font-family: 'Inter', system-ui, sans-serif;
+    -fx-font-size: 20px;
+    -fx-text-fill: #0f172a;
+    -fx-font-weight: bold;
+    -fx-wrap-text: true;
+    -fx-text-alignment: center;
+    -fx-padding: 8px 0;
+}
+
+/* Product Description */
+.product-description {
+    -fx-font-family: 'Inter', system-ui, sans-serif;
+    -fx-font-size: 14px;
+    -fx-fill: #64748b;
+    -fx-text-alignment: center;
+    -fx-line-spacing: 1.5;
+    -fx-padding: 0 12px;
+}
+
+/* Product Price */
+.product-price {
+    -fx-font-family: 'Inter', system-ui, sans-serif;
+    -fx-font-size: 24px;
+    -fx-text-fill: #0f172a;
+    -fx-font-weight: bold;
+    -fx-padding: 16px 0 8px 0;
+}
+
+/* Product Details */
+.product-details {
+    -fx-spacing: 12px;
+    -fx-alignment: CENTER;
+    -fx-padding: 8px 0;
+}
+
+/* Product Quantity */
+.product-quantity {
+    -fx-font-size: 14px;
+    -fx-text-fill: #64748b;
+    -fx-padding: 8px 16px;
+    -fx-background-color: white;
+    -fx-background-radius: 20px;
+    -fx-border-color: #e2e8f0;
+    -fx-border-radius: 20px;
+    -fx-border-width: 1px;
+}
+
+/* Product Category */
+.product-category {
+    -fx-font-size: 14px;
+    -fx-text-fill: #64748b;
+    -fx-padding: 8px 16px;
+    -fx-background-color: white;
+    -fx-background-radius: 20px;
+    -fx-border-color: #e2e8f0;
+    -fx-border-radius: 20px;
+    -fx-border-width: 1px;
+}
+
+/* Add to Cart Button */
+.add-to-cart-button {
+    -fx-background-color: linear-gradient(to right, #0f172a, #1e293b);
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 25px;
+    -fx-padding: 14px 28px;
+    -fx-font-size: 15px;
+    -fx-cursor: hand;
+    -fx-min-width: 220px;
+}
+
+.add-to-cart-button:hover {
+    -fx-background-color: linear-gradient(to right, #1e293b, #334155);
+}
+
+/* Pagination Controls */
+.pagination-button {
+    -fx-background-color: white;
+    -fx-text-fill: #0f172a;
+    -fx-font-weight: bold;
+    -fx-background-radius: 20px;
+    -fx-border-color: #e2e8f0;
+    -fx-border-radius: 20px;
+    -fx-padding: 10px 20px;
+    -fx-cursor: hand;
+}
+
+.pagination-button:hover {
+    -fx-background-color: #f8fafc;
+}
+
+.pagination-button:disabled {
+    -fx-opacity: 0.5;
+    -fx-cursor: default;
+}
+
+.page-label {
+    -fx-font-family: 'Inter', system-ui, sans-serif;
+    -fx-font-size: 16px;
+    -fx-text-fill: #64748b;
+    -fx-padding: 0 20px;
+}
+
+/* Hide scroll bars */
+.scroll-pane {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-background-insets: 0;
+}
+
+.scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+
+.scroll-pane .scroll-bar:vertical,
+.scroll-pane .scroll-bar:horizontal {
+    -fx-opacity: 0;
+    -fx-padding: 0;
+    -fx-background-insets: 0;
+}
+
+.scroll-pane .corner {
+    -fx-background-color: transparent;
+}
