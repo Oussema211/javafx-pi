@@ -1,35 +1,44 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.effect.*?>
+<?import javafx.scene.paint.*?>
+<?import javafx.scene.text.*?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
 
-<VBox xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1"
+<VBox xmlns="http://javafx.com/javafx/8.0.171"
+      xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.example.Evenement.Controller.EvenementListController"
-      spacing="20"
-      alignment="CENTER"
-      style="-fx-background-color: #f4f6f8; -fx-padding: 30;">
+      spacing="35"
+      alignment="TOP_CENTER"
+      style="-fx-background-color: linear-gradient(to bottom, #eef2f3, #dfe6e9); -fx-padding: 50;">
 
-    <Label text="Liste des Événements"
-           style="-fx-font-size: 26px; -fx-text-fill: #2c3e50; -fx-font-weight: bold;"/>
+    <Label text="📆 Tableau de Bord des Événements"
+           style="-fx-font-size: 32px; -fx-text-fill: #2c3e50; -fx-font-weight: bold;
+                  -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 4, 0.5, 0, 1);"/>
 
-    <TableView fx:id="eventTable"
-               prefWidth="1000"
-               style="-fx-background-color: white; -fx-border-radius: 10; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 4); -fx-padding: 5;">
-        <columns>
-            <TableColumn text="Titre" fx:id="colTitre" prefWidth="150"/>
-            <TableColumn text="Description" fx:id="colDescription" prefWidth="200"/>
-            <TableColumn text="Type" fx:id="colType" prefWidth="100"/>
-            <TableColumn text="Statut" fx:id="colStatut" prefWidth="100"/>
-            <TableColumn text="Date début" fx:id="colDateDebut" prefWidth="150"/>
-            <TableColumn text="Date fin" fx:id="colDateFin" prefWidth="150"/>
-            <TableColumn text="Régions" fx:id="colRegions" prefWidth="150"/>
-            <TableColumn text="Actions" fx:id="colActions" prefWidth="200"/>
-        </columns>
-    </TableView>
+    <Separator prefWidth="1000" style="-fx-opacity: 0.3;"/>
 
-    <HBox spacing="20" alignment="CENTER">
-        <Button text="Ajouter un événement" onAction="#handleAdd"
-                style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 16;"/>
+    <ListView fx:id="eventTable"
+              prefWidth="1000"
+              prefHeight="500"
+              style="-fx-background-color: white; -fx-background-radius: 16; -fx-border-radius: 16;
+                     -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.08), 12, 0, 0, 4);
+                     -fx-padding: 15;">
+    </ListView>
+
+    <!-- Container HBox modifié pour un meilleur alignement -->
+    <HBox spacing="30" alignment="CENTER" VBox.vgrow="ALWAYS">
+        <!-- Photo de l'événement centrée au-dessus du bouton -->
+        <VBox alignment="CENTER" spacing="10">
+            <ImageView fx:id="eventImage" fitWidth="100" fitHeight="100" preserveRatio="true" />
+            <Button text="➕ Ajouter un événement" onAction="#handleAdd"
+                    style="-fx-background-color: linear-gradient(to right, #43cea2, #185a9d); -fx-text-fill: white;
+                           -fx-font-size: 15px; -fx-font-weight: bold; -fx-background-radius: 12;
+                           -fx-padding: 12 24; -fx-cursor: hand;"/>
+        </VBox>
     </HBox>
+
 </VBox>

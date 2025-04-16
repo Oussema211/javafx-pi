@@ -10,61 +10,63 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.VBox;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 import java.io.IOException;
 import java.util.Optional;
 
 public class RegionListController {
-    @FXML private TableView<Region> regionTable;
-    @FXML private TableColumn<Region, String> colNom;
-    @FXML private TableColumn<Region, String> colVille;
-    @FXML private TableColumn<Region, String> colDescription;
-    @FXML private TableColumn<Region, Void> colActions;
+    @FXML
+    private ListView<Region> regionTable; // Changé de TableView à ListView
 
     private final RegionDAO regionDAO = new RegionDAO();
     private final ObservableList<Region> regionList = FXCollections.observableArrayList();
 
     @FXML
     public void initialize() {
-        colNom.setCellValueFactory(new PropertyValueFactory<>("nom"));
-        colVille.setCellValueFactory(new PropertyValueFactory<>("ville"));
-        colDescription.setCellValueFactory(new PropertyValueFactory<>("description"));
+        regionTable.setCellFactory(param -> new ListCell<Region>() {
+            private final HBox content = new HBox();
+            private final Text nom = new Text();
+            private final Text ville = new Text();
+            private final Text description = new Text();
+            private final Button editBtn = new Button("Modifier");
+            private final Button deleteBtn = new Button("Supprimer");
+            private final Button detailsBtn = new Button("Détails");
+            private final HBox buttons = new HBox(editBtn, deleteBtn, detailsBtn);
 
-        setupActionColumn();
-        loadRegions();
-    }
+            {
+                VBox textContent = new VBox(nom, ville, description);
+                textContent.setSpacing(5);
+                content.getChildren().addAll(textContent, buttons);
+                content.setSpacing(20);
 
-    private void setupActionColumn() {
-        colActions.setCellFactory(new Callback<>() {
+                buttons.setSpacing(5);
+                editBtn.setStyle("-fx-background-color: #93441A; -fx-text-fill: white;");
+                deleteBtn.setStyle("-fx-background-color: #B67332; -fx-text-fill: white;");
+                detailsBtn.setStyle("-fx-background-color: #DAAB3A; -fx-text-fill: white;");
+
+                editBtn.setOnAction(event -> handleEdit(getItem()));
+                deleteBtn.setOnAction(event -> handleDelete(getItem()));
+                detailsBtn.setOnAction(event -> showDetails(getItem()));
+            }
+
             @Override
-            public TableCell<Region, Void> call(TableColumn<Region, Void> param) {
-                return new TableCell<>() {
-                    private final Button editBtn = new Button("Modifier");
-                    private final Button deleteBtn = new Button("Supprimer");
-                    private final Button detailsBtn = new Button("Détails");
-                    private final HBox pane = new HBox(editBtn, deleteBtn, detailsBtn);
-
-                    {
-                        pane.setSpacing(5);
-                        editBtn.setStyle("-fx-background-color: #93441A; -fx-text-fill: white;");
-                        deleteBtn.setStyle("-fx-background-color: #B67332; -fx-text-fill: white;");
-                        detailsBtn.setStyle("-fx-background-color: #DAAB3A; -fx-text-fill: white;");
-
-                        editBtn.setOnAction(event -> handleEdit(getTableView().getItems().get(getIndex())));
-                        deleteBtn.setOnAction(event -> handleDelete(getTableView().getItems().get(getIndex())));
-                        detailsBtn.setOnAction(event -> showDetails(getTableView().getItems().get(getIndex())));
-                    }
-
-                    @Override
-                    protected void updateItem(Void item, boolean empty) {
-                        super.updateItem(item, empty);
-                        setGraphic(empty ? null : pane);
-                    }
-                };
+            protected void updateItem(Region region, boolean empty) {
+                super.updateItem(region, empty);
+                if (region != null && !empty) {
+                    nom.setText("Nom: " + region.getNom());
+                    ville.setText("Ville: " + region.getVille());
+                    description.setText("Description: " + (region.getDescription() != null ? region.getDescription() : ""));
+                    setGraphic(content);
+                } else {
+                    setGraphic(null);
+                }
             }
         });
+
+        loadRegions();
     }
 
     private void loadRegions() {
@@ -95,7 +97,6 @@ public class RegionListController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/Evenement/EvenementForm.fxml"));
             Parent root = loader.load();
 
-            // Passer la région sélectionnée si nécessaire
             Region selectedRegion = regionTable.getSelectionModel().getSelectedItem();
             if (selectedRegion != null) {
                 EvenementController controller = loader.getController();
