@@ -1,5 +1,7 @@
 package com.example.auth;
 
+import com.example.Evenement.Dao.EvenementDAO;
+import com.example.Evenement.Dao.RegionDAO;
 import com.example.auth.model.User;
 import com.example.auth.utils.SessionManager;
 import javafx.application.Application;
@@ -11,6 +13,8 @@ import javafx.stage.Stage;
 public class MainApp extends Application {
     private SessionManager sessionManager = SessionManager.getInstance();
     private static final boolean FULL_SCREEN = false; // Set to true for always full-screen, false for windowed
+    private final RegionDAO reclamationService = new RegionDAO();
+    private final EvenementDAO tagService = new EvenementDAO();
 
     @Override
     public void start(Stage primaryStage) throws Exception {

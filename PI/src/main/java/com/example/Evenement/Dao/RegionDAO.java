@@ -13,7 +13,19 @@ public class RegionDAO {
 
     public RegionDAO() {
         connection = MyDatabase.getInstance().getCnx();
+        try (Statement stmt = connection.createStatement()) {
+            String sql = "CREATE TABLE IF NOT EXISTS region (" +
+                    "id INT AUTO_INCREMENT PRIMARY KEY, " +
+                    "nom VARCHAR(100) NOT NULL, " +
+                    "ville VARCHAR(100) NOT NULL, " +
+                    "description TEXT)";
+            stmt.execute(sql);
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la création de la table region : " + e.getMessage());
+            e.printStackTrace();
+        }
     }
+
 
     public boolean addRegion(Region region) {
         String query = "INSERT INTO region(nom, ville, description) VALUES(?, ?, ?)";

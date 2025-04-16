@@ -15,11 +15,42 @@ public class EvenementDAO {
     private final Connection connection;
 
     public EvenementDAO() {
-        this.connection = MyDatabase.getInstance().getCnx();
-        if (this.connection == null) {
-            throw new RuntimeException("La connexion à la base de données n'est pas disponible");
+        connection = MyDatabase.getInstance().getCnx();
+        createTablesIfNotExist();
+    }
+
+    private void createTablesIfNotExist() {
+        try (Statement stmt = connection.createStatement()) {
+            // Create evenement table
+            String createEventTable = "CREATE TABLE IF NOT EXISTS evenement (" +
+                    "id INT PRIMARY KEY AUTO_INCREMENT, " +
+                    "titre VARCHAR(255) NOT NULL, " +
+                    "description LONGTEXT NOT NULL, " +
+                    "type VARCHAR(20) NOT NULL, " +
+                    "statut VARCHAR(20) NOT NULL, " +
+                    "date_debut DATETIME NOT NULL, " +
+                    "date_fin DATETIME NOT NULL, " +
+                    "photo VARCHAR(255)" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+            stmt.execute(createEventTable);
+
+            // Create evenement_region junction table
+            String createEventRegionTable = "CREATE TABLE IF NOT EXISTS evenement_region (" +
+                    "id INT PRIMARY KEY AUTO_INCREMENT, " +
+                    "evenement_id INT NOT NULL, " +
+                    "region_id INT NOT NULL, " +
+                    "FOREIGN KEY (evenement_id) REFERENCES evenement(id) ON DELETE CASCADE, " +
+                    "FOREIGN KEY (region_id) REFERENCES region(id) ON DELETE CASCADE" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+            stmt.execute(createEventRegionTable);
+
+            System.out.println("Tables evenement and evenement_region created successfully!");
+        } catch (SQLException e) {
+            System.err.println("Error creating tables: " + e.getMessage());
+            e.printStackTrace();
         }
     }
+
 
     public int create(Evenement event) throws SQLException {
         String sql = "INSERT INTO evenement (titre, description, type, statut, date_debut, date_fin, photo) " +
@@ -231,3 +262,5 @@ public class EvenementDAO {
         return false;
     }
 }
+
+
