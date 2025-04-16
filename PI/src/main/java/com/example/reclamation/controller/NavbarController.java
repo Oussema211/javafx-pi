@@ -7,7 +7,6 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.stage.Stage;
-
 import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -28,7 +27,7 @@ public class NavbarController implements Initializable {
     private final String defaultStyle = "-fx-font: normal 14px 'Arial'; -fx-text-fill: #000000; -fx-cursor: hand;";
     private final String hoverStyle = "-fx-font: normal 14px 'Arial'; -fx-text-fill: #000000; -fx-cursor: hand; -fx-border-color: #000000; -fx-border-width: 0 0 1 0;";
 
-    private SessionManager sessionManager = SessionManager.getInstance();
+    private final SessionManager sessionManager = SessionManager.getInstance();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -56,7 +55,7 @@ public class NavbarController implements Initializable {
     private void setupClickActions() {
         shopLabel.setOnMouseClicked(e -> System.out.println("Shop clicked"));
         collectionsLabel.setOnMouseClicked(e -> System.out.println("Collections clicked"));
-        exploreLabel.setOnMouseClicked(e -> System.out.println("Explore clicked"));
+        exploreLabel.setOnMouseClicked(e -> navigateToReclamation());
         moreLabel.setOnMouseClicked(e -> System.out.println("More clicked"));
         cartLabel.setOnMouseClicked(e -> System.out.println("Cart clicked"));
 
@@ -72,6 +71,26 @@ public class NavbarController implements Initializable {
                 ex.printStackTrace();
             }
         });
+    }
+
+    private void navigateToReclamation() {
+        try {
+            // Get the current stage
+            Stage stage = (Stage) exploreLabel.getScene().getWindow();
+            
+            // Load the Reclamation.fxml file
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/reclamation/Reclamation.fxml"));
+            Parent root = loader.load();
+            
+            // Set the new scene
+            Scene scene = new Scene(root);
+            stage.setScene(scene);
+            stage.setTitle("Reclamations");
+            stage.show();
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Failed to load Reclamation.fxml: " + e.getMessage());
+        }
     }
 
     @FXML

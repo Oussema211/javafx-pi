@@ -204,21 +204,8 @@ public class AuthService {
             return false;
         }
     }
-
-    public boolean deleteUser(UUID id) {
-        String sql = "DELETE FROM user WHERE id = ?";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, id.toString());
-            int rowsAffected = pstmt.executeUpdate();
-            return rowsAffected > 0;
-        } catch (SQLException e) {
-            System.err.println("Error deleting user: " + e.getMessage());
-            return false;
-        }
-    }
-
-    // Added to support ProfileController.java
-    public boolean updateUserEmail(String oldEmail, String newEmail) {
+     // Added to support ProfileController.java
+     public boolean updateUserEmail(String oldEmail, String newEmail) {
         // Check if the new email already exists
         String checkSql = "SELECT COUNT(*) FROM user WHERE email = ?";
         try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
@@ -245,8 +232,6 @@ public class AuthService {
             return false;
         }
     }
-
-    // Adjusted to support ProfileController.java
     public boolean updateUserPassword(String email, String newPassword) {
         String hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
         String sql = "UPDATE user SET password = ? WHERE email = ?";
@@ -260,6 +245,20 @@ public class AuthService {
             return false;
         }
     }
+
+
+    public boolean deleteUser(UUID id) {
+        String sql = "DELETE FROM user WHERE id = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, id.toString());
+            int rowsAffected = pstmt.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            System.err.println("Error deleting user: " + e.getMessage());
+            return false;
+        }
+    }
+
 
     public boolean requestPasswordReset(String email, String numTel) {
         String sql = "SELECT * FROM user WHERE email = ? AND num_tel = ?";

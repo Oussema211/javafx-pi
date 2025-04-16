@@ -1,5 +1,5 @@
 .root {
-    -fx-background-image: url("/com/example/auth/images/a.jpg");
+    -fx-background-color: transparent;
     -fx-background-size: cover;
     -fx-background-position: center;
     -fx-background-repeat: no-repeat;

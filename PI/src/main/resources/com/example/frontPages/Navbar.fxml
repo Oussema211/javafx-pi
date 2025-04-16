@@ -22,7 +22,7 @@
     <HBox fx:id="menuBox" alignment="CENTER" spacing="30" HBox.hgrow="ALWAYS">
         <Label fx:id="shopLabel" text="Shop" style="-fx-font: normal 14px 'Arial'; -fx-text-fill: #000000; -fx-cursor: hand;"/>
         <Label fx:id="collectionsLabel" text="Collections" style="-fx-font: normal 14px 'Arial'; -fx-text-fill: #000000; -fx-cursor: hand;"/>
-        <Label fx:id="exploreLabel" text="Explore" style="-fx-font: normal 14px 'Arial'; -fx-text-fill: #000000; -fx-cursor: hand;"/>
+        <Label fx:id="exploreLabel" text="Discussions" style="-fx-font: normal 14px 'Arial'; -fx-text-fill: #000000; -fx-cursor: hand;"/>
         <Label fx:id="moreLabel" text="..." style="-fx-font: normal 14px 'Arial'; -fx-text-fill: #000000; -fx-cursor: hand;"/>
     </HBox>
 

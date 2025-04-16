@@ -13,7 +13,7 @@ public class SessionManager {
     private StockService stockService = new StockService();
     private static final String SESSION_FILE = "session.dat";
 
-    private SessionManager() {
+    public SessionManager() {
         // Load session on startup
         loadSession();
     }
