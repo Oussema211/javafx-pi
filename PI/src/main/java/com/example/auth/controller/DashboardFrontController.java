@@ -4,6 +4,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
@@ -12,6 +13,9 @@ import javafx.stage.Stage;
 import utils.SessionManager;
 
 import java.io.IOException;
+
+import com.example.reclamation.controller.ReclamationMessagesController;
+import com.example.reclamation.model.Reclamation;
 
 public class DashboardFrontController {
     private final SessionManager sessionManager = SessionManager.getInstance();
@@ -38,6 +42,11 @@ public class DashboardFrontController {
     private Label welcomeLabel;
     @FXML
     private Label emailLabel;
+
+    private Stage primaryStage;
+
+
+    
     
     private void loadContent(String fxmlPath) {
         try {
@@ -54,7 +63,21 @@ public class DashboardFrontController {
             e.printStackTrace();
         }
     }
-    
+    public void loadReclamationMessages(Reclamation reclamation) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/reclamation/ReclamationMessages.fxml"));
+            Parent messagesRoot = loader.load();
+            ReclamationMessagesController controller = loader.getController();
+            controller.setPrimaryStage(primaryStage);
+            controller.setSelectedReclamation(reclamation);
+            borderPane.setCenter(messagesRoot);
+        } catch (IOException e) {
+            System.err.println("Error loading ReclamationMessages.fxml:");
+            e.printStackTrace();
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to load reclamation messages.");
+            alert.showAndWait();
+        }
+    }
     @FXML
     public void initialize() {
         System.out.println("DashboardController initialized");
@@ -83,6 +106,10 @@ public class DashboardFrontController {
         Stage stage = (Stage) welcomeLabel.getScene().getWindow();
         Parent root = FXMLLoader.load(getClass().getResource("/com/example/auth/login.fxml"));
         stage.setScene(new Scene(root));
+    }
+
+    public void setPrimaryStage(Stage stage) {
+        this.primaryStage = stage;
     }
     
 }
