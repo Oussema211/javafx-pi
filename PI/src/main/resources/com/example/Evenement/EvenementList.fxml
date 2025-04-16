@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.Evenement.Controller.EvenementListController"
+      spacing="20"
+      alignment="CENTER"
+      style="-fx-background-color: #f4f6f8; -fx-padding: 30;">
+
+    <Label text="Liste des Événements"
+           style="-fx-font-size: 26px; -fx-text-fill: #2c3e50; -fx-font-weight: bold;"/>
+
+    <TableView fx:id="eventTable"
+               prefWidth="1000"
+               style="-fx-background-color: white; -fx-border-radius: 10; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 4); -fx-padding: 5;">
+        <columns>
+            <TableColumn text="Titre" fx:id="colTitre" prefWidth="150"/>
+            <TableColumn text="Description" fx:id="colDescription" prefWidth="200"/>
+            <TableColumn text="Type" fx:id="colType" prefWidth="100"/>
+            <TableColumn text="Statut" fx:id="colStatut" prefWidth="100"/>
+            <TableColumn text="Date début" fx:id="colDateDebut" prefWidth="150"/>
+            <TableColumn text="Date fin" fx:id="colDateFin" prefWidth="150"/>
+            <TableColumn text="Régions" fx:id="colRegions" prefWidth="150"/>
+            <TableColumn text="Actions" fx:id="colActions" prefWidth="200"/>
+        </columns>
+    </TableView>
+
+    <HBox spacing="20" alignment="CENTER">
+        <Button text="Ajouter un événement" onAction="#handleAdd"
+                style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 16;"/>
+    </HBox>
+</VBox>

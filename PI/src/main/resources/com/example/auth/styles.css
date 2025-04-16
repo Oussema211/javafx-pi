@@ -60,6 +60,7 @@
 
 .message-label {
     -fx-font-weight: bold;
+
     -fx-text-fill: #d32f2f; /* Red for error messages */
 }
 
@@ -88,4 +89,69 @@
 .check-box .text {
     -fx-fill: #333;
     -fx-font-weight: bold;
+
+}
+
+/* Styles pour la barre latérale */
+
+
+.nav-link {
+    -fx-text-fill: #ecf0f1;
+    -fx-font-size: 14px;
+    -fx-padding: 10 5 10 5;
+    -fx-background-radius: 5px;
+    -fx-cursor: hand;
+}
+
+.nav-link:hover {
+    -fx-background-color: #B67332;
+}
+
+/* Styles pour le sous-menu */
+.sub-menu {
+    -fx-background-color: #93441A;
+    -fx-background-radius: 0 0 5px 5px;
+    -fx-padding: 5 0 5 0;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 10, 0, 0, 2);
+}
+
+.sub-nav-link {
+    -fx-text-fill: #bdc3c7;
+    -fx-font-size: 13px;
+    -fx-padding: 8 5 8 5;
+    -fx-background-radius: 3px;
+    -fx-cursor: hand;
+}
+
+.sub-nav-link:hover {
+    -fx-background-color: #B67332;
+    -fx-text-fill: white;
+}
+
+/* Animation pour la flèche déroulante */
+.dropdown-arrow {
+    -fx-rotate: 0;
+    -fx-transition: -fx-rotate 0.3s ease-in-out;
+}
+
+.dropdown-arrow.rotated {
+    -fx-rotate: 180;
+}
+
+/* Styles pour le contenu principal */
+.main-content {
+    -fx-background-color: #f5f5f5;
+    -fx-padding: 20px;
+}
+
+.dashboard-title {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-fill: #2c3e50;
+}
+
+.welcome-label, .email-label {
+    -fx-font-size: 16px;
+    -fx-text-fill: #7f8c8d;
+
 }
