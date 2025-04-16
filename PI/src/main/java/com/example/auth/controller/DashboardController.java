@@ -81,7 +81,7 @@ public class DashboardController {
 
         // Navigation principale
         dashboardButton.setOnAction(event -> loadContent("/com/example/pages/dashboard.fxml"));
-        reclamation.setOnAction(event -> handleReclamationLink());
+        reclamation.setOnAction(event -> loadContent("/com/example/pages/reclamation.fxml"));
         achat.setOnAction(event -> loadContent("/com/example/pages/purchasing.fxml"));
         productButton.setOnAction(event -> loadContent("/com/example/pages/products.fxml"));
         categoryButton.setOnAction(event -> loadContent("/com/example/pages/categories.fxml"));
