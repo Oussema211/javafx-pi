@@ -1,12 +1,14 @@
 package com.example.auth.controller;
 
 import com.example.auth.service.AuthService;
+import com.example.auth.utils.EmailUtil;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
+import javax.mail.MessagingException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -45,11 +47,22 @@ public class AddUserController {
         }
 
         List<String> roles = Arrays.asList(rolesInput.split("\\s*,\\s*"));
-        if (authService.signup(email, password, travail, photoUrl, nom, prenom, numTel, roles)) {
-            messageLabel.setText("User added successfully!");
-            clearFields();
-            Stage stage = (Stage) nomField.getScene().getWindow();
-            stage.close();
+        String verificationCode = authService.generateVerificationCode();
+        if (authService.signup(email, password, travail, photoUrl, nom, prenom, numTel, roles, verificationCode)) {
+            try {
+                String emailBody = "<h2>Email Verification</h2>" +
+                        "<p>Your verification code is: <b>" + verificationCode + "</b></p>" +
+                        "<p>Enter this code in the application to verify your account.</p>" +
+                        "<p>This code will expire in 24 hours.</p>";
+                EmailUtil.sendEmail(email, "Verify Your Email", emailBody);
+                messageLabel.setText("User added successfully! Verification code sent.");
+                clearFields();
+                Stage stage = (Stage) nomField.getScene().getWindow();
+                stage.close();
+            } catch (MessagingException e) {
+                messageLabel.setText("User added, but failed to send verification email.");
+                System.err.println("Error sending verification email: " + e.getMessage());
+            }
         } else {
             messageLabel.setText("Email already exists");
         }

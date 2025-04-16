@@ -4,15 +4,14 @@ import com.example.auth.model.User;
 import com.example.auth.utils.EmailUtil;
 import com.example.auth.utils.MyDatabase;
 import com.example.auth.utils.ResetLinkServer;
-
 import org.mindrot.jbcrypt.BCrypt;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
-
 import javax.mail.MessagingException;
 
 public class AuthService {
@@ -30,6 +29,7 @@ public class AuthService {
                     "date_inscri DATE NOT NULL, " +
                     "photo_url TEXT, " +
                     "is_verified BOOLEAN NOT NULL, " +
+                    "verification_token VARCHAR(36), " +
                     "nom VARCHAR(50) NOT NULL, " +
                     "prenom VARCHAR(50) NOT NULL, " +
                     "num_tel VARCHAR(20))";
@@ -41,23 +41,31 @@ public class AuthService {
                     "expiry_date TIMESTAMP NOT NULL, " +
                     "FOREIGN KEY (user_id) REFERENCES user(id))";
             stmt.execute(sql);
+
+            sql = "SHOW COLUMNS FROM user LIKE 'verification_token'";
+            ResultSet rs = stmt.executeQuery(sql);
+            if (!rs.next()) {
+                sql = "ALTER TABLE user ADD COLUMN verification_token VARCHAR(36)";
+                stmt.execute(sql);
+                System.out.println("Added verification_token column to user table");
+            }
         } catch (SQLException e) {
             System.err.println("Error initializing database: " + e.getMessage());
         }
     }
 
     public boolean signup(String email, String password, String travail, String photoUrl,
-                         String nom, String prenom, String numTel, List<String> roles) {
+                         String nom, String prenom, String numTel, List<String> roles, String verificationCode) {
         String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
         UUID id = UUID.randomUUID();
-        User tempUser = new User(id, email, "[]", password, travail, new Date(), photoUrl, false, nom, prenom, numTel);
+        User tempUser = new User(id, email, "[]", password, travail, new Date(), photoUrl, false, verificationCode, nom, prenom, numTel);
         tempUser.setRoles(roles);
         String rolesJson = tempUser.getRolesAsJson();
         Date dateInscri = new Date();
         boolean isVerified = false;
 
         String sql = "INSERT INTO user (id, email, roles, password, travail, date_inscri, photo_url, " +
-                "is_verified, nom, prenom, num_tel) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                "is_verified, verification_token, nom, prenom, num_tel) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, id.toString());
             pstmt.setString(2, email);
@@ -67,9 +75,10 @@ public class AuthService {
             pstmt.setDate(6, new java.sql.Date(dateInscri.getTime()));
             pstmt.setString(7, photoUrl);
             pstmt.setBoolean(8, isVerified);
-            pstmt.setString(9, nom);
-            pstmt.setString(10, prenom);
-            pstmt.setString(11, numTel);
+            pstmt.setString(9, verificationCode);
+            pstmt.setString(10, nom);
+            pstmt.setString(11, prenom);
+            pstmt.setString(12, numTel);
             pstmt.executeUpdate();
             return true;
         } catch (SQLException e) {
@@ -81,6 +90,34 @@ public class AuthService {
         }
     }
 
+    public boolean verifyUser(String verificationCode, String email) {
+        String sql = "SELECT id FROM user WHERE verification_token = ? AND email = ? AND is_verified = false";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, verificationCode);
+            pstmt.setString(2, email);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                String userId = rs.getString("id");
+                sql = "UPDATE user SET is_verified = true, verification_token = NULL WHERE id = ?";
+                try (PreparedStatement updateStmt = conn.prepareStatement(sql)) {
+                    updateStmt.setString(1, userId);
+                    updateStmt.executeUpdate();
+                    return true;
+                }
+            }
+            return false;
+        } catch (SQLException e) {
+            System.err.println("Error verifying user: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public String generateVerificationCode() {
+        Random random = new Random();
+        int code = 100000 + random.nextInt(900000);
+        return String.valueOf(code);
+    }
+
     public User authenticate(String email, String password) {
         String sql = "SELECT * FROM user WHERE email = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -88,7 +125,7 @@ public class AuthService {
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
                 String storedPassword = rs.getString("password");
-                if (password == null || BCrypt.checkpw(password, storedPassword)) {
+                if (password != null && BCrypt.checkpw(password, storedPassword)) {
                     Date dateInscri = rs.getDate("date_inscri");
                     if (dateInscri == null) {
                         dateInscri = new Date();
@@ -102,6 +139,7 @@ public class AuthService {
                             dateInscri,
                             rs.getString("photo_url"),
                             rs.getBoolean("is_verified"),
+                            rs.getString("verification_token"),
                             rs.getString("nom"),
                             rs.getString("prenom"),
                             rs.getString("num_tel")
@@ -137,6 +175,7 @@ public class AuthService {
                         dateInscri,
                         rs.getString("photo_url"),
                         rs.getBoolean("is_verified"),
+                        rs.getString("verification_token"),
                         rs.getString("nom"),
                         rs.getString("prenom"),
                         rs.getString("num_tel")
@@ -167,6 +206,7 @@ public class AuthService {
                         dateInscri,
                         rs.getString("photo_url"),
                         rs.getBoolean("is_verified"),
+                        rs.getString("verification_token"),
                         rs.getString("nom"),
                         rs.getString("prenom"),
                         rs.getString("num_tel")
@@ -175,12 +215,12 @@ public class AuthService {
         } catch (SQLException e) {
             System.err.println("Error fetching all users: " + e.getMessage());
         }
-        return users;
+        return users; // Ensure this line exists
     }
 
     public boolean updateUser(User user) {
         String sql = "UPDATE user SET email = ?, roles = ?, password = ?, travail = ?, " +
-                "photo_url = ?, is_verified = ?, nom = ?, prenom = ?, num_tel = ? WHERE id = ?";
+                "photo_url = ?, is_verified = ?, verification_token = ?, nom = ?, prenom = ?, num_tel = ? WHERE id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, user.getEmail());
             pstmt.setString(2, user.getRolesAsJson());
@@ -188,10 +228,11 @@ public class AuthService {
             pstmt.setString(4, user.getTravail());
             pstmt.setString(5, user.getPhotoUrl());
             pstmt.setBoolean(6, user.isVerified());
-            pstmt.setString(7, user.getNom());
-            pstmt.setString(8, user.getPrenom());
-            pstmt.setString(9, user.getNumTel());
-            pstmt.setString(10, user.getId().toString());
+            pstmt.setString(7, user.getVerificationToken());
+            pstmt.setString(8, user.getNom());
+            pstmt.setString(9, user.getPrenom());
+            pstmt.setString(10, user.getNumTel());
+            pstmt.setString(11, user.getId().toString());
             int rowsAffected = pstmt.executeUpdate();
             return rowsAffected > 0;
         } catch (SQLException e) {
@@ -201,7 +242,16 @@ public class AuthService {
     }
 
     public boolean deleteUser(UUID id) {
-        String sql = "DELETE FROM user WHERE id = ?";
+        String sql = "DELETE FROM reset_token WHERE user_id = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, id.toString());
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("Error deleting reset tokens for user: " + e.getMessage());
+            return false;
+        }
+
+        sql = "DELETE FROM user WHERE id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, id.toString());
             int rowsAffected = pstmt.executeUpdate();
@@ -258,10 +308,8 @@ public class AuthService {
                 EmailUtil.sendEmail(email, "Password Reset Request", emailBody);
                 return true;
             }
-        } catch (SQLException e) {
+        } catch (SQLException | MessagingException e) {
             System.err.println("Error requesting password reset: " + e.getMessage());
-        } catch (MessagingException e) {
-            System.err.println("Error sending reset email: " + e.getMessage());
         }
         return false;
     }

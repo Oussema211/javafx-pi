@@ -20,13 +20,14 @@ public class User implements Serializable {
     private Date dateInscri;
     private String photoUrl;
     private boolean isVerified;
+    private String verificationToken; // New field
     private String nom;
     private String prenom;
     private String numTel;
 
-    // Constructor
+    // Updated constructor
     public User(UUID id, String email, String rolesJson, String password, String travail, Date dateInscri,
-                String photoUrl, boolean isVerified, String nom, String prenom, String numTel) {
+                String photoUrl, boolean isVerified, String verificationToken, String nom, String prenom, String numTel) {
         this.id = id;
         this.email = email;
         this.roles = parseRoles(rolesJson);
@@ -35,6 +36,7 @@ public class User implements Serializable {
         this.dateInscri = dateInscri;
         this.photoUrl = photoUrl;
         this.isVerified = isVerified;
+        this.verificationToken = verificationToken;
         this.nom = nom;
         this.prenom = prenom;
         this.numTel = numTel;
@@ -133,6 +135,14 @@ public class User implements Serializable {
 
     public void setVerified(boolean verified) {
         isVerified = verified;
+    }
+
+    public String getVerificationToken() {
+        return verificationToken;
+    }
+
+    public void setVerificationToken(String verificationToken) {
+        this.verificationToken = verificationToken;
     }
 
     public String getNom() {

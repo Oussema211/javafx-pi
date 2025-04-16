@@ -40,19 +40,19 @@ public class MainApp extends Application {
         }
 
         System.out.println("DEBUG: Loading FXML: " + fxmlFile);
-        FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlFile));
+        URL fxmlUrl = getClass().getResource(fxmlFile);
+        if (fxmlUrl == null) {
+            throw new IOException("ERROR: FXML file not found: " + fxmlFile);
+        }
+        FXMLLoader loader = new FXMLLoader(fxmlUrl);
         Parent root = loader.load();
 
-        if (root == null) {
-            throw new IOException("ERROR: Root is null after loading FXML: " + fxmlFile);
-        }
-
         Scene scene = new Scene(root, 400, 500);
-        URL stylesheetUrl = getClass().getClassLoader().getResource("com/example/auth/styles.css");
+        URL stylesheetUrl = getClass().getResource("/com/example/auth/styles.css");
         if (stylesheetUrl != null) {
             scene.getStylesheets().add(stylesheetUrl.toExternalForm());
         } else {
-            System.out.println("DEBUG: Could not find styles.css in MainApp");
+            System.out.println("WARNING: Could not find styles.css in MainApp");
         }
 
         primaryStage.setTitle("Authentication System");
@@ -62,10 +62,7 @@ public class MainApp extends Application {
         primaryStage.show();
         System.out.println("DEBUG: MainApp started successfully");
 
-        primaryStage.setOnCloseRequest(event -> {
-            ResetLinkServer.stopServer();
-            System.out.println("DEBUG: Stopping MainApp");
-        });
+      
     }
 
     public static void main(String[] args) {
