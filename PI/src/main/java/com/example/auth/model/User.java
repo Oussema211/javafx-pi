@@ -98,6 +98,10 @@ public class User implements Serializable {
     public String getPassword() {
         return password;
     }
+    public String getProfilePhotoPath() {
+        return getPhotoUrl();
+    }
+
 
     public void setPassword(String password) {
         this.password = password;

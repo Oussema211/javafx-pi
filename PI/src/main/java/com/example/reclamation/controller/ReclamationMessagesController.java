@@ -129,12 +129,33 @@ public class ReclamationMessagesController {
         messageBox.setStyle("-fx-border-color: #ddd; -fx-border-width: 0 0 1 0;");
 
         User user = authService.getUserById(message.getUserId());
-        String photoUrl = user != null && user.getPhotoUrl() != null ? "file:" + user.getPhotoUrl() : "file:images/admin.jpg";
-        ImageView avatar = new ImageView(new Image(photoUrl, true));
+        ImageView avatar = new ImageView();
         avatar.setFitWidth(50);
         avatar.setFitHeight(50);
         avatar.setClip(new Circle(25, 25, 23));
         avatar.setStyle("-fx-border-color: #7AAE49; -fx-border-width: 2;");
+
+        // Load profile picture
+        String profilePhotoPath = user != null ? user.getPhotoUrl() : null; // Assuming getPhotoUrl() is the correct method
+        if (profilePhotoPath != null && !profilePhotoPath.isEmpty()) {
+            System.out.println("Attempting to load profile picture from resource: " + profilePhotoPath);
+            try {
+                // Load the image as a resource from the classpath
+                Image image = new Image(getClass().getResourceAsStream(profilePhotoPath));
+                if (!image.isError()) {
+                    avatar.setImage(image);
+                } else {
+                    System.err.println("Error loading profile image: Image is corrupted or invalid.");
+                    loadFallbackImage(avatar);
+                }
+            } catch (Exception e) {
+                System.err.println("Error loading profile image: " + e.getMessage());
+                loadFallbackImage(avatar);
+            }
+        } else {
+            System.err.println("Profile photo path is null or empty.");
+            loadFallbackImage(avatar);
+        }
 
         VBox content = new VBox(5);
         HBox header = new HBox(10);
@@ -179,12 +200,33 @@ public class ReclamationMessagesController {
         replyBox.setStyle("-fx-background-color: #f8f8f8; -fx-border-color: #dcdcdc; -fx-border-radius: 6; -fx-padding: 10;");
 
         User currentUser = sessionManager.getLoggedInUser();
-        String photoUrl = currentUser != null && currentUser.getPhotoUrl() != null ? "file:" + currentUser.getPhotoUrl() : "file:images/admin.jpg";
-        ImageView avatar = new ImageView(new Image(photoUrl, true));
+        ImageView avatar = new ImageView();
         avatar.setFitWidth(40);
         avatar.setFitHeight(40);
         avatar.setClip(new Circle(20, 20, 18));
         avatar.setStyle("-fx-border-color: #7AAE49; -fx-border-width: 2;");
+
+        // Load profile picture for current user
+        String profilePhotoPath = currentUser != null ? currentUser.getPhotoUrl() : null; // Assuming getPhotoUrl() is the correct method
+        if (profilePhotoPath != null && !profilePhotoPath.isEmpty()) {
+            System.out.println("Attempting to load profile picture from resource: " + profilePhotoPath);
+            try {
+                // Load the image as a resource from the classpath
+                Image image = new Image(getClass().getResourceAsStream(profilePhotoPath));
+                if (!image.isError()) {
+                    avatar.setImage(image);
+                } else {
+                    System.err.println("Error loading profile image: Image is corrupted or invalid.");
+                    loadFallbackImage(avatar);
+                }
+            } catch (Exception e) {
+                System.err.println("Error loading profile image: " + e.getMessage());
+                loadFallbackImage(avatar);
+            }
+        } else {
+            System.err.println("Profile photo path is null or empty.");
+            loadFallbackImage(avatar);
+        }
 
         TextArea replyText = new TextArea();
         replyText.setPromptText("Type your reply...");
@@ -272,6 +314,18 @@ public class ReclamationMessagesController {
             e.printStackTrace();
             Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to load reclamations page.");
             alert.showAndWait();
+        }
+    }
+
+    // Helper method to load fallback image
+    private void loadFallbackImage(ImageView avatar) {
+        try {
+            Image fallbackImage = new Image(getClass().getResourceAsStream("/images/admin.jpg"));
+            avatar.setImage(fallbackImage);
+        } catch (Exception e) {
+            System.err.println("Error loading fallback image: " + e.getMessage());
+            // Fallback to file-based approach if classpath fails
+            avatar.setImage(new Image("file:images/admin.jpg"));
         }
     }
 }

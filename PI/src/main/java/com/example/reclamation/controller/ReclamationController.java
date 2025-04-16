@@ -149,12 +149,33 @@ public class ReclamationController {
         }
     
         StackPane profileContainer = new StackPane();
-        String photoUrl = user != null && user.getPhotoUrl() != null ? "file:" + user.getPhotoUrl() : "file:images/admin.jpg";
-        ImageView avatar = new ImageView(new Image(photoUrl, true));
+        ImageView avatar = new ImageView();
         avatar.setFitWidth(50);
         avatar.setFitHeight(50);
         avatar.setClip(new Circle(25, 25, 23));
         avatar.setStyle("-fx-border-color: white; -fx-border-width: 3; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);");
+    
+        // Load profile picture
+        String profilePhotoPath = user != null ? user.getPhotoUrl() : null; // Assuming getPhotoUrl() is the correct method
+        if (profilePhotoPath != null && !profilePhotoPath.isEmpty()) {
+            System.out.println("Attempting to load profile picture from resource: " + profilePhotoPath);
+            try {
+                // Load the image as a resource from the classpath
+                Image image = new Image(getClass().getResourceAsStream(profilePhotoPath));
+                if (!image.isError()) {
+                    avatar.setImage(image);
+                } else {
+                    System.err.println("Error loading profile image: Image is corrupted or invalid.");
+                    loadFallbackImage(avatar);
+                }
+            } catch (Exception e) {
+                System.err.println("Error loading profile image: " + e.getMessage());
+                loadFallbackImage(avatar);
+            }
+        } else {
+            System.err.println("Profile photo path is null or empty.");
+            loadFallbackImage(avatar);
+        }
     
         Circle status = new Circle(7.5);
         String statusColor = switch (rec.getStatut()) {
@@ -220,6 +241,18 @@ public class ReclamationController {
         }
     
         return card;
+    }
+    
+    // Helper method to load fallback image
+    private void loadFallbackImage(ImageView avatar) {
+        try {
+            Image fallbackImage = new Image(getClass().getResourceAsStream("/images/admin.jpg"));
+            avatar.setImage(fallbackImage);
+        } catch (Exception e) {
+            System.err.println("Error loading fallback image: " + e.getMessage());
+            // Optionally set a blank or placeholder image
+            avatar.setImage(new Image("file:images/admin.jpg")); // Fallback to file-based approach if classpath fails
+        }
     }
 
     private void handleReclamationClick(Reclamation reclamation) {
