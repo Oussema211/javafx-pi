@@ -42,7 +42,7 @@
 
 /* Profile page styles */
 .profile-content {
-    -fx-background-color: linear-gradient(to bottom right, #3b1e66, #8e2de2); /* Gradient from deep purple to vibrant purple */
+    -fx-background-color: linear-gradient(to bottom right, #5fc788, #1f4635); /* Gradient from deep purple to vibrant purple */
     -fx-padding: 30;
     -fx-background-radius: 15;
     -fx-border-radius: 15;

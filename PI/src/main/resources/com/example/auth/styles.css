@@ -1,22 +1,57 @@
+/* Root pane with background image */
 .root {
-    -fx-background-color: transparent;
+    -fx-background-image: url("/com/example/auth/images/agri.jpg");
     -fx-background-size: cover;
     -fx-background-position: center;
     -fx-background-repeat: no-repeat;
 }
 
-.vbox {
-    -fx-background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent white background for the form */
+/* Logo styling */
+.logo {
+    -fx-background-image: url("/com/example/auth/images/logofront.png");
+    -fx-background-size: contain;
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: center;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 5, 0, 0, 2);
+    -fx-background-radius: 5px;
+}
+
+/* Transparent card style for both profile and login */
+.transparent-card {
+    -fx-background-color: rgba(255, 255, 255, 0.2);
     -fx-padding: 20px;
     -fx-border-radius: 10px;
     -fx-background-radius: 10px;
     -fx-max-width: 400px;
     -fx-alignment: center;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 10, 0, 0, 2); /* Subtle drop shadow for floating effect */
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 10, 0, 0, 2);
 }
 
+/* Reuse .vbox for non-card VBoxes if needed */
+.vbox {
+    -fx-background-color: rgba(255, 255, 255, 0.8);
+    -fx-padding: 20px;
+    -fx-border-radius: 10px;
+    -fx-background-radius: 10px;
+    -fx-max-width: 400px;
+    -fx-alignment: top-left;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 10, 0, 0, 2);
+}
+
+/* Profile card (optional override for specific styling) */
+.profile-card {
+    -fx-background-color: rgba(255, 255, 255, 0.2);
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-color: rgba(0, 0, 0, 0.1);
+    -fx-border-width: 1;
+    -fx-padding: 20;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 0, 2);
+}
+
+/* TextField and PasswordField styling */
 .text-field, .password-field {
-    -fx-background-color: #f0f0f0;
+    -fx-background-color: rgba(255, 255, 255, 0.9);
     -fx-border-color: #4CAF50;
     -fx-border-radius: 5px;
     -fx-padding: 5px;
@@ -25,11 +60,12 @@
 .text-field:focused, .password-field:focused {
     -fx-border-color: #4CAF50;
     -fx-border-width: 2px;
-    -fx-effect: dropshadow(gaussian, #4CAF50, 5, 0.5, 0, 0); /* Glow effect when focused */
+    -fx-effect: dropshadow(gaussian, #4CAF50, 5, 0.5, 0, 0);
 }
 
+/* Button styling */
 .button {
-    -fx-background-color: #4CAF50; /* Green color for agricultural theme */
+    -fx-background-color: #4CAF50;
     -fx-text-fill: white;
     -fx-font-weight: bold;
     -fx-border-radius: 5px;
@@ -38,21 +74,12 @@
 
 .button:hover {
     -fx-background-color: #45a049;
-    -fx-scale-x: 1.05; /* Slight scale-up on hover */
+    -fx-scale-x: 1.05;
     -fx-scale-y: 1.05;
     -fx-cursor: hand;
 }
 
-.hyperlink {
-    -fx-text-fill: #4CAF50;
-    -fx-font-weight: bold;
-}
-
-.hyperlink:hover {
-    -fx-text-fill: #45a049;
-    -fx-cursor: hand;
-}
-
+/* Label styling */
 .label {
     -fx-font-weight: bold;
     -fx-text-fill: #333;
@@ -60,8 +87,26 @@
 
 .message-label {
     -fx-font-weight: bold;
+    -fx-text-fill: #d32f2f;
+}
 
-    -fx-text-fill: #d32f2f; /* Red for error messages */
+/* Profile picture styling */
+.image-view {
+    -fx-border-color: #4CAF50;
+    -fx-border-width: 1;
+    -fx-border-radius: 50%;
+    -fx-background-radius: 50%;
+}
+
+/* Hyperlink styling */
+.hyperlink {
+    -fx-text-fill: #1f271f;
+    -fx-font-weight: bold;
+}
+
+.hyperlink:hover {
+    -fx-text-fill: #1a341b;
+    -fx-cursor: hand;
 }
 
 #photoPreview {
@@ -73,7 +118,7 @@
 
 #photoErrorLabel {
     -fx-font-size: 12px;
-    -fx-text-fill: #d32f2f; /* Red for error messages */
+    -fx-text-fill: #d32f2f;
 }
 
 .check-box .box {
@@ -89,11 +134,7 @@
 .check-box .text {
     -fx-fill: #333;
     -fx-font-weight: bold;
-
 }
-
-/* Styles pour la barre latérale */
-
 
 .nav-link {
     -fx-text-fill: #ecf0f1;
@@ -107,7 +148,6 @@
     -fx-background-color: #B67332;
 }
 
-/* Styles pour le sous-menu */
 .sub-menu {
     -fx-background-color: #93441A;
     -fx-background-radius: 0 0 5px 5px;
@@ -128,7 +168,6 @@
     -fx-text-fill: white;
 }
 
-/* Animation pour la flèche déroulante */
 .dropdown-arrow {
     -fx-rotate: 0;
     -fx-transition: -fx-rotate 0.3s ease-in-out;
@@ -138,7 +177,6 @@
     -fx-rotate: 180;
 }
 
-/* Styles pour le contenu principal */
 .main-content {
     -fx-background-color: #f5f5f5;
     -fx-padding: 20px;
@@ -153,5 +191,4 @@
 .welcome-label, .email-label {
     -fx-font-size: 16px;
     -fx-text-fill: #7f8c8d;
-
 }

@@ -3,10 +3,9 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.image.Image?>
-
 <?import javafx.scene.shape.Circle?>
-<BorderPane fx:id="borderPane" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.auth.controller.DashboardFrontController" styleClass="black-background"
-            stylesheets="@styles.css">
+
+<BorderPane fx:id="borderPane" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.auth.controller.DashboardFrontController" styleClass="black-background" stylesheets="@styles.css">
     <left>
         <VBox fx:id="sidebar" spacing="10" prefWidth="220" styleClass="sidebar">
             <VBox VBox.vgrow="ALWAYS"/>
@@ -17,7 +16,6 @@
                     </ImageView>
                 </graphic>
             </Hyperlink>
-
             <Hyperlink fx:id="productButton" text="Products" graphicTextGap="10" styleClass="nav-link">
                 <graphic>
                     <ImageView fitHeight="20" fitWidth="20">
@@ -32,7 +30,7 @@
                     </ImageView>
                 </graphic>
             </Hyperlink>
-            <Hyperlink fx:id="categoryButton" text="Whatshlist" styleClass="nav-link">
+            <Hyperlink fx:id="categoryButton" text="Wishlist" styleClass="nav-link">
                 <graphic>
                     <ImageView fitHeight="20" fitWidth="20">
                         <Image url="@icons/favorite.png"/>
@@ -46,7 +44,13 @@
                     </ImageView>
                 </graphic>
             </Hyperlink>
-
+            <Hyperlink fx:id="profileButton" text="Profile" graphicTextGap="10" styleClass="nav-link" onAction="#handleProfileClick">
+                <graphic>
+                    <ImageView fitHeight="20" fitWidth="20">
+                        <Image url="@icons/profile.png"/>
+                    </ImageView>
+                </graphic>
+            </Hyperlink>
             <Hyperlink fx:id="settings" text="Settings" graphicTextGap="10" styleClass="nav-link">
                 <graphic>
                     <ImageView fitHeight="20" fitWidth="20">
@@ -55,7 +59,7 @@
                 </graphic>
             </Hyperlink>
             <VBox VBox.vgrow="ALWAYS"/>
-            <Hyperlink fx:id="logoutButton" text="Logout" graphicTextGap="10" styleClass="nav-link">
+            <Hyperlink fx:id="logoutButton" text="Logout" graphicTextGap="10" styleClass="nav-link" onAction="#handleLogout">
                 <graphic>
                     <ImageView fitHeight="20" fitWidth="20">
                         <Image url="@icons/logout.png"/>
@@ -65,18 +69,16 @@
         </VBox>
     </left>
     <top>
-        <!-- In the <top> section -->
         <HBox styleClass="top-bar" spacing="20" alignment="CENTER">
+            <!-- Added welcomeLabel -->
+            <Label fx:id="welcomeLabel" text="Welcome" styleClass="welcome-label"/>
             <HBox styleClass="search-container" HBox.hgrow="ALWAYS">
                 <ImageView fitHeight="16" fitWidth="16" styleClass="search-icon">
                     <Image url="@icons/search.png"/>
                 </ImageView>
                 <TextField promptText="Search..." styleClass="search-field"/>
             </HBox>
-
-            <!-- Right Side Icons -->
             <HBox spacing="16" alignment="CENTER_RIGHT">
-                <!-- Notification Icon -->
                 <StackPane styleClass="icon-container">
                     <ImageView fitHeight="20" fitWidth="20">
                         <Image url="@icons/notification.png"/>
@@ -112,7 +114,6 @@
                     <Label styleClass="stat-change-positive" text="+3.72% From last month" />
                 </VBox>
             </HBox>
-
         </VBox>
     </center>
 </BorderPane>

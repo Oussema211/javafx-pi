@@ -33,11 +33,8 @@
     <HBox spacing="20" alignment="CENTER">
         <Label fx:id="cartLabel" text="🛒 Cart 0" style="-fx-font: normal 14px 'Arial'; -fx-text-fill: #000000; -fx-cursor: hand;"/>
         <Label fx:id="accountLabel" text="👤 My Account" style="-fx-font: normal 14px 'Arial'; -fx-text-fill: #000000; -fx-cursor: hand;"/>
-        <Label fx:id="logoutButton" text="Logout"
-       onMouseClicked="#handleLogout"
-       style="-fx-font: normal 14px 'Arial'; -fx-text-fill: #000000; -fx-cursor: hand;"/>
-
-
+        <Label fx:id="profileLabel" text="📄 Profile" style="-fx-font: normal 14px 'Arial'; -fx-text-fill: #000000; -fx-cursor: hand;" onMouseClicked="#handleProfileClick"/>
+        <Label fx:id="logoutButton" text="Logout" onMouseClicked="#handleLogout" style="-fx-font: normal 14px 'Arial'; -fx-text-fill: #000000; -fx-cursor: hand;"/>
     </HBox>
 
 </HBox>
