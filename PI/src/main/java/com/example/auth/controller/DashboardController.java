@@ -44,7 +44,7 @@ public class DashboardController {
     private void loadContent(String fxmlPath) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
-            VBox content = loader.load();
+            Parent content = loader.load();
             borderPane.setCenter(content);
         } catch (IOException e) {
             e.printStackTrace();

@@ -218,14 +218,15 @@ public class ReclamationController {
             editBtn.setOnAction(e -> handleEdit(rec.getId()));
             editBtn.setOnMouseEntered(e -> editBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-background-radius: 50%; -fx-padding: 10;"));
             editBtn.setOnMouseExited(e -> editBtn.setStyle("-fx-background-color: #f5f5f5; -fx-background-radius: 50%; -fx-padding: 10;"));
-    
-            Button deleteBtn = new Button("Delete");
-            deleteBtn.setStyle("-fx-background-color: #f5f5f5; -fx-background-radius: 50%; -fx-padding: 10;");
-            deleteBtn.setOnAction(e -> handleDelete(rec.getId()));
-            deleteBtn.setOnMouseEntered(e -> deleteBtn.setStyle("-fx-background-color: #ff5555; -fx-text-fill: white; -fx-background-radius: 50%; -fx-padding: 10;"));
-            deleteBtn.setOnMouseExited(e -> deleteBtn.setStyle("-fx-background-color: #f5f5f5; -fx-background-radius: 50%; -fx-padding: 10;"));
-    
-            actionButtons.getChildren().addAll(editBtn, deleteBtn);
+            Button deleteBtn = new Button();
+            Image deleteImage = new Image(getClass().getResourceAsStream("/icons/delete.png"));
+            // Create an ImageView for the image and set its desired dimensions
+            ImageView deleteIcon = new ImageView(deleteImage);
+            deleteIcon.setFitWidth(20);  // adjust width as needed
+            deleteIcon.setFitHeight(20); // adjust height as needed
+
+            // Assign the ImageView to the button as its graphic
+            deleteBtn.setGraphic(deleteIcon);
         }
     
         card.getChildren().addAll(profileContainer, contentWrapper, actionButtons);
