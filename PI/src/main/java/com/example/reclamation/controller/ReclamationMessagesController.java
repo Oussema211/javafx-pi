@@ -561,15 +561,27 @@ public class ReclamationMessagesController {
             alert.showAndWait();
             return;
         }
-
-        if (content.trim().isEmpty()) {
+    
+        String trimmedContent = content.trim();
+        // Check if the content is blank
+        if (trimmedContent.isEmpty()) {
             Alert alert = new Alert(Alert.AlertType.WARNING, "Reply content cannot be empty.");
             alert.getDialogPane().setStyle("-fx-background-color: #ffffff; -fx-border-color: #6C983B; -fx-border-radius: 10;");
             alert.setHeaderText(null);
             alert.showAndWait();
             return;
         }
-
+    
+        // Check if the content has at least two words
+        String[] words = trimmedContent.split("\\s+");
+        if (words.length < 2) {
+            Alert alert = new Alert(Alert.AlertType.WARNING, "Reply must contain at least two words.");
+            alert.getDialogPane().setStyle("-fx-background-color: #ffffff; -fx-border-color: #6C983B; -fx-border-radius: 10;");
+            alert.setHeaderText(null);
+            alert.showAndWait();
+            return;
+        }
+    
         User dbUser = authService.getUserById(currentUser.getId());
         if (dbUser == null) {
             Alert alert = new Alert(Alert.AlertType.ERROR, "Your user account is not found in the database. Please log in again.");
@@ -579,11 +591,11 @@ public class ReclamationMessagesController {
             sessionManager.clearSession();
             return;
         }
-
+    
         System.out.println("Attempting to add message with user_id: " + currentUser.getId() +
                           ", reclamation_id: " + selectedReclamation.getId() +
                           ", content: " + content);
-
+    
         boolean success = messageService.addMessage(currentUser.getId(), selectedReclamation.getId(), content);
         if (success) {
             replyText.clear();
