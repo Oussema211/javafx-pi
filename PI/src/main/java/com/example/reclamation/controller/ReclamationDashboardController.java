@@ -52,6 +52,7 @@ public class ReclamationDashboardController {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private ObservableList<Reclamation> reclamationsList;
     private ObservableList<Reclamation> filteredReclamations;
+    private Stage primaryStage;
 
     @FXML
     public void initialize() {
@@ -344,18 +345,23 @@ public class ReclamationDashboardController {
             }
         }
     }
-
+    public void setPrimaryStage(Stage stage) {
+        this.primaryStage = stage;
+    }
     private void showMessagesWindow(Reclamation reclamation) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/pages/ReclamationMessages.fxml"));
-            Parent root = loader.load();
-
-            MessagesRecController controller = loader.getController();
-            controller.initData(reclamation, sessionManager.getLoggedInUser().getId());
-
+            // Stage currentStage = (Stage) reclamationsFlowPane.getScene().getWindow();
+            // currentStage.close();
+    
             Stage messagesStage = new Stage();
-            messagesStage.initModality(Modality.WINDOW_MODAL);
-            messagesStage.initOwner(reclamationsFlowPane.getScene().getWindow());
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/reclamation/ReclamationMessages.fxml"));
+            Parent root = loader.load();
+    
+    
+            ReclamationMessagesController controller = loader.getController();
+            controller.setSelectedReclamation(reclamation);
+            controller.setPrimaryStage(messagesStage); 
+    
             messagesStage.setTitle("Messages - " + reclamation.getTitle());
             messagesStage.setScene(new Scene(root, 800, 600));
             messagesStage.show();

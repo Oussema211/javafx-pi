@@ -40,8 +40,10 @@ public class DashboardController {
     @FXML private Label welcomeLabel;
     @FXML private Label emailLabel;
 
-
-    private void loadContent(String fxmlPath) {
+    public BorderPane getBorderPane() {
+        return borderPane;
+    }
+    public void loadContent(String fxmlPath) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
             Parent content = loader.load();
@@ -50,6 +52,7 @@ public class DashboardController {
             e.printStackTrace();
         }
     }
+    
 
     private SessionManager sessionManager = SessionManager.getInstance();
 
@@ -78,7 +81,9 @@ public class DashboardController {
                 throw new RuntimeException(e);
             }
         });
+        
     }
+    
 
     @FXML
     private void handleLogout() throws IOException {
