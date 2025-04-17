@@ -48,7 +48,6 @@ import java.util.stream.Collectors;
 
 public class ReclamationDashboardController {
 
-    @FXML private Label welcomeLabel;
     @FXML private FlowPane reclamationsFlowPane;
     @FXML private TextField searchField;
     @FXML private Button clearSearchButton;
@@ -69,8 +68,7 @@ public class ReclamationDashboardController {
             return;
         }
 
-        welcomeLabel.setText("Welcome, " + user.getPrenom() + " " + user.getNom() + "!");
-        applyFadeIn(welcomeLabel);
+        
 
         setupFlowPane();
         setupSearch();
@@ -112,7 +110,7 @@ public class ReclamationDashboardController {
     }
     private void loadFallbackImage(ImageView avatar, User user) {
     String initials = (user != null && user.getPrenom() != null && user.getNom() != null)
-        ? (user.getPrenom().charAt(0) + "" + user.getNom().charAt(0)).toUpperCase()
+        ? (user.getPrenom().charAt(0) + "" ).toUpperCase()
         : "UU";
     StackPane textAvatar = new StackPane();
     Circle circle = new Circle(30);
@@ -192,7 +190,7 @@ private VBox createReclamationCard(Reclamation reclamation) {
     });
 
     // Labels
-    Label userIdLabel = new Label((user != null ? user.getPrenom() + " " + user.getNom() : "Unknown"));
+    Label userIdLabel = new Label((user != null ? user.getPrenom() + " "  : "Unknown"));
     userIdLabel.setStyle("-fx-font-family: 'Arial'; -fx-font-size: 13; -fx-text-fill: #64748b;");
 
     LocalDateTime dateTime = LocalDateTime.ofInstant(
@@ -449,13 +447,7 @@ private VBox createReclamationCard(Reclamation reclamation) {
         }
     }
 
-    @FXML
-    private void handleLogout() throws IOException {
-        sessionManager.clearSession();
-        Stage stage = (Stage) welcomeLabel.getScene().getWindow();
-        Parent root = FXMLLoader.load(getClass().getResource("/com/example/auth/login.fxml"));
-        stage.setScene(new Scene(root));
-    }
+  
 
     private Stage createStyledStage(String title) {
         Stage stage = new Stage();

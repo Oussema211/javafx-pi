@@ -11,7 +11,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox prefHeight="700.0" prefWidth="1200.0" spacing="0" style="-fx-background-color: linear-gradient(to bottom right, #f0f4f8, #d9e2ec);" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.Stock.Controller.EntrepotController">
+<VBox prefHeight="700.0" prefWidth="1200.0"  spacing="0" style="-fx-background-color: linear-gradient(to bottom right, #f0f4f8, #d9e2ec);" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.Stock.Controller.EntrepotController">
 
     <!-- Top Bar -->
     <HBox fx:id="topBar" alignment="CENTER" spacing="20" style="-fx-background-color: #ffffff; -fx-border-color: #e0e0e0; -fx-border-width: 0 0 1 0; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 10, 0, 0, 2);">
