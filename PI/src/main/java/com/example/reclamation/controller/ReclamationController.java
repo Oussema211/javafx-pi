@@ -349,10 +349,10 @@ public class ReclamationController {
         if (tagId == null) return "#999999";
         String tagIdStr = tagId.toString();
         switch (tagIdStr) {
-            case "11d2c8d3-f48e-11ef-a0dc-8c8caa96b2fa": return "#7AAE49"; // General Info
-            case "20743b83-f48e-11ef-a0dc-8c8caa96b2fa": return "#FF5555"; // Wrong product
-            case "294a4472-f48e-11ef-a0dc-8c8caa96b2fa": return "#FF9800"; // Illegal activity
-            default: return "#999999"; // Default gray
+            case "11d2c8d3-f48e-11ef-a0dc-8c8caa96b2fa": return "#7AAE49"; 
+            case "20743b83-f48e-11ef-a0dc-8c8caa96b2fa": return "#FF5555"; 
+            case "294a4472-f48e-11ef-a0dc-8c8caa96b2fa": return "#FF9800";
+            default: return "#999999"; // didnt use those 
         }
     }
 
@@ -431,39 +431,32 @@ public class ReclamationController {
             st.play();
         });
 
-        // Add an event filter to validate before allowing the dialog to proceed
         saveButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
             String title = titleField.getText().trim();
             String description = descField.getText().trim();
 
-            // Reset error messages
             titleError.setText("");
             descError.setText("");
             messageLabel.setText("");
 
-            // Track validation failures
             boolean hasErrors = false;
 
-            // Validate title length (at least 5 letters)
             if (title.length() < 5) {
                 titleError.setText("Title must be at least 5 letters long.");
                 hasErrors = true;
             }
 
-            // Validate description word count (at least 6 words)
             String[] words = description.split("\\s+");
             if (description.isEmpty() || words.length < 6) {
                 descError.setText("Description must contain at least 6 words.");
                 hasErrors = true;
             }
 
-            // Prevent dialog from proceeding if there are errors
             if (hasErrors) {
                 event.consume();
             }
         });
 
-        // Handle action if validation passes
         saveButton.setOnAction(e -> {
             try {
                 if (rec != null) {
@@ -490,7 +483,6 @@ public class ReclamationController {
             }
         });
 
-        // Fade in effect for the dialog content
         FadeTransition fadeIn = new FadeTransition(Duration.millis(500), content);
         fadeIn.setFromValue(0);
         fadeIn.setToValue(1);
@@ -558,7 +550,6 @@ public class ReclamationController {
         descError.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
         descGroup.getChildren().addAll(descFieldLabel, descField, descError);
 
-        // Tag field
         VBox tagGroup = new VBox(8);
         Label tagFieldLabel = new Label("Tag:");
         tagFieldLabel.getStyleClass().add("form-label");
@@ -567,18 +558,15 @@ public class ReclamationController {
         tagCombo.setPromptText("Tag (optional)");
         tagCombo.getStyleClass().add("form-field");
         tagGroup.getChildren().addAll(tagFieldLabel, tagCombo);
-
-        // Message label for database errors
         Label messageLabel = new Label();
         messageLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
 
-        // Add all components to content
+
         content.getChildren().addAll(titleLabel, subtitle, titleGroup, descGroup, tagGroup, messageLabel);
 
         Button createButton = (Button) dialog.getDialogPane().lookupButton(createButtonType);
         createButton.getStyleClass().add("primary-button");
 
-        // Button press animation
         createButton.setOnMousePressed(e -> {
             ScaleTransition st = new ScaleTransition(Duration.millis(200), createButton);
             st.setFromX(1.0);
@@ -613,13 +601,10 @@ public class ReclamationController {
                 hasErrors = true;
             }
 
-            // Prevent dialog from proceeding if there are errors
             if (hasErrors) {
                 event.consume();
             }
         });
-
-        // Handle action if validation passes
         createButton.setOnAction(e -> {
             try {
                 String title = titleField.getText().trim();

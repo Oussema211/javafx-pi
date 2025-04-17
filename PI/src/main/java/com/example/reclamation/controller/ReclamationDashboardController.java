@@ -82,7 +82,7 @@ public class ReclamationDashboardController {
                 reclamationsFlowPane.prefWidthProperty().bind(newScene.widthProperty());
             }
         });
-        reclamationsFlowPane.setPrefWidth(800); // Fallback width
+        reclamationsFlowPane.setPrefWidth(800); 
     }
 
     private void setupSearch() {
@@ -174,7 +174,6 @@ private VBox createReclamationCard(Reclamation reclamation) {
         loadFallbackImage(profilePicture, user);
     }
 
-    // Image animations
     ScaleTransition imageHover = new ScaleTransition(Duration.millis(200), profilePicture);
     imageHover.setToX(1.1);
     imageHover.setToY(1.1);
@@ -198,9 +197,9 @@ private VBox createReclamationCard(Reclamation reclamation) {
     Label descLabel = new Label("Context: " + reclamation.getDescription());
     descLabel.setStyle("-fx-font-family: 'Arial'; -fx-font-size: 13; -fx-text-fill: #000000; -fx-font-weight: bold;");
     descLabel.setWrapText(true);
-    descLabel.setMaxWidth(280); // Match titleLabel width for consistency
-    descLabel.setMaxHeight(40); // Approximate height for two lines (13px font * 2 + padding)
-    descLabel.setTextOverrun(OverrunStyle.ELLIPSIS); // Add ellipsis for truncated text
+    descLabel.setMaxWidth(280); 
+    descLabel.setMaxHeight(40);
+    descLabel.setTextOverrun(OverrunStyle.ELLIPSIS); 
 
     Label dateLabel = new Label("Date: " + DATE_FORMATTER.format(dateTime));
     dateLabel.setStyle("-fx-font-family: 'Arial'; -fx-font-size: 13; -fx-text-fill: #64748b;");
@@ -215,7 +214,6 @@ private VBox createReclamationCard(Reclamation reclamation) {
     statusLabel.setPadding(new Insets(6, 12, 6, 12));
     statusLabel.setAlignment(Pos.CENTER);
 
-    // Action buttons
     Button editButton = createModernButton("Edit", "#3b82f6");
     editButton.setOnAction(e -> showEditReclamationForm(reclamation));
 
@@ -229,7 +227,6 @@ private VBox createReclamationCard(Reclamation reclamation) {
     buttonBox.setAlignment(Pos.CENTER);
     buttonBox.setPadding(new Insets(10, 0, 0, 0));
 
-    // Layout image and labels
     HBox topBox = new HBox(12);
     topBox.setAlignment(Pos.CENTER_LEFT);
     topBox.getChildren().addAll(profilePicture, new VBox(8, titleLabel, userIdLabel));

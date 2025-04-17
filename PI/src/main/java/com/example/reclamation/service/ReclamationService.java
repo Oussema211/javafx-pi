@@ -59,7 +59,6 @@ public class ReclamationService {
             return false;
         }
     }
-    // Read: Get reclamation by ID
     public Reclamation getReclamationById(UUID id) {
         String sql = "SELECT * FROM reclamations WHERE id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -83,7 +82,6 @@ public class ReclamationService {
         return null;
     }
 
-    // Read: Get all reclamations
     public List<Reclamation> getAllReclamations() {
         List<Reclamation> reclamations = new ArrayList<>();
         String sql = "SELECT * FROM reclamations";
@@ -107,7 +105,6 @@ public class ReclamationService {
         return reclamations;
     }
 
-    // Update: Update an existing reclamation
     public boolean updateReclamation(Reclamation reclamation) {
         String sql = "UPDATE reclamations SET user_id = ?, tag_id = ?, date_reclamation = ?, rate = ?, " +
                      "title = ?, description = ?, statut = ? WHERE id = ?";
@@ -127,8 +124,6 @@ public class ReclamationService {
             return false;
         }
     }
-
-    // Delete: Delete a reclamation by ID
     public boolean deleteReclamation(UUID id) {
         String sql = "DELETE FROM reclamations WHERE id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
