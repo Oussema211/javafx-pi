@@ -11,6 +11,7 @@
     <HBox style="-fx-background-color: #ffffff; -fx-padding: 12 16; -fx-border-color: #e2e8f0; -fx-border-width: 0 0 1 0; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 1);">
         <VBox>
             <Label fx:id="titleLabel" style="-fx-font: bold 16px 'Arial'; -fx-text-fill: #1e3a8a;"/>
+            <Label fx:id="descriptionLabel" style="-fx-font: bold 16px 'Arial'; -fx-text-fill: #1e3a8a;"/>
             <Label fx:id="dateLabel" style="-fx-font: normal 12px 'Arial'; -fx-text-fill: #64748b;"/>
         </VBox>
     </HBox>

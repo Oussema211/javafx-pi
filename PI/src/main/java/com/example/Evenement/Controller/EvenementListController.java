@@ -4,6 +4,7 @@ import com.example.Evenement.Dao.EvenementDAO;
 import com.example.Evenement.Model.Evenement;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -14,6 +15,8 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
 import javafx.util.Callback;
+import javafx.geometry.Pos;
+import javafx.geometry.Insets;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,93 +28,142 @@ public class EvenementListController {
 
     @FXML
     private ListView<Evenement> eventTable;
+    @FXML
+    private TextField searchField;
+    @FXML
+    private Label totalLabel;
 
     private final ObservableList<Evenement> eventList = FXCollections.observableArrayList();
+    private final FilteredList<Evenement> filteredEvents = new FilteredList<>(eventList);
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     @FXML
     public void initialize() {
+        setupSearchFilter();
         loadEvents();
         setupCellFactory();
+        updateTotalLabel();
+    }
+
+    private void setupSearchFilter() {
+        searchField.textProperty().addListener((observable, oldValue, newValue) -> {
+            filteredEvents.setPredicate(event -> {
+                if (newValue == null || newValue.isEmpty()) {
+                    return true;
+                }
+
+                String lowerCaseFilter = newValue.toLowerCase();
+                return event.getTitre().toLowerCase().contains(lowerCaseFilter) ||
+                        event.getDescription().toLowerCase().contains(lowerCaseFilter) ||
+                        event.getType().getLabel().toLowerCase().contains(lowerCaseFilter) ||
+                        event.getRegions().stream().anyMatch(r -> r.getNom().toLowerCase().contains(lowerCaseFilter));
+            });
+            updateTotalLabel();
+        });
     }
 
     private void loadEvents() {
         try {
             eventList.setAll(new EvenementDAO().getAll());
-            eventTable.setItems(eventList);
+            eventTable.setItems(filteredEvents);
+            updateTotalLabel();
         } catch (Exception e) {
             showAlert("Erreur", "Erreur lors du chargement des événements: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
+    @FXML
+    private void handleRefresh() {
+        loadEvents();
+    }
+
+    private void updateTotalLabel() {
+        totalLabel.setText("Total: " + filteredEvents.size() + " événements");
+    }
+
     private void setupCellFactory() {
-        eventTable.setCellFactory(new Callback<>() {
+        eventTable.setCellFactory(param -> new ListCell<Evenement>() {
+            private final HBox root = new HBox(20);
+            private final VBox infoBox = new VBox(8);
+            private final ImageView imageView = new ImageView();
+            private final Label titleLabel = new Label();
+            private final Label dateLabel = new Label();
+            private final Label regionLabel = new Label();
+            private final Label typeLabel = new Label();
+            private final HBox buttonBox = new HBox(10);
+
+            {
+                // Configuration de la mise en page
+                root.setAlignment(Pos.CENTER_LEFT);
+                root.setPadding(new Insets(15));
+                root.setStyle("-fx-background-color: white; -fx-background-radius: 12;");
+
+                // Style des éléments
+                titleLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
+                dateLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #666;");
+                regionLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #666;");
+                typeLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #666;");
+
+                // Configuration de l'image
+                imageView.setFitWidth(100);
+                imageView.setFitHeight(100);
+                imageView.setPreserveRatio(true);
+                imageView.setStyle("-fx-border-radius: 8; -fx-background-radius: 8;");
+
+                // Configuration des boutons
+                Button btnEdit = new Button("Modifier");
+                Button btnDelete = new Button("Supprimer");
+                Button btnDetails = new Button("Voir détails");
+
+                btnEdit.setStyle("-fx-background-color: #93441A; -fx-text-fill: white; -fx-font-weight: bold;");
+                btnDelete.setStyle("-fx-background-color: #B67332; -fx-text-fill: white; -fx-font-weight: bold;");
+                btnDetails.setStyle("-fx-background-color: #DAAB3A; -fx-text-fill: white; -fx-font-weight: bold;");
+
+                btnEdit.setOnAction(e -> openEventForm(getItem()));
+                btnDelete.setOnAction(e -> handleDelete(getItem()));
+                btnDetails.setOnAction(e -> showEventDetails(getItem()));
+
+                buttonBox.getChildren().addAll(btnEdit, btnDelete, btnDetails);
+
+                // Ajout des éléments à la VBox d'informations
+                infoBox.getChildren().addAll(titleLabel, dateLabel, regionLabel, typeLabel, buttonBox);
+
+                // Ajout des deux colonnes à la HBox racine
+                root.getChildren().addAll(imageView, infoBox);
+            }
+
             @Override
-            public ListCell<Evenement> call(ListView<Evenement> listView) {
-                return new ListCell<>() {
-                    @Override
-                    protected void updateItem(Evenement event, boolean empty) {
-                        super.updateItem(event, empty);
+            protected void updateItem(Evenement event, boolean empty) {
+                super.updateItem(event, empty);
 
-                        if (empty || event == null) {
-                            setGraphic(null);
-                            return;
-                        }
+                if (empty || event == null) {
+                    setGraphic(null);
+                    return;
+                }
 
-                        VBox box = new VBox(5);
-                        box.setStyle("-fx-background-color: white; -fx-background-radius: 10; -fx-padding: 15; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.07), 6, 0, 0, 3);");
+                // Mise à jour des informations
+                titleLabel.setText(event.getTitre());
+                dateLabel.setText("Du " + event.getDateDebut().format(DATE_FORMATTER) +
+                        " au " + event.getDateFin().format(DATE_FORMATTER));
+                regionLabel.setText("Régions : " + event.getRegions().stream()
+                        .map(r -> r.getNom()).collect(Collectors.joining(", ")));
+                typeLabel.setText("Type : " + event.getType().getLabel() +
+                        " | Statut : " + event.getStatut().getLabel());
 
-                        // Affichage de l'image de l'événement
-                        ImageView imageView = new ImageView();
-                        if (event.getPhotoPath() != null && !event.getPhotoPath().isEmpty()) {
-                            File file = new File(event.getPhotoPath());
-                            if (file.exists()) {
-                                imageView.setImage(new Image(file.toURI().toString()));
-                                imageView.setFitWidth(100);
-                                imageView.setFitHeight(100);
-                                imageView.setPreserveRatio(true);
-                            }
-                        }
-
-                        // Titre de l'événement
-                        Label title = new Label(event.getTitre());
-                        title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
-
-                        // Description de l'événement
-                        Label description = new Label(event.getDescription());
-                        description.setStyle("-fx-font-size: 13px; -fx-text-fill: #555;");
-
-                        // Informations supplémentaires sur l'événement
-                        Label infos = new Label(
-                                "📅 Du " + event.getDateDebut().format(DATE_FORMATTER)
-                                        + " au " + event.getDateFin().format(DATE_FORMATTER) + "\n" +
-                                        "📍 Régions : " + event.getRegions().stream().map(r -> r.getNom()).collect(Collectors.joining(", ")) + "\n" +
-                                        "🔖 Type : " + event.getType().getLabel() + " | Statut : " + event.getStatut().getLabel()
-                        );
-                        infos.setStyle("-fx-font-size: 12px; -fx-text-fill: #777;");
-
-                        // Boutons d'action (modifier, supprimer, voir détails)
-                        HBox buttons = new HBox(10);
-                        Button btnEdit = new Button("Modifier");
-                        Button btnDelete = new Button("Supprimer");
-                        Button btnDetails = new Button("Voir détails");
-
-                        btnEdit.setStyle("-fx-background-color: #93441A; -fx-text-fill: white; -fx-font-weight: bold;");
-                        btnDelete.setStyle("-fx-background-color: #B67332; -fx-text-fill: white; -fx-font-weight: bold;");
-                        btnDetails.setStyle("-fx-background-color: #DAAB3A; -fx-text-fill: white; -fx-font-weight: bold;");
-
-                        btnEdit.setOnAction(e -> openEventForm(event));
-                        btnDelete.setOnAction(e -> handleDelete(event));
-                        btnDetails.setOnAction(e -> showEventDetails(event));
-
-                        buttons.getChildren().addAll(btnEdit, btnDelete, btnDetails);
-
-                        // Ajouter l'image et le texte à la boîte
-                        box.getChildren().addAll(imageView, title, description, infos, buttons);
-                        setGraphic(box);
+                // Mise à jour de l'image
+                if (event.getPhotoPath() != null && !event.getPhotoPath().isEmpty()) {
+                    File file = new File(event.getPhotoPath());
+                    if (file.exists()) {
+                        imageView.setImage(new Image(file.toURI().toString()));
+                    } else {
+                        imageView.setImage(null);
                     }
-                };
+                } else {
+                    imageView.setImage(null);
+                }
+
+                setGraphic(root);
             }
         });
     }
@@ -166,6 +218,7 @@ public class EvenementListController {
                 new EvenementDAO().delete(event.getId());
                 eventList.remove(event);
                 showAlert("Succès", "Événement supprimé avec succès");
+                updateTotalLabel();
             } catch (Exception e) {
                 showAlert("Erreur", "Erreur lors de la suppression: " + e.getMessage());
             }

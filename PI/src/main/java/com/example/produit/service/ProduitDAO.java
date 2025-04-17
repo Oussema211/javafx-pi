@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 public class ProduitDAO {
-    private static final String URL = "jdbc:mysql://localhost:3306/pidev";
+    private static final String URL = "jdbc:mysql://localhost:3306/pidevv";
     private static final String USER = "root";
     private static final String PASSWORD = "";
 
