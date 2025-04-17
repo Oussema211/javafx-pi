@@ -21,6 +21,7 @@ import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 public class CategorieController {
 
@@ -136,36 +137,71 @@ public class CategorieController {
         URL cssUrl = getClass().getResource("/com/example/css/categoriedialog.css");
         if (cssUrl != null) {
             dialogPane.getStylesheets().add(cssUrl.toExternalForm());
-            System.out.println("bitch it works");
         } else {
-            System.err.println("Warning: CSS file /com/example/css/produits.css not found. Using default styles.");
+            System.err.println("Warning: CSS file /com/example/css/categoriedialog.css not found. Using default styles.");
             dialogPane.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-padding: 10;");
         }
+        dialogPane.getStyleClass().add("dialog-pane");
 
+        // Form fields
         TextField nameField = new TextField();
         nameField.getStyleClass().add("modal-text-field");
         TextArea descriptionField = new TextArea();
         descriptionField.getStyleClass().add("modal-text-field");
-        Label dateCreationLabel = new Label();
 
+        // Error labels (small font, minimal space)
+        Label nameError = new Label();
+        Label descriptionError = new Label();
+        nameError.setStyle("-fx-text-fill: red; -fx-font-size: 10px;");
+        descriptionError.setStyle("-fx-text-fill: red; -fx-font-size: 10px;");
+
+        // Populate fields for edit
         if (category != null) {
             nameField.setText(category.getNom());
             descriptionField.setText(category.getDescription());
-            dateCreationLabel.setText(category.getDateCreation().toString());
-        } else {
-            dateCreationLabel.setText(LocalDateTime.now().toString());
         }
 
-        // Create the form layout
+        // Validation patterns and rules
+        Pattern namePattern = Pattern.compile("^[a-zA-Z0-9\\s-]{3,50}$");
+
+        // Real-time validation
+        nameField.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal.trim().isEmpty()) {
+                nameError.setText("Name cannot be empty");
+                nameField.setStyle("-fx-border-color: red;");
+            } else if (!namePattern.matcher(newVal).matches()) {
+                nameError.setText("3-50 chars, letters, numbers, spaces, hyphens");
+                nameField.setStyle("-fx-border-color: red;");
+            } else {
+                nameError.setText("");
+                nameField.setStyle("");
+            }
+        });
+
+        descriptionField.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal.trim().isEmpty()) {
+                descriptionError.setText("Description cannot be empty");
+                descriptionField.setStyle("-fx-border-color: red;");
+            } else if (newVal.length() > 200) {
+                descriptionError.setText("Max 200 characters");
+                descriptionField.setStyle("-fx-border-color: red;");
+            } else {
+                descriptionError.setText("");
+                descriptionField.setStyle("");
+            }
+        });
+
+        // Grid layout with error labels in same column
         GridPane grid = new GridPane();
         grid.setHgap(10);
-        grid.setVgap(10);
+        grid.setVgap(5); // Reduced gap to minimize space
         grid.addRow(0, new Label("Name:"), nameField);
-        grid.addRow(1, new Label("Description:"), descriptionField);
-        grid.addRow(2, new Label("Date Creation:"), dateCreationLabel);
+        grid.add(nameError, 1, 1);
+        grid.addRow(2, new Label("Description:"), descriptionField);
+        grid.add(descriptionError, 1, 3);
 
         grid.getChildren().forEach(node -> {
-            if (node instanceof Label) {
+            if (node instanceof Label && !node.getStyle().contains("-fx-font-size: 10px")) {
                 node.getStyleClass().add("modal-label");
             }
         });
@@ -179,21 +215,39 @@ public class CategorieController {
         dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
 
         // Style the buttons
-        dialog.getDialogPane().lookupButton(saveButtonType).getStyleClass().add("modal-save-button");
+        Button saveButton = (Button) dialog.getDialogPane().lookupButton(saveButtonType);
+        saveButton.getStyleClass().add("modal-save-button");
         dialog.getDialogPane().lookupButton(ButtonType.CANCEL).getStyleClass().add("modal-cancel-button");
+
+        // Disable save button until all validations pass
+        saveButton.setDisable(true);
+
+        // Validation check for save button
+        Runnable validateForm = () -> {
+            boolean isValid =
+                    !nameField.getText().trim().isEmpty() &&
+                            namePattern.matcher(nameField.getText()).matches() &&
+                            !descriptionField.getText().trim().isEmpty() &&
+                            descriptionField.getText().length() <= 200;
+            saveButton.setDisable(!isValid);
+        };
+
+        nameField.textProperty().addListener((obs, old, newVal) -> validateForm.run());
+        descriptionField.textProperty().addListener((obs, old, newVal) -> validateForm.run());
 
         dialog.setResultConverter(buttonType -> {
             if (buttonType == saveButtonType) {
                 try {
                     Categorie newCategory = category != null ? category : new Categorie();
-                    newCategory.setNom(nameField.getText());
-                    newCategory.setDescription(descriptionField.getText());
+                    newCategory.setNom(nameField.getText().trim());
+                    newCategory.setDescription(descriptionField.getText().trim());
                     if (category == null) {
                         newCategory.setDateCreation(LocalDateTime.now());
                         newCategory.setId(UUID.randomUUID());
                         CategorieDAO.saveCategory(newCategory);
                         categoryList.add(newCategory);
                     } else {
+                        // Preserve existing dateCreation for edits
                         CategorieDAO.updateCategory(newCategory);
                         categoryTableView.refresh();
                     }
