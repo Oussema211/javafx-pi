@@ -6,6 +6,8 @@ import com.example.purchasingbackend.model.ProduitCommandeTemp;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -28,6 +30,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 public class PurchasingController {
+
+    @FXML
+    private TextField searchField;
 
     @FXML
     private TableView<CommandeFinalisee> commandeTable;
@@ -77,6 +82,8 @@ public class PurchasingController {
     }
     private void addActionButtonsToTable() {
         TableColumn<CommandeFinalisee, Void> colActions = new TableColumn<>("Actions");
+        colActions.setPrefWidth(300);
+
 
         colActions.setCellFactory(param -> new TableCell<>() {
             private final Button btnModifier = new Button(" Modifier");
@@ -116,9 +123,22 @@ public class PurchasingController {
 
 
     private void loadCommandes() {
-        commandeList = FXCollections.observableArrayList(CommandeFinaliseeDAO.getAllCommandes());
-        commandeTable.setItems(commandeList);
+        List<CommandeFinalisee> allCommandes = CommandeFinaliseeDAO.getAllCommandes();
+        commandeList = FXCollections.observableArrayList(allCommandes);
+
+        FilteredList<CommandeFinalisee> filteredData = new FilteredList<>(commandeList, p -> true);
+
+        searchField.textProperty().addListener((obs, oldVal, newVal) -> {
+            String lowerCaseFilter = newVal.toLowerCase();
+            filteredData.setPredicate(cmd -> {
+                if (lowerCaseFilter.isEmpty()) return true;
+                return cmd.getUtilisateur().getUsername().toLowerCase().contains(lowerCaseFilter);
+            });
+        });
+
+        commandeTable.setItems(filteredData);
     }
+
 
     @FXML
     private void handleAddCommande() {
@@ -154,8 +174,32 @@ public class PurchasingController {
             updateSummary[0].run();
         });
         quantiteCol.setPrefWidth(100);
+        TableColumn<ProduitCommandeTemp, Void> supprimerCol = new TableColumn<>("Action");
+        supprimerCol.setPrefWidth(100);
+        supprimerCol.setCellFactory(param -> new TableCell<>() {
+            private final Button btnSupprimer = new Button("🗑");
 
-        produitTableView.getColumns().addAll(nomCol, quantiteCol);
+            {
+                btnSupprimer.setStyle("-fx-background-color: #e53935; -fx-text-fill: white; -fx-background-radius: 5; -fx-cursor: hand;");
+                btnSupprimer.setOnAction(e -> {
+                    ProduitCommandeTemp produit = getTableView().getItems().get(getIndex());
+                    selectedProduits.remove(produit);
+                    updateSummary[0].run();
+                });
+            }
+
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    setGraphic(btnSupprimer);
+                }
+            }
+        });
+
+        produitTableView.getColumns().addAll(nomCol, quantiteCol, supprimerCol);
         produitTableView.setEditable(true);
 
         ComboBox<Produit> produitComboBox = new ComboBox<>();
@@ -217,20 +261,49 @@ public class PurchasingController {
         dialog.getDialogPane().setContent(grid);
         dialog.getDialogPane().setPrefWidth(600);
         dialog.getDialogPane().setPrefHeight(500);
-        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        ButtonType validateButtonType = new ButtonType("Valider", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(validateButtonType, ButtonType.CANCEL);
+
+
+
+
+        Button validateButton = (Button) dialog.getDialogPane().lookupButton(validateButtonType);
+
+// 👇 Ajoute cette action personnalisée pour empêcher la fermeture automatique
+        validateButton.addEventFilter(ActionEvent.ACTION, event -> {
+            User user = userComboBox.getValue();
+            LocalDate date = datePicker.getValue();
+
+            if (user == null) {
+                showAlert(Alert.AlertType.WARNING, "Utilisateur manquant", "Veuillez sélectionner un utilisateur.");
+                event.consume(); // ⛔ empêche la fermeture
+                return;
+            }
+
+            if (selectedProduits.isEmpty()) {
+                showAlert(Alert.AlertType.WARNING, "Produits manquants", "Veuillez ajouter au moins un produit.");
+                event.consume(); // ⛔ empêche la fermeture
+                return;
+            }
+
+            if (date == null) {
+                showAlert(Alert.AlertType.WARNING, "Date manquante", "Veuillez choisir une date.");
+                event.consume(); // ⛔ empêche la fermeture
+                return;
+            }
+        });
 
         dialog.setResultConverter(button -> {
-            if (button == ButtonType.OK) {
+            if (button == validateButtonType) {
                 User user = userComboBox.getValue();
                 LocalDate date = datePicker.getValue();
                 double prix = Double.parseDouble(prixField.getText());
-
-                if (user != null && !selectedProduits.isEmpty() && date != null) {
-                    return new CommandeFinalisee(UUID.randomUUID(), user, new ArrayList<>(selectedProduits), date.atStartOfDay(), prix);
-                }
+                return new CommandeFinalisee(UUID.randomUUID(), user, new ArrayList<>(selectedProduits), date.atStartOfDay(), prix);
             }
             return null;
         });
+
+
 
         dialog.showAndWait().ifPresent(cmd -> {
             CommandeFinaliseeDAO.saveCommande(cmd);
@@ -279,8 +352,32 @@ public class PurchasingController {
             updateSummary[0].run();
         });
         quantiteCol.setPrefWidth(100);
+        TableColumn<ProduitCommandeTemp, Void> supprimerCol = new TableColumn<>("Action");
+        supprimerCol.setPrefWidth(100);
+        supprimerCol.setCellFactory(param -> new TableCell<>() {
+            private final Button btnSupprimer = new Button("🗑");
 
-        produitTableView.getColumns().addAll(nomCol, quantiteCol);
+            {
+                btnSupprimer.setStyle("-fx-background-color: #e53935; -fx-text-fill: white; -fx-background-radius: 5; -fx-cursor: hand;");
+                btnSupprimer.setOnAction(e -> {
+                    ProduitCommandeTemp produit = getTableView().getItems().get(getIndex());
+                    selectedProduits.remove(produit);
+                    updateSummary[0].run();
+                });
+            }
+
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    setGraphic(btnSupprimer);
+                }
+            }
+        });
+
+        produitTableView.getColumns().addAll(nomCol, quantiteCol, supprimerCol);
         produitTableView.setEditable(true);
 
         ComboBox<Produit> produitComboBox = new ComboBox<>();
@@ -340,20 +437,44 @@ public class PurchasingController {
         dialog.getDialogPane().setContent(grid);
         dialog.getDialogPane().setPrefWidth(600);
         dialog.getDialogPane().setPrefHeight(500);
-        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        ButtonType validateButtonType = new ButtonType("Valider", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(validateButtonType, ButtonType.CANCEL);
+        Button validateButton = (Button) dialog.getDialogPane().lookupButton(validateButtonType);
+
+        validateButton.addEventFilter(ActionEvent.ACTION, event -> {
+            User user = userComboBox.getValue();
+            LocalDate date = datePicker.getValue();
+
+            if (user == null) {
+                showAlert(Alert.AlertType.WARNING, "Utilisateur manquant", "Veuillez sélectionner un utilisateur.");
+                event.consume(); // ❌ empêche la fermeture
+                return;
+            }
+
+            if (selectedProduits.isEmpty()) {
+                showAlert(Alert.AlertType.WARNING, "Produits manquants", "Veuillez ajouter au moins un produit.");
+                event.consume(); // ❌ empêche la fermeture
+                return;
+            }
+
+            if (date == null) {
+                showAlert(Alert.AlertType.WARNING, "Date manquante", "Veuillez choisir une date.");
+                event.consume(); // ❌ empêche la fermeture
+            }
+        });
+
 
         dialog.setResultConverter(button -> {
-            if (button == ButtonType.OK) {
+            if (button == validateButtonType) {
                 User user = userComboBox.getValue();
                 LocalDate date = datePicker.getValue();
                 double prix = Double.parseDouble(prixField.getText());
 
-                if (user != null && !selectedProduits.isEmpty() && date != null) {
-                    return new CommandeFinalisee(selected.getId(), user, new ArrayList<>(selectedProduits), date.atStartOfDay(), prix);
-                }
+                return new CommandeFinalisee(selected.getId(), user, new ArrayList<>(selectedProduits), date.atStartOfDay(), prix);
             }
             return null;
         });
+
 
         dialog.showAndWait().ifPresent(cmd -> {
             CommandeFinaliseeDAO.updateCommande(cmd);  // 🔧 tu dois avoir cette méthode

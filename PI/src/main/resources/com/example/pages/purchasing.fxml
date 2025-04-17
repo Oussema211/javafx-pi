@@ -14,19 +14,27 @@
 
 
 
-    <!-- 🧾 Titre -->
-    <Label text="📦 Commandes Finalisées" styleClass="content-title"/>
+    <HBox spacing="15" alignment="CENTER_LEFT">
+        <Label text="📦 Commandes Finalisées" styleClass="fancy-title"/>
+        <Region fx:id="spacer" HBox.hgrow="ALWAYS"/>
+        <TextField fx:id="searchField"
+                   promptText="🔍 Rechercher utilisateur..."
+                   prefWidth="250"
+                   styleClass="search-field"/>
 
-    <!-- ➕ Bouton d'ajout -->
-    <Button text="➕ Ajouter Commande" onAction="#handleAddCommande"/>
+        <Button text="➕ Nouvelle Commande" onAction="#handleAddCommande" styleClass="add-button"/>
+    </HBox>
+
+
 
     <!-- 📋 Tableau des commandes -->
-    <TableView fx:id="commandeTable" prefWidth="900" maxHeight="400">
-        <columns>
+    <TableView fx:id="commandeTable" maxHeight="400" VBox.vgrow="ALWAYS">
+
+    <columns>
             <TableColumn fx:id="colUser" text="👤 Utilisateur" prefWidth="200"/>
             <TableColumn fx:id="colDate" text="📅 Date d’Achat" prefWidth="200"/>
             <TableColumn fx:id="colPrix" text="💰 Prix Total" prefWidth="150"/>
-            <TableColumn fx:id="colProduit" text="🛍 Produits" prefWidth="200"/>
+            <TableColumn fx:id="colProduit" text="🛍 Produits" prefWidth="350"/>
 
         </columns>
     </TableView>
