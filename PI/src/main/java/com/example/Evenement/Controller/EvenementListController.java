@@ -4,6 +4,7 @@ import com.example.Evenement.Dao.EvenementDAO;
 import com.example.Evenement.Model.Evenement;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -27,24 +28,58 @@ public class EvenementListController {
 
     @FXML
     private ListView<Evenement> eventTable;
+    @FXML
+    private TextField searchField;
+    @FXML
+    private Label totalLabel;
 
     private final ObservableList<Evenement> eventList = FXCollections.observableArrayList();
+    private final FilteredList<Evenement> filteredEvents = new FilteredList<>(eventList);
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     @FXML
     public void initialize() {
+        setupSearchFilter();
         loadEvents();
         setupCellFactory();
+        updateTotalLabel();
+    }
+
+    private void setupSearchFilter() {
+        searchField.textProperty().addListener((observable, oldValue, newValue) -> {
+            filteredEvents.setPredicate(event -> {
+                if (newValue == null || newValue.isEmpty()) {
+                    return true;
+                }
+
+                String lowerCaseFilter = newValue.toLowerCase();
+                return event.getTitre().toLowerCase().contains(lowerCaseFilter) ||
+                        event.getDescription().toLowerCase().contains(lowerCaseFilter) ||
+                        event.getType().getLabel().toLowerCase().contains(lowerCaseFilter) ||
+                        event.getRegions().stream().anyMatch(r -> r.getNom().toLowerCase().contains(lowerCaseFilter));
+            });
+            updateTotalLabel();
+        });
     }
 
     private void loadEvents() {
         try {
             eventList.setAll(new EvenementDAO().getAll());
-            eventTable.setItems(eventList);
+            eventTable.setItems(filteredEvents);
+            updateTotalLabel();
         } catch (Exception e) {
             showAlert("Erreur", "Erreur lors du chargement des événements: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    @FXML
+    private void handleRefresh() {
+        loadEvents();
+    }
+
+    private void updateTotalLabel() {
+        totalLabel.setText("Total: " + filteredEvents.size() + " événements");
     }
 
     private void setupCellFactory() {
@@ -95,7 +130,7 @@ public class EvenementListController {
                 infoBox.getChildren().addAll(titleLabel, dateLabel, regionLabel, typeLabel, buttonBox);
 
                 // Ajout des deux colonnes à la HBox racine
-                root.getChildren().addAll(infoBox, imageView);
+                root.getChildren().addAll(imageView, infoBox);
             }
 
             @Override
@@ -183,6 +218,7 @@ public class EvenementListController {
                 new EvenementDAO().delete(event.getId());
                 eventList.remove(event);
                 showAlert("Succès", "Événement supprimé avec succès");
+                updateTotalLabel();
             } catch (Exception e) {
                 showAlert("Erreur", "Erreur lors de la suppression: " + e.getMessage());
             }
