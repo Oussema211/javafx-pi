@@ -17,11 +17,28 @@
   <dependencies>
     <!-- ✅ JavaFX modules pour Windows 64 bits -->
     <dependency>
+      <groupId>org.apache.pdfbox</groupId>
+      <artifactId>pdfbox</artifactId>
+      <version>2.0.27</version> <!-- ou version plus récente -->
+    </dependency>
+    <dependency>
+      <groupId>org.apache.poi</groupId>
+      <artifactId>poi</artifactId>
+      <version>5.2.3</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.poi</groupId>
+      <artifactId>poi-ooxml</artifactId>
+      <version>5.2.3</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.openjfx</groupId>
       <artifactId>javafx-controls</artifactId>
       <version>${javafx.version}</version>
       <classifier>win</classifier>
     </dependency>
+
     <dependency>
       <groupId>org.openjfx</groupId>
       <artifactId>javafx-fxml</artifactId>
@@ -79,6 +96,21 @@
   </dependencies>
 
   <build>
+  <resources>
+        <resource>
+            <directory>src/main/resources</directory>
+            <includes>
+                <include>**/*.fxml</include>
+                <include>**/*.css</include>
+                <include>**/*.properties</include>
+            </includes>
+        </resource>
+         <resource>
+            <directory>src/main/resources</directory>
+            <filtering>false</filtering>
+        </resource>
+
+    </resources>
     <plugins>
       <!-- Compiler -->
       <plugin>

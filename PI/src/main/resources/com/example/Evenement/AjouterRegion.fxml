@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.text.*?>
+
+<StackPane xmlns="http://javafx.com/javafx/11.0.1"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.example.Evenement.Controller.RegionController"
+           style="-fx-background-color: #f4f6f8;">
+
+    <VBox alignment="CENTER" spacing="20">
+        <VBox spacing="20" alignment="TOP_CENTER"
+              style="-fx-background-color: white; -fx-padding: 30; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 0, 4);"
+              maxWidth="500">
+
+            <!-- Titre principal -->
+            <Text text="Ajouter une région"
+                  style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-fill: #2c3e50;"/>
+
+            <Separator style="-fx-background-color: #3498db;"/>
+
+            <!-- Formulaire -->
+            <GridPane hgap="15" vgap="15" alignment="CENTER">
+                <columnConstraints>
+                    <ColumnConstraints minWidth="120" halignment="RIGHT"/>
+                    <ColumnConstraints hgrow="ALWAYS"/>
+                </columnConstraints>
+
+                <Label text="Nom :" style="-fx-font-weight: bold; -fx-text-fill: #2c3e50;" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                <TextField fx:id="nomField" promptText="Nom de la région"
+                           style="-fx-background-radius: 5; -fx-padding: 5;"
+                           GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+                <Label text="Ville :" style="-fx-font-weight: bold; -fx-text-fill: #2c3e50;" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                <TextField fx:id="villeField" promptText="Ville principale"
+                           style="-fx-background-radius: 5; -fx-padding: 5;"
+                           GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+                <Label text="Description :" style="-fx-font-weight: bold; -fx-text-fill: #2c3e50;" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                <TextField fx:id="descriptionField" promptText="Courte description"
+                           style="-fx-background-radius: 5; -fx-padding: 5;"
+                           GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+            </GridPane>
+
+            <!-- Boutons centrés -->
+            <HBox spacing="15" alignment="CENTER">
+                <Button text="Enregistrer" onAction="#handleSave"
+                        style="-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-padding: 10 20;"/>
+                <Button text="Annuler" onAction="#handleCancel"
+                        style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-padding: 10 20;"/>
+                <Button text="Liste des régions" onAction="#handleShowList"
+                        style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-padding: 10 20;"/>
+            </HBox>
+        </VBox>
+    </VBox>
+</StackPane>

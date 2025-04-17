@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.example.Evenement.Controller.EvenementListController"
+            style="-fx-background-color: linear-gradient(to bottom, #eef2f3, #dfe6e9);">
+
+    <top>
+        <VBox spacing="10">
+            <padding>
+                <Insets top="20" right="20" bottom="20" left="20"/>
+            </padding>
+
+            <Label text="📆 Tableau de Bord des Événements">
+                <font>
+                    <Font name="System Bold" size="24.0"/>
+                </font>
+                <style>
+                    -fx-text-fill: #2c3e50;
+                    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 4, 0.5, 0, 1);
+                </style>
+            </Label>
+
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <TextField fx:id="searchField" promptText="Rechercher un événement..."
+                           HBox.hgrow="ALWAYS"
+                           style="-fx-background-radius: 12; -fx-padding: 8;"/>
+                <Button text="➕ Ajouter un événement" onAction="#handleAdd"
+                        style="-fx-background-color: linear-gradient(to right, #43cea2, #185a9d);
+                               -fx-text-fill: white; -fx-font-weight: bold;
+                               -fx-background-radius: 12; -fx-padding: 8 16;"/>
+                <Button text="🔄 Actualiser" onAction="#handleRefresh"
+                        style="-fx-background-color: #3498db; -fx-text-fill: white;
+                               -fx-font-weight: bold; -fx-background-radius: 12; -fx-padding: 8 16;"/>
+            </HBox>
+        </VBox>
+    </top>
+
+    <center>
+        <VBox spacing="10">
+            <padding>
+                <Insets top="10" right="20" bottom="20" left="20"/>
+            </padding>
+
+            <ListView fx:id="eventTable" VBox.vgrow="ALWAYS">
+                <placeholder>
+                    <Label text="Aucun événement trouvé"/>
+                </placeholder>
+                <style>
+                    -fx-background-color: white;
+                    -fx-background-radius: 16;
+                    -fx-border-radius: 16;
+                    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.08), 12, 0, 0, 4);
+                    -fx-padding: 15;
+                </style>
+            </ListView>
+        </VBox>
+    </center>
+
+    <bottom>
+        <HBox alignment="CENTER_RIGHT" spacing="10">
+            <padding>
+                <Insets top="10" right="20" bottom="10" left="20"/>
+            </padding>
+            <Label fx:id="totalLabel" text="Total: 0 événements"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>

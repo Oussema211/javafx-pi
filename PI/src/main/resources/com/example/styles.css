@@ -1,8 +1,8 @@
 .black-background {
-    -fx-background-color: #000 ;
-    -fx-padding: 20 20 20 20;
+    -fx-background-color: #3d5a40 !important;
+    -fx-padding: 20 20 20 20 !important;
+    -fx-background-image: none !important;
 }
-
 
 .nav-button {
     -fx-text-fill: white;
@@ -15,7 +15,7 @@
 
 .main-content {
     -fx-padding: 20 20 20 20;
-    -fx-background-color: #E6E6E6;
+    -fx-background-color: white;
     -fx-background-radius: 20;
 }
 

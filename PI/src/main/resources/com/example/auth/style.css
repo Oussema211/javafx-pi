@@ -1,0 +1,154 @@
+/* Root styles for consistent background across all scenes */
+.root {
+    -fx-font-family: "Segoe UI", "Arial", sans-serif;
+    -fx-background-color: #1e1e2f; /* Dark navy background for a modern feel */
+}
+
+/* Dashboard styles */
+.main-content {
+    -fx-background-color: linear-gradient(to bottom right, #2a2a72, #009ffd); /* Gradient from deep blue to teal */
+    -fx-padding: 30;
+    -fx-background-radius: 15;
+    -fx-border-radius: 15;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 20, 0, 0, 5);
+}
+
+/* Title on the dashboard */
+.content-title {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffffff; /* White text for contrast */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 5, 0, 0, 2);
+    -fx-padding: 10;
+}
+
+/* Icon button on the dashboard (profile button) */
+.icon-button {
+    -fx-background-color: rgba(255, 255, 255, 0.1); /* Semi-transparent white */
+    -fx-background-radius: 50%;
+    -fx-border-radius: 50%;
+    -fx-border-color: #ffffff33; /* Subtle white border */
+    -fx-border-width: 2;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 10, 0, 0, 3);
+    -fx-cursor: hand;
+}
+
+.icon-button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.3); /* Lighter on hover */
+    -fx-scale-x: 1.1; /* Slight scale-up effect */
+    -fx-scale-y: 1.1;
+    -fx-transition: all 0.3s ease; /* Smooth transition */
+}
+
+/* Profile page styles */
+.profile-content {
+    -fx-background-color: linear-gradient(to bottom right, #5fc788, #1f4635); /* Gradient from deep purple to vibrant purple */
+    -fx-padding: 30;
+    -fx-background-radius: 15;
+    -fx-border-radius: 15;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 20, 0, 0, 5);
+    -fx-alignment: center;
+}
+
+/* Profile picture styling */
+.profile-pic {
+    -fx-border-radius: 50%;
+    -fx-background-radius: 50%;
+    -fx-border-color: #ffffff; /* White border for the profile picture */
+    -fx-border-width: 4; /* Thicker border for emphasis */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.6), 20, 0, 0, 8); /* Stronger shadow */
+    -fx-opacity: 0.95;
+    -fx-background-color: #e0e0e0; /* Fallback background if image fails to load */
+}
+
+.profile-pic:hover {
+    -fx-opacity: 1.0; /* Full opacity on hover */
+    -fx-scale-x: 1.08; /* Slightly larger zoom effect */
+    -fx-scale-y: 1.08;
+    -fx-transition: all 0.3s ease;
+}
+
+/* Labels on the profile page */
+.profile-label {
+    -fx-font-size: 16px;
+    -fx-text-fill: #e0e0e0; /* Light gray for readability */
+    -fx-font-weight: 500;
+    -fx-padding: 8;
+    -fx-background-color: rgba(255, 255, 255, 0.12); /* Slightly darker background for labels */
+    -fx-background-radius: 6;
+}
+
+/* Settings card */
+.settings-card {
+    -fx-background-color: rgba(255, 255, 255, 0.1); /* Semi-transparent white background */
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-padding: 20;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 15, 0, 0, 5);
+    -fx-max-width: 400; /* Limit the width for better readability */
+}
+
+/* Settings section title */
+.settings-title {
+    -fx-font-size: 22px;
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+    -fx-padding: 10 0;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 5, 0, 0, 2);
+}
+
+/* Labels for form fields */
+.label {
+    -fx-font-size: 14px;
+    -fx-text-fill: #d1d1d1; /* Light gray */
+    -fx-font-weight: 400;
+    -fx-min-width: 80; /* Ensure labels are aligned properly */
+}
+
+/* Text fields for settings */
+.text-field {
+    -fx-pref-width: 250; /* Wider text fields for better usability */
+    -fx-background-color: rgba(255, 255, 255, 0.9);
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-font-size: 14px;
+    -fx-text-fill: #333333; /* Dark text for contrast */
+    -fx-padding: 10;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 5, 0, 0, 2);
+}
+
+.text-field:focused {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #009ffd; /* Teal border on focus */
+    -fx-border-width: 2;
+}
+
+/* Buttons (used in both dashboard and profile) */
+.button {
+    -fx-background-color: #00ddeb; /* Bright teal */
+    -fx-text-fill: #1e1e2f; /* Dark navy text */
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-padding: 10 20;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 10, 0, 0, 3);
+    -fx-cursor: hand;
+}
+
+.button:hover {
+    -fx-background-color: #00b7c2; /* Slightly darker teal on hover */
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+    -fx-transition: all 0.3s ease;
+}
+
+/* Message label for feedback */
+.message-label {
+    -fx-text-fill: #ff6b6b; /* Soft red for errors */
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+    -fx-padding: 5;
+    -fx-background-color: rgba(255, 107, 107, 0.1); /* Subtle red background */
+    -fx-background-radius: 5;
+}

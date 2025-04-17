@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.*?>
+
+<HBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.reclamation.controller.NavbarController"
+      style="-fx-background-color: #f5f5f5; -fx-padding: 10 20; -fx-border-color: #e0e0e0; -fx-border-width: 0 0 1 0;"
+      alignment="CENTER" spacing="20">
+
+    <!-- Logo -->
+    <ImageView fx:id="logoImage"
+               fitHeight="30" fitWidth="100"
+               pickOnBounds="true" preserveRatio="true">
+        <image>
+            <Image url="@/images/logofront.png"/>
+        </image>
+    </ImageView>
+
+    <!-- Center Menu -->
+    <HBox fx:id="menuBox" alignment="CENTER" spacing="30" HBox.hgrow="ALWAYS">
+        <Label fx:id="shopLabel" text="Shop" style="-fx-font: normal 14px 'Arial'; -fx-text-fill: #000000; -fx-cursor: hand;"/>
+        <Label fx:id="collectionsLabel" text="Collections" style="-fx-font: normal 14px 'Arial'; -fx-text-fill: #000000; -fx-cursor: hand;"/>
+        <Label fx:id="exploreLabel" text="Discussions" style="-fx-font: normal 14px 'Arial'; -fx-text-fill: #000000; -fx-cursor: hand;"/>
+        <Label fx:id="moreLabel" text="..." style="-fx-font: normal 14px 'Arial'; -fx-text-fill: #000000; -fx-cursor: hand;"/>
+    </HBox>
+
+    <!-- Spacer -->
+    <Region HBox.hgrow="ALWAYS"/>
+
+    <!-- Icons Section -->
+    <HBox spacing="20" alignment="CENTER">
+        <Label fx:id="cartLabel" text="🛒 Cart 0" style="-fx-font: normal 14px 'Arial'; -fx-text-fill: #000000; -fx-cursor: hand;"/>
+        <Label fx:id="accountLabel" text="👤 My Account" style="-fx-font: normal 14px 'Arial'; -fx-text-fill: #000000; -fx-cursor: hand;"/>
+        <Label fx:id="profileLabel" text="📄 Profile" style="-fx-font: normal 14px 'Arial'; -fx-text-fill: #000000; -fx-cursor: hand;" onMouseClicked="#handleProfileClick"/>
+        <Label fx:id="logoutButton" text="Logout" onMouseClicked="#handleLogout" style="-fx-font: normal 14px 'Arial'; -fx-text-fill: #000000; -fx-cursor: hand;"/>
+    </HBox>
+
+</HBox>

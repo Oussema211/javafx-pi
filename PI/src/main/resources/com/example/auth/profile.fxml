@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+
+<AnchorPane id="root" prefHeight="600.0" prefWidth="800.0" styleClass="root" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.auth.controller.ProfileController">
+    <!-- Transparent Profile Card -->
+    <VBox fx:id="profileCard" layoutX="50.0" layoutY="50.0" prefWidth="400.0" styleClass="transparent-card">
+        <!-- Profile Picture and Details -->
+        <ImageView fx:id="profilePicture" fitHeight="100.0" fitWidth="100.0" />
+        <Label fx:id="nameLabel" text="Name" styleClass="label" />
+        <Label fx:id="emailLabel" text="Email" styleClass="label" />
+        <Label fx:id="workLabel" text="Work" styleClass="label" />
+        <Label fx:id="phoneLabel" text="Phone" styleClass="label" />
+
+        <!-- Settings Form -->
+        <TextField fx:id="emailField" promptText="Email" styleClass="text-field" />
+        <TextField fx:id="passwordField" promptText="Password" styleClass="password-field" />
+        <Button fx:id="saveSettingsButton" onAction="#saveSettings" text="Save Settings" styleClass="button" />
+        <Label fx:id="messageLabel" text="" styleClass="message-label" />
+    </VBox>
+
+    <!-- Back Button (Outside Card) -->
+    <Button fx:id="backButton" layoutX="50.0" layoutY="500.0" onAction="#goToDashboard" text="Back to Dashboard" styleClass="button" />
+</AnchorPane>

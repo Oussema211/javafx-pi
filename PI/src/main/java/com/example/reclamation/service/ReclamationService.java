@@ -8,6 +8,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class ReclamationService {
@@ -24,7 +25,7 @@ public class ReclamationService {
                     "rate INT NOT NULL, " +
                     "title VARCHAR(255) NOT NULL, " +
                     "description VARCHAR(255) NOT NULL, " +
-                    "statut VARCHAR(255) NOT NULL, " + // Still stored as VARCHAR in DB
+                    "statut VARCHAR(255) NOT NULL, " + 
                     "FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE, " +
                     "FOREIGN KEY (tag_id) REFERENCES tag(id) ON DELETE SET NULL)";
             stmt.execute(sql);
@@ -139,4 +140,5 @@ public class ReclamationService {
             return false;
         }
     }
+    
 }

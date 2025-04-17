@@ -7,7 +7,6 @@ import java.util.UUID;
 
 public class Produit {
 
-    // Fields as JavaFX properties
     private final ObjectProperty<UUID> id = new SimpleObjectProperty<>();
     private final ObjectProperty<Categorie> category = new SimpleObjectProperty<>();
     private final ObjectProperty<UUID> userId = new SimpleObjectProperty<>();

@@ -1,3 +1,4 @@
+
 package com.example.reclamation.controller;
 
 import com.example.reclamation.model.Reclamation;
@@ -10,6 +11,7 @@ import com.example.reclamation.service.ReclamationService;
 import com.example.reclamation.service.TagService;
 
 import javafx.animation.FadeTransition;
+import javafx.animation.PauseTransition;
 import javafx.animation.ScaleTransition;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -18,6 +20,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.ButtonBar.ButtonData;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
@@ -27,6 +30,7 @@ import javafx.util.Duration;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -42,7 +46,7 @@ public class ReclamationController {
     @FXML private GridPane contentContainer;
     @FXML private VBox mainContainer;
     @FXML private VBox sidebar;
-
+    @FXML private NavbarController navbarController;
     private Stage primaryStage;
 
     public void setPrimaryStage(Stage stage) {
@@ -52,7 +56,7 @@ public class ReclamationController {
     @FXML
     public void initialize() {
         root.setPadding(new Insets(20));
-        root.setStyle("-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #f5f7fa, #c3cfe2);");
+        root.setStyle("-fx-background-color: #f5f7fa");
 
         ColumnConstraints col1 = new ColumnConstraints();
         col1.setPercentWidth(75);
@@ -63,7 +67,7 @@ public class ReclamationController {
         setupMainContainer();
         setupSidebar();
     }
-
+ 
     private void setupMainContainer() {
         mainContainer.getChildren().clear();
         mainContainer.setPadding(new Insets(10));
@@ -126,30 +130,59 @@ public class ReclamationController {
         HBox card = new HBox(10);
         card.setPadding(new Insets(15));
         card.setStyle("-fx-background-color: white; -fx-background-radius: 15; " +
-                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 15, 0, 0, 5); " +
-                "-fx-cursor: hand;");
-        card.setOnMouseEntered(e -> card.setStyle(card.getStyle() + "-fx-translate-y: -5; " +
-                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 25, 0, 0, 8);"));
-        card.setOnMouseExited(e -> card.setStyle("-fx-background-color: white; -fx-background-radius: 15; " +
-                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 15, 0, 0, 5);"));
+                "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 15, 0, 0, 5);");
 
-        // Add click handler to navigate to ReclamationMessages
-        card.setOnMouseClicked(e -> handleReclamationClick(rec));
+        // Set cursor and click behavior only for non-CLOSED cards
+        if (rec.getStatut() != Status.CLOSED) {
+            card.setStyle(card.getStyle() + "-fx-cursor: hand;");
+            card.setOnMouseClicked(e -> handleReclamationClick(rec));
+            card.setOnMouseEntered(e -> card.setStyle(card.getStyle() + "-fx-translate-y: -5; " +
+                    "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 25, 0, 0, 8);"));
+            card.setOnMouseExited(e -> {
+                String baseStyle = "-fx-background-color: white; -fx-background-radius: 15; " +
+                        "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 15, 0, 0, 5); -fx-cursor: hand;";
+                if (rec.getStatut() == Status.RESOLVED) {
+                    card.setStyle(baseStyle.replace("-fx-background-color: white;", "-fx-background-color: #e6f5e6;"));
+                } else {
+                    card.setStyle(baseStyle);
+                }
+            });
+        }
 
         StackPane profileContainer = new StackPane();
-        String photoUrl = user != null && user.getPhotoUrl() != null ? "file:" + user.getPhotoUrl() : "file:images/admin.jpg";
-        ImageView avatar = new ImageView(new Image(photoUrl, true));
+        ImageView avatar = new ImageView();
         avatar.setFitWidth(50);
         avatar.setFitHeight(50);
         avatar.setClip(new Circle(25, 25, 23));
         avatar.setStyle("-fx-border-color: white; -fx-border-width: 3; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);");
 
+        // Load profile picture
+        String profilePhotoPath = user != null ? user.getPhotoUrl() : null;
+        if (profilePhotoPath != null && !profilePhotoPath.isEmpty()) {
+            System.out.println("Attempting to load profile picture from resource: " + profilePhotoPath);
+            try {
+                Image image = new Image(getClass().getResourceAsStream(profilePhotoPath));
+                if (!image.isError()) {
+                    avatar.setImage(image);
+                } else {
+                    System.err.println("Error loading profile image: Image is corrupted or invalid.");
+                    loadFallbackImage(avatar);
+                }
+            } catch (Exception e) {
+                System.err.println("Error loading profile image: " + e.getMessage());
+                loadFallbackImage(avatar);
+            }
+        } else {
+            System.err.println("Profile photo path is null or empty.");
+            loadFallbackImage(avatar);
+        }
+
         Circle status = new Circle(7.5);
         String statusColor = switch (rec.getStatut()) {
-            case CLOSED -> "#ff5555";  // Red for closed
-            case RESOLVED -> "#4CAF50"; // Green for resolved
-            case REVIEW -> "#FF9800";   // Orange for review
-            case WAITING -> "#999";     // Gray for waiting
+            case CLOSED -> "#ff5555";
+            case RESOLVED -> "#4CAF50";
+            case REVIEW -> "#FF9800";
+            case WAITING -> "#999";
         };
         status.setStyle("-fx-fill: " + statusColor + "; -fx-stroke: white; -fx-stroke-width: 2;");
         StackPane.setAlignment(status, Pos.BOTTOM_RIGHT);
@@ -164,7 +197,7 @@ public class ReclamationController {
                 "-fx-padding: 3 8; -fx-background-radius: 20;");
         titleBar.getChildren().addAll(title, tagLabel);
 
-        Label desc = new Label(rec.getDescription());
+        Label desc = rec.getDescription() != null ? new Label(rec.getDescription()) : new Label("No description provided.");
         desc.setStyle("-fx-font-size: 14px; -fx-text-fill: #666; -fx-wrap-text: true;");
 
         HBox metaInfo = new HBox(10);
@@ -180,17 +213,31 @@ public class ReclamationController {
         HBox actionButtons = new HBox(5);
         User currentUser = sessionManager.getLoggedInUser();
         if (currentUser != null && rec.getUserId().equals(currentUser.getId())) {
-            Button editBtn = new Button("Edit");
-            editBtn.setStyle("-fx-background-color: #f5f5f5; -fx-background-radius: 50%; -fx-padding: 10;");
+            // Edit Button with Icon
+            Button editBtn = new Button();
+            ImageView editIcon = new ImageView(new Image(getClass().getResourceAsStream("/icons/edit.png")));
+            editIcon.setFitWidth(16);
+            editIcon.setFitHeight(16);
+            editBtn.setGraphic(editIcon);
+            editBtn.setStyle("-fx-background-color: #f5f5f5; -fx-background-radius: 50%; -fx-padding: 8;");
             editBtn.setOnAction(e -> handleEdit(rec.getId()));
-            editBtn.setOnMouseEntered(e -> editBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-background-radius: 50%; -fx-padding: 10;"));
-            editBtn.setOnMouseExited(e -> editBtn.setStyle("-fx-background-color: #f5f5f5; -fx-background-radius: 50%; -fx-padding: 10;"));
+            editBtn.setOnMouseEntered(e -> editBtn.setStyle("-fx-background-color: #4CAF50; -fx-background-radius: 50%; -fx-padding: 8;"));
+            editBtn.setOnMouseExited(e -> editBtn.setStyle("-fx-background-color: #f5f5f5; -fx-background-radius: 50%; -fx-padding: 8;"));
+            Tooltip editTooltip = new Tooltip("Edit");
+            editBtn.setTooltip(editTooltip);
 
-            Button deleteBtn = new Button("Delete");
-            deleteBtn.setStyle("-fx-background-color: #f5f5f5; -fx-background-radius: 50%; -fx-padding: 10;");
+            // Delete Button with Icon
+            Button deleteBtn = new Button();
+            ImageView deleteIcon = new ImageView(new Image(getClass().getResourceAsStream("/icons/delete.png")));
+            deleteIcon.setFitWidth(16);
+            deleteIcon.setFitHeight(16);
+            deleteBtn.setGraphic(deleteIcon);
+            deleteBtn.setStyle("-fx-background-color: #f5f5f5; -fx-background-radius: 50%; -fx-padding: 8;");
             deleteBtn.setOnAction(e -> handleDelete(rec.getId()));
-            deleteBtn.setOnMouseEntered(e -> deleteBtn.setStyle("-fx-background-color: #ff5555; -fx-text-fill: white; -fx-background-radius: 50%; -fx-padding: 10;"));
-            deleteBtn.setOnMouseExited(e -> deleteBtn.setStyle("-fx-background-color: #f5f5f5; -fx-background-radius: 50%; -fx-padding: 10;"));
+            deleteBtn.setOnMouseEntered(e -> deleteBtn.setStyle("-fx-background-color: #ff5555; -fx-background-radius: 50%; -fx-padding: 8;"));
+            deleteBtn.setOnMouseExited(e -> deleteBtn.setStyle("-fx-background-color: #f5f5f5; -fx-background-radius: 50%; -fx-padding: 8;"));
+            Tooltip deleteTooltip = new Tooltip("Delete");
+            deleteBtn.setTooltip(deleteTooltip);
 
             actionButtons.getChildren().addAll(editBtn, deleteBtn);
         }
@@ -198,13 +245,26 @@ public class ReclamationController {
         card.getChildren().addAll(profileContainer, contentWrapper, actionButtons);
         HBox.setHgrow(contentWrapper, Priority.ALWAYS);
 
+        // Apply status-specific styling
         if (rec.getStatut() == Status.CLOSED) {
-            card.setStyle(card.getStyle() + "-fx-background-color: #fff5f5; -fx-border-color: #ff5555; -fx-border-width: 0 0 0 5;");
+            card.setStyle("-fx-background-color: #ffe6e6; -fx-background-radius: 15; " +
+                    "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 15, 0, 0, 5);");
         } else if (rec.getStatut() == Status.RESOLVED) {
-            card.setStyle(card.getStyle() + "-fx-background-color: #f5fff5; -fx-border-color: #4CAF50; -fx-border-width: 0 0 0 5;");
+            card.setStyle("-fx-background-color: #e6f5e6; -fx-background-radius: 15; " +
+                    "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 15, 0, 0, 5); -fx-cursor: hand;");
         }
 
         return card;
+    }
+
+    private void loadFallbackImage(ImageView avatar) {
+        try {
+            Image fallbackImage = new Image(getClass().getResourceAsStream("/images/admin.jpg"));
+            avatar.setImage(fallbackImage);
+        } catch (Exception e) {
+            System.err.println("Error loading fallback image: " + e.getMessage());
+            avatar.setImage(new Image("file:images/admin.jpg"));
+        }
     }
 
     private void handleReclamationClick(Reclamation reclamation) {
@@ -215,18 +275,16 @@ public class ReclamationController {
             ReclamationMessagesController controller = loader.getController();
             controller.setPrimaryStage(primaryStage);
             controller.setSelectedReclamation(reclamation);
-
-            Scene messagesScene = new Scene(messagesRoot, primaryStage.getWidth(), primaryStage.getHeight());
-            primaryStage.setScene(messagesScene);
-            primaryStage.setTitle("Reclamation Messages - " + reclamation.getTitle());
+            Stage stage = (Stage) root.getScene().getWindow();
+            Scene messagesScene = new Scene(messagesRoot, stage.getWidth(), stage.getHeight());
+            stage.setScene(messagesScene);
+            stage.setTitle("Reclamation Messages - " + reclamation.getTitle());
         } catch (IOException e) {
             e.printStackTrace();
             Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to load messages page.");
             alert.showAndWait();
         }
     }
-
-    // Rest of the methods remain unchanged...
 
     private void setupSidebar() {
         sidebar.getChildren().clear();
@@ -302,17 +360,51 @@ public class ReclamationController {
         Dialog<Reclamation> dialog = new Dialog<>();
         dialog.setTitle("Edit Reclamation");
 
-        ButtonType saveButtonType = new ButtonType("Save", ButtonBar.ButtonData.OK_DONE);
+        DialogPane dialogPane = dialog.getDialogPane();
+        dialogPane.getStylesheets().add(getClass().getResource("/css/modern-dialog.css").toExternalForm());
+
+        ButtonType saveButtonType = new ButtonType("Save", ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
 
-        VBox content = new VBox(10);
+        VBox content = new VBox(15);
+        content.setStyle("-fx-padding: 20;");
+
+        // Title field with error label
+        VBox titleGroup = new VBox(8);
+        Label titleLabel = new Label("Title:");
+        titleLabel.getStyleClass().add("form-label");
         TextField titleField = new TextField();
-        titleField.setPromptText("Title");
+        titleField.setPromptText("Enter title (min 5 letters)");
+        titleField.getStyleClass().add("form-field");
+        Label titleError = new Label();
+        titleError.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
+        titleGroup.getChildren().addAll(titleLabel, titleField, titleError);
+
+        // Description field with error label
+        VBox descGroup = new VBox(8);
+        Label descLabel = new Label("Description:");
+        descLabel.getStyleClass().add("form-label");
         TextArea descField = new TextArea();
-        descField.setPromptText("Description");
+        descField.setPromptText("Enter description (min 6 words)");
+        descField.setPrefRowCount(4);
+        descField.getStyleClass().add("form-field");
+        Label descError = new Label();
+        descError.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
+        descGroup.getChildren().addAll(descLabel, descField, descError);
+
+        // Status field
+        VBox statusGroup = new VBox(8);
+        Label statusLabel = new Label("Status:");
+        statusLabel.getStyleClass().add("form-label");
         ComboBox<Status> statusCombo = new ComboBox<>();
         statusCombo.getItems().addAll(Status.values());
-        statusCombo.setPromptText("Status");
+        statusCombo.setPromptText("Select status");
+        statusCombo.getStyleClass().add("form-field");
+        statusGroup.getChildren().addAll(statusLabel, statusCombo);
+
+        // Message label for database errors
+        Label messageLabel = new Label();
+        messageLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
 
         Reclamation rec = reclamationService.getReclamationById(reclamationId);
         if (rec != null) {
@@ -321,24 +413,90 @@ public class ReclamationController {
             statusCombo.setValue(rec.getStatut());
         }
 
-        content.getChildren().addAll(new Label("Title:"), titleField, new Label("Description:"), descField, new Label("Status:"), statusCombo);
+        content.getChildren().addAll(titleGroup, descGroup, statusGroup, messageLabel);
         dialog.getDialogPane().setContent(content);
 
-        dialog.setResultConverter(dialogButton -> {
-            if (dialogButton == saveButtonType && rec != null) {
-                rec.setTitle(titleField.getText());
-                rec.setDescription(descField.getText());
-                rec.setStatut(statusCombo.getValue());
-                return rec;
-            }
-            return null;
+        Button saveButton = (Button) dialog.getDialogPane().lookupButton(saveButtonType);
+        saveButton.getStyleClass().add("primary-button");
+
+        // Button press animation
+        saveButton.setOnMousePressed(e -> {
+            ScaleTransition st = new ScaleTransition(Duration.millis(200), saveButton);
+            st.setFromX(1.0);
+            st.setFromY(1.0);
+            st.setToX(1.05);
+            st.setToY(1.05);
+            st.setCycleCount(2);
+            st.setAutoReverse(true);
+            st.play();
         });
 
-        dialog.showAndWait().ifPresent(updatedRec -> {
-            if (reclamationService.updateReclamation(updatedRec)) {
-                setupMainContainer();
+        // Add an event filter to validate before allowing the dialog to proceed
+        saveButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
+            String title = titleField.getText().trim();
+            String description = descField.getText().trim();
+
+            // Reset error messages
+            titleError.setText("");
+            descError.setText("");
+            messageLabel.setText("");
+
+            // Track validation failures
+            boolean hasErrors = false;
+
+            // Validate title length (at least 5 letters)
+            if (title.length() < 5) {
+                titleError.setText("Title must be at least 5 letters long.");
+                hasErrors = true;
+            }
+
+            // Validate description word count (at least 6 words)
+            String[] words = description.split("\\s+");
+            if (description.isEmpty() || words.length < 6) {
+                descError.setText("Description must contain at least 6 words.");
+                hasErrors = true;
+            }
+
+            // Prevent dialog from proceeding if there are errors
+            if (hasErrors) {
+                event.consume();
             }
         });
+
+        // Handle action if validation passes
+        saveButton.setOnAction(e -> {
+            try {
+                if (rec != null) {
+                    rec.setTitle(titleField.getText().trim());
+                    rec.setDescription(descField.getText().trim());
+                    rec.setStatut(statusCombo.getValue());
+
+                    boolean success = reclamationService.updateReclamation(rec);
+                    if (success) {
+                        titleError.setText("");
+                        descError.setText("");
+                        messageLabel.setText("");
+                        setupMainContainer();
+                        dialog.close();
+                    } else {
+                        messageLabel.setText("Failed to update reclamation. Check database constraints.");
+                    }
+                } else {
+                    messageLabel.setText("Reclamation not found.");
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                messageLabel.setText("An unexpected error occurred: " + ex.getMessage());
+            }
+        });
+
+        // Fade in effect for the dialog content
+        FadeTransition fadeIn = new FadeTransition(Duration.millis(500), content);
+        fadeIn.setFromValue(0);
+        fadeIn.setToValue(1);
+        dialog.setOnShown(e -> fadeIn.play());
+
+        dialog.show();
     }
 
     private void handleDelete(UUID reclamationId) {
@@ -353,226 +511,74 @@ public class ReclamationController {
     private void handleNewDiscussion() {
         User currentUser = sessionManager.getLoggedInUser();
         if (currentUser == null) {
-            Alert alert = new Alert(Alert.AlertType.WARNING, "You must be logged in to create a discussion.");
-            alert.showAndWait();
+            showAlert("Unauthorized", "You must be logged in to create a discussion.", Alert.AlertType.WARNING);
             return;
         }
 
         Dialog<Reclamation> dialog = new Dialog<>();
         dialog.setTitle("New Discussion");
 
+        DialogPane dialogPane = dialog.getDialogPane();
+        dialogPane.getStylesheets().add(getClass().getResource("/css/modern-dialog.css").toExternalForm());
+
         ButtonType createButtonType = new ButtonType("Create", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(createButtonType, ButtonType.CANCEL);
 
-        VBox content = new VBox(25);
-        content.setPadding(new Insets(40));
+        VBox content = new VBox(15);
+        content.setStyle("-fx-padding: 20;");
         content.setAlignment(Pos.CENTER);
         content.setMaxWidth(700);
-        content.setStyle(
-            "-fx-background-color: linear-gradient(to bottom right, white, #f5f6fa);" +
-            "-fx-background-radius: 20;" +
-            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 30, 0, 0, 10);"
-        );
 
         Label titleLabel = new Label("Submit Your Problem");
-        titleLabel.setStyle(
-            "-fx-font-family: 'Poppins';" +
-            "-fx-font-size: 2.2em;" +
-            "-fx-font-weight: bold;" +
-            "-fx-text-fill: #1a1a1a;" +
-            "-fx-padding: 0 0 15 0;"
-        );
+        titleLabel.getStyleClass().add("header-label");
 
         Label subtitle = new Label("We value your feedback. Please describe your concern below.");
-        subtitle.setStyle(
-            "-fx-font-family: 'Poppins';" +
-            "-fx-font-size: 1.1em;" +
-            "-fx-text-fill: #666;" +
-            "-fx-padding: 0 0 30 0;"
-        );
+        subtitle.getStyleClass().add("subtitle-label");
 
+        // Title field with error label
         VBox titleGroup = new VBox(8);
         Label titleFieldLabel = new Label("Title:");
-        titleFieldLabel.setStyle(
-            "-fx-font-family: 'Poppins';" +
-            "-fx-font-size: 1.1em;" +
-            "-fx-font-weight: bold;" +
-            "-fx-text-fill: #1a1a1a;"
-        );
+        titleFieldLabel.getStyleClass().add("form-label");
         TextField titleField = new TextField();
-        titleField.setPromptText("Title");
-        titleField.setStyle(
-            "-fx-font-family: 'Poppins';" +
-            "-fx-font-size: 1.2em;" +
-            "-fx-font-weight: 500;" +
-            "-fx-background-color: white;" +
-            "-fx-background-radius: 10;" +
-            "-fx-border-color: #2ecc71;" +
-            "-fx-border-width: 2;" +
-            "-fx-padding: 15;" +
-            "-fx-effect: innershadow(gaussian, rgba(0,0,0,0.05), 5, 0, 0, 2);"
-        );
-        titleField.focusedProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal) {
-                titleField.setStyle(
-                    "-fx-font-family: 'Poppins';" +
-                    "-fx-font-size: 1.2em;" +
-                    "-fx-font-weight: 500;" +
-                    "-fx-background-color: white;" +
-                    "-fx-background-radius: 10;" +
-                    "-fx-border-color: #27ae60;" +
-                    "-fx-border-width: 2;" +
-                    "-fx-padding: 15;" +
-                    "-fx-effect: dropshadow(gaussian, rgba(46,204,113,0.2), 4, 0, 0, 0);"
-                );
-            } else {
-                titleField.setStyle(
-                    "-fx-font-family: 'Poppins';" +
-                    "-fx-font-size: 1.2em;" +
-                    "-fx-font-weight: 500;" +
-                    "-fx-background-color: white;" +
-                    "-fx-background-radius: 10;" +
-                    "-fx-border-color: #2ecc71;" +
-                    "-fx-border-width: 2;" +
-                    "-fx-padding: 15;" +
-                    "-fx-effect: innershadow(gaussian, rgba(0,0,0,0.05), 5, 0, 0, 2);"
-                );
-            }
-        });
-        titleGroup.getChildren().addAll(titleFieldLabel, titleField);
+        titleField.setPromptText("Enter title (min 5 letters)");
+        titleField.getStyleClass().add("form-field");
+        Label titleError = new Label();
+        titleError.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
+        titleGroup.getChildren().addAll(titleFieldLabel, titleField, titleError);
 
+        // Description field with error label
         VBox descGroup = new VBox(8);
         Label descFieldLabel = new Label("Describe Your Problem:");
-        descFieldLabel.setStyle(
-            "-fx-font-family: 'Poppins';" +
-            "-fx-font-size: 1.1em;" +
-            "-fx-font-weight: bold;" +
-            "-fx-text-fill: #1a1a1a;"
-        );
+        descFieldLabel.getStyleClass().add("form-label");
         TextArea descField = new TextArea();
-        descField.setPromptText("Description");
-        descField.setPrefHeight(220);
-        descField.setStyle(
-            "-fx-font-family: 'Poppins';" +
-            "-fx-font-size: 1em;" +
-            "-fx-background-color: white;" +
-            "-fx-background-radius: 10;" +
-            "-fx-border-width: 0;" +
-            "-fx-padding: 15;" +
-            "-fx-effect: innershadow(gaussian, rgba(0,0,0,0.05), 5, 0, 0, 2);"
-        );
-        descField.focusedProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal) {
-                descField.setStyle(
-                    "-fx-font-family: 'Poppins';" +
-                    "-fx-font-size: 1em;" +
-                    "-fx-background-color: white;" +
-                    "-fx-background-radius: 10;" +
-                    "-fx-border-width: 0;" +
-                    "-fx-padding: 15;" +
-                    "-fx-effect: dropshadow(gaussian, rgba(46,204,113,0.2), 4, 0, 0, 0);"
-                );
-            } else {
-                descField.setStyle(
-                    "-fx-font-family: 'Poppins';" +
-                    "-fx-font-size: 1em;" +
-                    "-fx-background-color: white;" +
-                    "-fx-background-radius: 10;" +
-                    "-fx-border-width: 0;" +
-                    "-fx-padding: 15;" +
-                    "-fx-effect: innershadow(gaussian, rgba(0,0,0,0.05), 5, 0, 0, 2);"
-                );
-            }
-        });
-        descGroup.getChildren().addAll(descFieldLabel, descField);
+        descField.setPromptText("Enter description (min 6 words)");
+        descField.setPrefRowCount(6);
+        descField.getStyleClass().add("form-field");
+        Label descError = new Label();
+        descError.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
+        descGroup.getChildren().addAll(descFieldLabel, descField, descError);
 
+        // Tag field
         VBox tagGroup = new VBox(8);
         Label tagFieldLabel = new Label("Tag:");
-        tagFieldLabel.setStyle(
-            "-fx-font-family: 'Poppins';" +
-            "-fx-font-size: 1.1em;" +
-            "-fx-font-weight: bold;" +
-            "-fx-text-fill: #1a1a1a;"
-        );
+        tagFieldLabel.getStyleClass().add("form-label");
         ComboBox<String> tagCombo = new ComboBox<>();
         tagCombo.getItems().addAll(tagService.getAllTags().stream().map(Tag::getName).toList());
         tagCombo.setPromptText("Tag (optional)");
-        tagCombo.setStyle(
-            "-fx-font-family: 'Poppins';" +
-            "-fx-font-size: 1em;" +
-            "-fx-background-color: white;" +
-            "-fx-background-radius: 10;" +
-            "-fx-border-width: 0;" +
-            "-fx-padding: 15;" +
-            "-fx-effect: innershadow(gaussian, rgba(0,0,0,0.05), 5, 0, 0, 2);"
-        );
-        tagCombo.focusedProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal) {
-                tagCombo.setStyle(
-                    "-fx-font-family: 'Poppins';" +
-                    "-fx-font-size: 1em;" +
-                    "-fx-background-color: white;" +
-                    "-fx-background-radius: 10;" +
-                    "-fx-border-width: 0;" +
-                    "-fx-padding: 15;" +
-                    "-fx-effect: dropshadow(gaussian, rgba(46,204,113,0.2), 4, 0, 0, 0);"
-                );
-            } else {
-                tagCombo.setStyle(
-                    "-fx-font-family: 'Poppins';" +
-                    "-fx-font-size: 1em;" +
-                    "-fx-background-color: white;" +
-                    "-fx-background-radius: 10;" +
-                    "-fx-border-width: 0;" +
-                    "-fx-padding: 15;" +
-                    "-fx-effect: innershadow(gaussian, rgba(0,0,0,0.05), 5, 0, 0, 2);"
-                );
-            }
-        });
+        tagCombo.getStyleClass().add("form-field");
         tagGroup.getChildren().addAll(tagFieldLabel, tagCombo);
 
+        // Message label for database errors
         Label messageLabel = new Label();
-        messageLabel.setStyle(
-            "-fx-font-family: 'Poppins';" +
-            "-fx-font-size: 1em;" +
-            "-fx-text-fill: #e74c3c;" +
-            "-fx-font-weight: 500;"
-        );
+        messageLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
 
+        // Add all components to content
         content.getChildren().addAll(titleLabel, subtitle, titleGroup, descGroup, tagGroup, messageLabel);
 
         Button createButton = (Button) dialog.getDialogPane().lookupButton(createButtonType);
-        createButton.setStyle(
-            "-fx-font-family: 'Poppins';" +
-            "-fx-font-size: 1.1em;" +
-            "-fx-font-weight: bold;" +
-            "-fx-background-color: #2ecc71;" +
-            "-fx-text-fill: white;" +
-            "-fx-background-radius: 50;" +
-            "-fx-padding: 15 30;" +
-            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 15, 0, 0, 4);"
-        );
-        createButton.setOnMouseEntered(e -> createButton.setStyle(
-            "-fx-font-family: 'Poppins';" +
-            "-fx-font-size: 1.1em;" +
-            "-fx-font-weight: bold;" +
-            "-fx-background-color: #27ae60;" +
-            "-fx-text-fill: white;" +
-            "-fx-background-radius: 50;" +
-            "-fx-padding: 15 30;" +
-            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 20, 0, 0, 6);"
-        ));
-        createButton.setOnMouseExited(e -> createButton.setStyle(
-            "-fx-font-family: 'Poppins';" +
-            "-fx-font-size: 1.1em;" +
-            "-fx-font-weight: bold;" +
-            "-fx-background-color: #2ecc71;" +
-            "-fx-text-fill: white;" +
-            "-fx-background-radius: 50;" +
-            "-fx-padding: 15 30;" +
-            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 15, 0, 0, 4);"
-        ));
+        createButton.getStyleClass().add("primary-button");
 
+        // Button press animation
         createButton.setOnMousePressed(e -> {
             ScaleTransition st = new ScaleTransition(Duration.millis(200), createButton);
             st.setFromX(1.0);
@@ -583,56 +589,79 @@ public class ReclamationController {
             st.setAutoReverse(true);
             st.play();
         });
-
-        dialog.getDialogPane().setContent(content);
-
-        createButton.setOnAction(e -> {
-            String title = titleField.getText().trim();
-            String description = descField.getText().trim();
-            String tagName = tagCombo.getValue();
-
-            if (title.isEmpty() || description.isEmpty()) {
-                messageLabel.setText("Please fill in all required fields (Title and Description)");
-                messageLabel.setStyle("-fx-text-fill: #e74c3c;");
-                return;
-            }
-
-            Tag selectedTag = tagName != null ? tagService.getTagByName(tagName) : null;
-            UUID tagId = selectedTag != null ? selectedTag.getId() : null;
-            UUID userId = currentUser.getId();
-
-            boolean success = reclamationService.addReclamation(
-                userId,
-                tagId,
-                1,
-                title,
-                description,
-                Status.WAITING
-            );
-
-            if (success) {
-                messageLabel.setText("Reclamation added successfully!");
-                messageLabel.setStyle("-fx-text-fill: #2ecc71;");
-                setupMainContainer();
-                titleField.clear();
-                descField.clear();
-                tagCombo.getSelectionModel().clearSelection();
-
-                javafx.animation.PauseTransition delay = new javafx.animation.PauseTransition(Duration.seconds(1));
-                delay.setOnFinished(event -> dialog.close());
-                delay.play();
-            } else {
-                messageLabel.setText("Failed to add reclamation. Check user ID or database constraints.");
-                messageLabel.setStyle("-fx-text-fill: #e74c3c;");
-            }
-        });
-
         FadeTransition fadeIn = new FadeTransition(Duration.millis(500), content);
         fadeIn.setFromValue(0);
         fadeIn.setToValue(1);
         dialog.setOnShown(e -> fadeIn.play());
 
+        dialog.getDialogPane().setContent(content);
+        createButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
+            String title = titleField.getText().trim();
+            String description = descField.getText().trim();
+            titleError.setText("");
+            descError.setText("");
+            messageLabel.setText("");
+            boolean hasErrors = false;
+            if (title.length() < 5) {
+                titleError.setText("Title must be at least 5 letters long.");
+                hasErrors = true;
+            }
+
+            String[] words = description.split("\\s+");
+            if (description.isEmpty() || words.length < 6) {
+                descError.setText("Description must contain at least 6 words.");
+                hasErrors = true;
+            }
+
+            // Prevent dialog from proceeding if there are errors
+            if (hasErrors) {
+                event.consume();
+            }
+        });
+
+        // Handle action if validation passes
+        createButton.setOnAction(e -> {
+            try {
+                String title = titleField.getText().trim();
+                String description = descField.getText().trim();
+                String tagName = tagCombo.getValue();
+
+                Tag selectedTag = tagName != null ? tagService.getTagByName(tagName) : null;
+                UUID tagId = selectedTag != null ? selectedTag.getId() : null;
+
+                boolean success = reclamationService.addReclamation(
+                    currentUser.getId(),
+                    tagId,
+                    1,
+                    title,
+                    description,
+                    Status.WAITING
+                );
+
+                if (success) {
+                    titleError.setText("");
+                    descError.setText("");
+                    messageLabel.setText("");
+                    setupMainContainer();
+                    dialog.close();
+                } else {
+                    messageLabel.setText("Failed to add reclamation. Check user ID or database constraints.");
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                messageLabel.setText("An unexpected error occurred: " + ex.getMessage());
+            }
+        });
+
         dialog.show();
+    }
+
+    private void showAlert(String title, String message, Alert.AlertType type) {
+        Alert alert = new Alert(type);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 
     private void handleWriteReview() {
