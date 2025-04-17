@@ -96,7 +96,9 @@ public class DashboardController {
                 e.printStackTrace();
             }
         });
+        
     }
+    
 
     private void toggleEventSubMenu() {
         isSubMenuVisible = !isSubMenuVisible;
