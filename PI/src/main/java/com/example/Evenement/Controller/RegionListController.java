@@ -1,7 +1,6 @@
 package com.example.Evenement.Controller;
 
 import com.example.Evenement.Dao.RegionDAO;
-import javafx.scene.layout.HBox;
 import com.example.Evenement.Model.Region;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -10,10 +9,10 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
-import javafx.util.Callback;
 import java.io.IOException;
 import java.util.Optional;
 
@@ -43,10 +42,13 @@ public class RegionListController {
                 content.setSpacing(20);
 
                 buttons.setSpacing(5);
-                editBtn.setStyle("-fx-background-color: #93441A; -fx-text-fill: white;");
-                deleteBtn.setStyle("-fx-background-color: #B67332; -fx-text-fill: white;");
-                detailsBtn.setStyle("-fx-background-color: #DAAB3A; -fx-text-fill: white;");
+                buttons.setStyle("-fx-padding: 5;");
 
+                editBtn.setStyle("-fx-background-color: #93441A; -fx-text-fill: white; -fx-padding: 5 10;");
+                deleteBtn.setStyle("-fx-background-color: #B67332; -fx-text-fill: white; -fx-padding: 5 10;");
+                detailsBtn.setStyle("-fx-background-color: #DAAB3A; -fx-text-fill: white; -fx-padding: 5 10;");
+
+                // Actions des boutons
                 editBtn.setOnAction(event -> handleEdit(getItem()));
                 deleteBtn.setOnAction(event -> handleDelete(getItem()));
                 detailsBtn.setOnAction(event -> showDetails(getItem()));

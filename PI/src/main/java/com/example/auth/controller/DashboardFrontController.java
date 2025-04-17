@@ -44,6 +44,7 @@ public class DashboardFrontController {
     private Label emailLabel;
 
     private Stage primaryStage;
+    @FXML private Hyperlink profileButton;
 
 
     
@@ -56,10 +57,10 @@ public class DashboardFrontController {
                 System.err.println("FXML not found: " + fxmlPath);
                 return;
             }
-            Parent content = loader.load();  // Use Parent to support any node type
+            Parent content = loader.load();
             borderPane.setCenter(content);
         } catch (IOException e) {
-            System.err.println("Error loading " + fxmlPath + ":");
+            System.err.println("Error loading " + fxmlPath + ": " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -78,34 +79,55 @@ public class DashboardFrontController {
             alert.showAndWait();
         }
     }
+
     @FXML
     public void initialize() {
         System.out.println("DashboardController initialized");
         System.out.println("borderPane: " + borderPane);
         System.out.println("dashboardButton: " + dashboardButton);
-    
+        System.out.println("logoutButton: " + logoutButton);
+
         dashboardButton.setOnAction(event -> loadContent("/com/example/frontPages/pages/dashboard.fxml"));
         achat.setOnAction(event -> loadContent("/com/example/frontPages/pages/achat.fxml"));
         productButton.setOnAction(event -> loadContent("/com/example/frontPages/pages/products.fxml"));
         categoryButton.setOnAction(event -> loadContent("/com/example/frontPages/pages/categories.fxml"));
         reclamationButton.setOnAction(event -> loadContent("/com/example/reclamation/Reclamation.fxml"));
+        profileButton.setOnAction(event -> loadContent("/com/example/auth/profile.fxml"));
         settings.setOnAction(event -> loadContent("/com/example/frontPages/pages/settings.fxml"));
-    
+
         logoutButton.setOnAction(event -> {
             try {
+                System.out.println("Logout button clicked");
                 handleLogout();
             } catch (IOException e) {
+                System.err.println("Logout failed: " + e.getMessage());
                 e.printStackTrace();
             }
         });
     }
-    
+
     @FXML
     private void handleLogout() throws IOException {
+        System.out.println("Initiating logout");
         sessionManager.clearSession();
+        System.out.println("Session cleared");
+
         Stage stage = (Stage) welcomeLabel.getScene().getWindow();
-        Parent root = FXMLLoader.load(getClass().getResource("/com/example/auth/login.fxml"));
-        stage.setScene(new Scene(root));
+        System.out.println("Current stage: " + stage);
+
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/auth/login.fxml"));
+        if (loader.getLocation() == null) {
+            System.err.println("login.fxml not found at /com/example/auth/login.fxml");
+            throw new IOException("login.fxml resource not found");
+        }
+
+        Parent root = loader.load();
+        Scene scene = new Scene(root);
+        scene.getStylesheets().add(getClass().getClassLoader().getResource("com/example/auth/styles.css").toExternalForm());
+        stage.setScene(scene);
+        stage.setTitle("Login");
+        stage.show();
+        System.out.println("Navigated to login page");
     }
 
     public void setPrimaryStage(Stage stage) {
@@ -115,4 +137,9 @@ public class DashboardFrontController {
         return borderPane;
     }
     
+
+    @FXML
+    private void handleProfileClick() {
+        loadContent("/com/example/auth/profile.fxml");
+    }
 }

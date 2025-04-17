@@ -29,11 +29,8 @@
                      -fx-padding: 15;">
     </ListView>
 
-    <!-- Container HBox modifié pour un meilleur alignement -->
     <HBox spacing="30" alignment="CENTER" VBox.vgrow="ALWAYS">
-        <!-- Photo de l'événement centrée au-dessus du bouton -->
         <VBox alignment="CENTER" spacing="10">
-            <ImageView fx:id="eventImage" fitWidth="100" fitHeight="100" preserveRatio="true" />
             <Button text="➕ Ajouter un événement" onAction="#handleAdd"
                     style="-fx-background-color: linear-gradient(to right, #43cea2, #185a9d); -fx-text-fill: white;
                            -fx-font-size: 15px; -fx-font-weight: bold; -fx-background-radius: 12;
