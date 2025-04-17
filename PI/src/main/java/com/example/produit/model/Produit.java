@@ -1,6 +1,7 @@
 package com.example.produit.model;
 
 import javafx.beans.property.*;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -76,17 +77,8 @@ public class Produit {
 
     @Override
     public String toString() {
-        return "Produit{" +
-                "id=" + id.get() +
-                ", category=" + (category.get() != null ? category.get().getNom() : "null") +
-                ", userId=" + userId.get() +
-                ", nom='" + nom.get() + '\'' +
-                ", description='" + description.get() + '\'' +
-                ", prixUnitaire=" + prixUnitaire.get() +
-                ", dateCreation=" + dateCreation.get() +
-                ", quantite=" + quantite.get() +
-                ", rate=" + rate.get() +
-                ", imageName='" + imageName.get() + '\'' +
-                '}';
+        return getNom(); // ou getNom() + " (" + getQuantite() + " en stock)" si tu veux plus d'infos
     }
+
+
 }

@@ -96,7 +96,9 @@ public class ProductController {
                 }
             }
         });
-        imagePreviewColumn.setCellValueFactory(new PropertyValueFactory<>("imageName"));
+        imagePreviewColumn.setCellValueFactory(cellData ->
+                new SimpleStringProperty(cellData.getValue().getImageName()));
+
     }
 
     private void initializeComboBoxes() {

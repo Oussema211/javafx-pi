@@ -2,6 +2,8 @@ package com.example.auth.model;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import javafx.beans.value.ObservableValue;
+
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -165,4 +167,14 @@ public class User implements Serializable {
     public void setNumTel(String numTel) {
         this.numTel = numTel;
     }
+    public String getUsername() {
+        return prenom + " " + nom;
+    }
+    @Override
+    public String toString() {
+        return getPrenom() + " " + getNom();
+    }
+
+
+
 }

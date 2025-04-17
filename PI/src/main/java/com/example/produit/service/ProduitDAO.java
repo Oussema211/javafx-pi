@@ -20,6 +20,22 @@ public class ProduitDAO {
              ResultSet rs = stmt.executeQuery(query)) {
 
             while (rs.next()) {
+ aziz-search-bar
+                Produit product = new Produit();
+                product.setId(UUID.fromString(rs.getString("id")));
+                product.setNom(rs.getString("nom"));
+                product.setDescription(rs.getString("description"));
+                product.setPrixUnitaire(rs.getFloat("prix_unitaire"));
+                product.setQuantite(rs.getInt("quantite"));
+                product.setDateCreation(rs.getTimestamp("date_creation").toLocalDateTime());
+                product.setImageName(rs.getString("image_name"));
+
+                UUID categoryId = UUID.fromString(rs.getString("categorie_id"));
+
+                product.setCategory(CategorieDAO.getCategoryById(categoryId));
+
+                products.add(product);
+
                 try {
                     Produit product = new Produit();
                     product.setId(UUID.fromString(rs.getString("id")));
@@ -49,6 +65,7 @@ public class ProduitDAO {
                     System.err.println("Error processing product row: " + e.getMessage());
                     e.printStackTrace();
                 }
+ main
             }
             System.out.println("getAllProducts: Retrieved " + products.size() + " products");
         } catch (SQLException e) {
