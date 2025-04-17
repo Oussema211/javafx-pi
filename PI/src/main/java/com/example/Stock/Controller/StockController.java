@@ -10,6 +10,7 @@ import com.example.produit.model.Produit;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -110,9 +111,21 @@ public class StockController {
     }
 
     public void refreshStockData() {
-        stockData.clear();
-        stockData.addAll(stockService.getAllStocksWithDetails());
-        stockList.refresh();
+        // Afficher un indicateur de chargement
+        ProgressIndicator progress = new ProgressIndicator();
+        progress.setMaxSize(50, 50);
+        stockList.setPlaceholder(progress);
+
+        // Exécuter en arrière-plan
+        new Thread(() -> {
+            List<Stock> freshData = stockService.getAllStocksWithDetails();
+
+            // Mettre à jour sur le thread UI
+            Platform.runLater(() -> {
+                stockData.setAll(freshData);
+                applyFilters();
+            });
+        }).start();
     }
 
     public UUID getCurrentUserId() {
@@ -185,7 +198,7 @@ public class StockController {
                     // Seuil d'alerte
                     Label alertLabel = new Label();
                     if (stock.getProduit() != null && stock.getProduit().getQuantite() < stock.getSeuilAlert()) {
-                        alertLabel.setText("⚠️ Stock critique (" + stock.getSeuilAlert() + ")");
+                        alertLabel.setText("⚠ Stock critique (" + stock.getSeuilAlert() + ")");
                         alertLabel.getStyleClass().add("stock-alert-critical");
                     } else {
                         alertLabel.setText("Seuil: " + stock.getSeuilAlert());
@@ -198,17 +211,17 @@ public class StockController {
                     HBox actionBox = new HBox(10);
                     actionBox.setAlignment(Pos.CENTER_RIGHT);
 
-                    Button editBtn = new Button("✏️ Modifier");
+                    Button editBtn = new Button("✏ Modifier");
                     editBtn.getStyleClass().add("action-button");
                     editBtn.setOnAction(e -> editStock(stock));
 
-                    Button deleteBtn = new Button("🗑️ Supprimer");
+                    Button deleteBtn = new Button("🗑 Supprimer");
                     deleteBtn.getStyleClass().add("action-button-danger");
                     deleteBtn.setOnAction(e -> deleteStock(stock));
 
                     actionBox.getChildren().addAll(editBtn, deleteBtn);
 
-                    // Assemblage final
+
                     mainContainer.getChildren().addAll(imageView, infoBox, actionBox);
 
                     // Hover effect
@@ -222,8 +235,21 @@ public class StockController {
 
                     // Tooltip
                     Tooltip tooltip = new Tooltip();
-                    tooltip.setText(stock.getProduit() != null && stock.getProduit().getDescription() != null ?
-                            stock.getProduit().getDescription() : "Aucune description");
+                    // Structured tooltip content with product name, category, and alert threshold
+                    String tooltipText = String.format(
+                            "Produit: %s\nQuantite: %s\nSeuil d'alerte: %d",
+                            stock.getProduit() != null && stock.getProduit().getNom() != null ? stock.getProduit().getNom() : "Inconnu",
+                            stock.getProduit() != null && stock.getProduit().getQuantite() != 0 ? stock.getProduit().getQuantite() : "Inconnu",
+                            stock.getSeuilAlert() != null ? stock.getSeuilAlert() : 0
+                    );
+                    tooltip.setText(tooltipText);
+
+                    // Customize tooltip style for better readability
+                    tooltip.setStyle(
+
+                            "-fx-text-fill:white; " +       // Dark text for high contrast
+                                    "-fx-font-size: 14px; "
+                    );
                     tooltip.setShowDelay(Duration.millis(200));
                     Tooltip.install(mainContainer, tooltip);
 
@@ -404,6 +430,7 @@ public class StockController {
             dialogStage.setTitle("Modifier le Stock");
             dialogStage.initModality(Modality.APPLICATION_MODAL);
             dialogStage.setScene(new Scene(root));
+            dialogStage.setOnHidden(e -> refreshStockData());
             dialogStage.setResizable(false);
             dialogStage.showAndWait();
 
@@ -414,19 +441,30 @@ public class StockController {
     }
 
     private void deleteStock(Stock stock) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Confirmation de suppression");
-        alert.setHeaderText("Supprimer le stock");
-        alert.setContentText("Êtes-vous sûr de vouloir supprimer ce stock ?");
+        Alert confirmationAlert = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmationAlert.setTitle("Confirmation de suppression");
+        confirmationAlert.setHeaderText("Supprimer le stock");
+        confirmationAlert.setContentText("Êtes-vous sûr de vouloir supprimer le stock ?");
 
-        Optional<ButtonType> result = alert.showAndWait();
+        Optional<ButtonType> result = confirmationAlert.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
             boolean success = stockService.deleteStock(stock.getId());
+
+            Alert resultAlert = new Alert(
+                    success ? Alert.AlertType.INFORMATION : Alert.AlertType.ERROR
+            );
+            resultAlert.setTitle(success ? "Succès" : "Erreur");
+            resultAlert.setHeaderText(null);
+            resultAlert.setContentText(
+                    success
+                            ? "Le stock a été supprimé avec succès."
+                            : "Échec de la suppression du stock."
+            );
+            resultAlert.showAndWait();
+
             if (success) {
-                stockData.remove(stock);
-                showAlert("Succès", "Stock supprimé avec succès", Alert.AlertType.INFORMATION);
-            } else {
-                showAlert("Erreur", "Échec de la suppression du stock", Alert.AlertType.ERROR);
+                // Rafraîchir les données directement
+                refreshStockData(); // Ajoutez cet appel
             }
         }
     }
@@ -452,6 +490,7 @@ public class StockController {
             dialogStage.setTitle("Ajouter un nouveau stock");
             dialogStage.initModality(Modality.APPLICATION_MODAL);
             dialogStage.setScene(new Scene(root));
+            dialogStage.setOnHidden(e -> refreshStockData());
             dialogStage.showAndWait();
 
         } catch (IOException e) {

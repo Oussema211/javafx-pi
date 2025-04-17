@@ -155,6 +155,7 @@ public class EntrepotController {
                 // Tooltip
                 Tooltip tooltip = new Tooltip("Entrepôt: " + entrepot.getNom() + "\nAdresse: " +
                         (entrepot.getAdresse() != null ? entrepot.getAdresse() : "Non spécifiée"));
+                tooltip.setStyle("-fx-text-fill:white; " + "-fx-font-size: 14px; ");
                 tooltip.setShowDelay(Duration.millis(200));
                 Tooltip.install(mainContainer, tooltip);
 
