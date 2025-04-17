@@ -125,9 +125,11 @@ public class AuthService {
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
                 String storedPassword = rs.getString("password");
-                if (password != null && BCrypt.checkpw(password, storedPassword)) {
+                // Support both password-based and face recognition login (password may be null)
+                if (password == null || (password != null && BCrypt.checkpw(password, storedPassword))) {
                     Date dateInscri = rs.getDate("date_inscri");
                     if (dateInscri == null) {
+                        System.err.println("Invalid date_inscri for user " + email + ", using current date");
                         dateInscri = new Date();
                     }
                     return new User(
@@ -139,7 +141,7 @@ public class AuthService {
                             dateInscri,
                             rs.getString("photo_url"),
                             rs.getBoolean("is_verified"),
-                            rs.getString("verification_token"),
+                            rs.getString("verification_token"), // Added to match User constructor
                             rs.getString("nom"),
                             rs.getString("prenom"),
                             rs.getString("num_tel")
@@ -215,7 +217,7 @@ public class AuthService {
         } catch (SQLException e) {
             System.err.println("Error fetching all users: " + e.getMessage());
         }
-        return users; // Ensure this line exists
+        return users;
     }
 
     public boolean updateUser(User user) {
@@ -241,6 +243,46 @@ public class AuthService {
         }
     }
 
+    public boolean updateUserEmail(String oldEmail, String newEmail) {
+        String checkSql = "SELECT COUNT(*) FROM user WHERE email = ?";
+        try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+            checkStmt.setString(1, newEmail);
+            ResultSet rs = checkStmt.executeQuery();
+            if (rs.next() && rs.getInt(1) > 0) {
+                System.err.println("Email already exists: " + newEmail);
+                return false;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error checking email existence: " + e.getMessage());
+            return false;
+        }
+
+        String sql = "UPDATE user SET email = ? WHERE email = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, newEmail);
+            pstmt.setString(2, oldEmail);
+            int rowsAffected = pstmt.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            System.err.println("Error updating email: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean updateUserPassword(String email, String newPassword) {
+        String hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
+        String sql = "UPDATE user SET password = ? WHERE email = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, hashedPassword);
+            pstmt.setString(2, email);
+            int rowsAffected = pstmt.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            System.err.println("Error updating password: " + e.getMessage());
+            return false;
+        }
+    }
+
     public boolean deleteUser(UUID id) {
         String sql = "DELETE FROM reset_token WHERE user_id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -258,20 +300,6 @@ public class AuthService {
             return rowsAffected > 0;
         } catch (SQLException e) {
             System.err.println("Error deleting user: " + e.getMessage());
-            return false;
-        }
-    }
-
-    public boolean updatePasswordByEmail(String email, String newPassword) {
-        String hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
-        String sql = "UPDATE user SET password = ? WHERE email = ?";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, hashedPassword);
-            pstmt.setString(2, email);
-            int rowsAffected = pstmt.executeUpdate();
-            return rowsAffected > 0;
-        } catch (SQLException e) {
-            System.err.println("Error updating password: " + e.getMessage());
             return false;
         }
     }

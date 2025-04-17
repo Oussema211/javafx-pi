@@ -102,8 +102,25 @@ public class LoginController {
         }
 
         sessionManager.setLoggedInUser(user);
-        String fxmlFile = user.hasRole("ROLE_ADMIN") ? "/com/example/auth/dashboard.fxml" : "/com/example/reclamation/Reclamation.fxml";
-        loadScene(fxmlFile);
+
+        // Redirect based on user role
+        String fxmlFile = user.hasRole("ROLE_ADMIN") ? "/com/example/auth/dashboard.fxml" : "/com/example/frontPages/dashboard.fxml";
+        Stage stage = (Stage) usernameField.getScene().getWindow();
+        boolean isFullScreen = stage.isFullScreen();
+        Parent root = FXMLLoader.load(getClass().getResource(fxmlFile));
+        Scene scene = new Scene(root, 400, 500);
+
+        // Load stylesheet
+        java.net.URL stylesheetUrl = getClass().getClassLoader().getResource("com/example/auth/styles.css");
+        if (stylesheetUrl != null) {
+            scene.getStylesheets().add(stylesheetUrl.toExternalForm());
+        } else {
+            System.out.println("DEBUG: Could not find styles.css in onLoginClicked");
+        }
+
+        stage.setScene(scene);
+        stage.setFullScreen(isFullScreen);
+        stage.show();
     }
 
     @FXML
@@ -292,7 +309,7 @@ public class LoginController {
                     User user = authService.authenticate(email, null);
                     if (user != null) {
                         sessionManager.setLoggedInUser(user);
-                        String fxmlFile = user.hasRole("ROLE_ADMIN") ? "/com/example/auth/dashboard.fxml" : "/com/example/reclamation/Reclamation.fxml";
+                        String fxmlFile = user.hasRole("ROLE_ADMIN") ? "/com/example/auth/dashboard.fxml" : "/com/example/frontPages/dashboard.fxml";
                         Platform.runLater(() -> {
                             try {
                                 // Close the webcam window before loading the new scene

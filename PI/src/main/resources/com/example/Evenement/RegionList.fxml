@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.effect.*?>
+<?import javafx.scene.paint.*?>
+<?import javafx.scene.text.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx/8.0.171"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.Evenement.Controller.RegionListController"
+      spacing="35"
+      alignment="TOP_CENTER"
+      style="-fx-background-color: linear-gradient(to bottom, #eef2f3, #dfe6e9); -fx-padding: 50;">
+
+    <Label text="🌍 Tableau de Bord des Régions"
+           style="-fx-font-size: 32px; -fx-text-fill: #2c3e50; -fx-font-weight: bold; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 4, 0.5, 0, 1);"/>
+
+    <Separator prefWidth="1000" style="-fx-opacity: 0.3;"/>
+
+    <ListView fx:id="regionTable"
+              prefWidth="1000"
+              prefHeight="500"
+              style="-fx-background-color: white; -fx-background-radius: 16; -fx-border-radius: 16;
+                     -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.08), 12, 0, 0, 4);
+                     -fx-padding: 15;">
+    </ListView>
+
+    <HBox spacing="30" alignment="CENTER">
+        <Button text="➕ Ajouter une région" onAction="#handleAdd"
+                style="-fx-background-color: linear-gradient(to right, #43cea2, #185a9d); -fx-text-fill: white;
+                       -fx-font-size: 15px; -fx-font-weight: bold; -fx-background-radius: 12;
+                       -fx-padding: 12 24; -fx-cursor: hand;"/>
+
+        <Button text="📅 Ajouter un événement" onAction="#handleAddEvent"
+                style="-fx-background-color: linear-gradient(to right, #74ebd5, #9face6); -fx-text-fill: #2c3e50;
+                       -fx-font-size: 15px; -fx-font-weight: bold; -fx-background-radius: 12;
+                       -fx-padding: 12 24; -fx-cursor: hand;"/>
+    </HBox>
+
+</VBox>

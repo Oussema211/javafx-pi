@@ -1,4 +1,5 @@
 package com.example.auth.utils;
+import com.example.Stock.service.StockService;
 import com.example.auth.model.User;
 import com.example.auth.service.AuthService;
 
@@ -9,9 +10,10 @@ public class SessionManager {
     private static SessionManager instance;
     private User loggedInUser;
     private AuthService authService = new AuthService();
+    private StockService stockService = new StockService();
     private static final String SESSION_FILE = "session.dat";
 
-    private SessionManager() {
+    public SessionManager() {
         // Load session on startup
         loadSession();
     }
@@ -66,4 +68,6 @@ public class SessionManager {
             System.err.println("Error loading session: " + e.getMessage());
         }
     }
+
+
 }
