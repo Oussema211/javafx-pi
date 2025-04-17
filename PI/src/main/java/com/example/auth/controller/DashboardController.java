@@ -165,6 +165,7 @@ public class DashboardController {
         Parent root = FXMLLoader.load(getClass().getResource("/com/example/auth/login.fxml"));
         stage.setScene(new Scene(root));
     }
+    
 
     @FXML
     private void handleReclamationLink() {

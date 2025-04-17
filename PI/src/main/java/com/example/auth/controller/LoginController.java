@@ -56,7 +56,7 @@ public class LoginController {
         Stage stage = (Stage) usernameField.getScene().getWindow();
         boolean isFullScreen = stage.isFullScreen();
         Parent root = FXMLLoader.load(getClass().getResource(fxmlFile));
-        Scene scene = new Scene(root, 400, 500);
+        Scene scene = new Scene(root, 700, 700);
 
         // Load stylesheet
         java.net.URL stylesheetUrl = getClass().getClassLoader().getResource("com/example/auth/styles.css");
@@ -78,7 +78,7 @@ public class LoginController {
             Parent root = loader.load();
             Stage stage = new Stage();
             stage.setTitle("Reset Password");
-            stage.setScene(new Scene(root, 400, 400));
+            stage.setScene(new Scene(root, 700, 700));
             stage.show();
         } catch (IOException e) {
             e.printStackTrace();
@@ -96,7 +96,7 @@ public class LoginController {
                 System.out.println("DEBUG: Failed to load signup.fxml - root is null");
                 return;
             }
-            Scene scene = new Scene(root, 400, 500);
+            Scene scene = new Scene(root, 700, 700);
 
             // Load stylesheet
             java.net.URL stylesheetUrl = getClass().getClassLoader().getResource("com/example/auth/styles.css");

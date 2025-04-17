@@ -59,15 +59,21 @@ public class ProfileController {
 
         if (profilePhotoPath != null && !profilePhotoPath.isEmpty()) {
             try {
-                // Verify resource exists
-                if (getClass().getResource(profilePhotoPath) == null) {
-                    System.err.println("Resource not found: " + profilePhotoPath);
-                    loadFallbackImage();
-                    return;
+                // Load image directly from path or file
+                Image image;
+                if (profilePhotoPath.startsWith("/")) {
+                    // Resource path
+                    if (getClass().getResource(profilePhotoPath) == null) {
+                        System.err.println("Resource not found: " + profilePhotoPath);
+                        loadFallbackImage();
+                        return;
+                    }
+                    image = new Image(getClass().getResourceAsStream(profilePhotoPath));
+                } else {
+                    // File path
+                    image = new Image("file:" + profilePhotoPath);
                 }
 
-                // Load the image as a resource
-                Image image = new Image(getClass().getResourceAsStream(profilePhotoPath));
                 if (!image.isError()) {
                     profilePicture.setImage(image);
                     System.out.println("Profile picture loaded successfully");
@@ -86,18 +92,16 @@ public class ProfileController {
     }
 
     private void loadFallbackImage() {
-        String fallbackPath = "/com/example/images/default_profile.jpg";
+        String fallbackPath = "/com/example/images/download.png";
         System.out.println("Attempting to load fallback image: " + fallbackPath);
 
         try {
-            // Verify resource exists
             if (getClass().getResource(fallbackPath) == null) {
                 System.err.println("Fallback resource not found: " + fallbackPath);
                 applyCssFallback();
                 return;
             }
 
-            // Load fallback image
             Image fallbackImage = new Image(getClass().getResourceAsStream(fallbackPath));
             if (!fallbackImage.isError()) {
                 profilePicture.setImage(fallbackImage);
@@ -114,7 +118,7 @@ public class ProfileController {
 
     private void applyCssFallback() {
         messageLabel.setText("Unable to load profile picture");
-        profilePicture.setImage(null); // Clear any existing image
+        profilePicture.setImage(null);
         profilePicture.setStyle("-fx-background-color: #cccccc; -fx-border-radius: 50%; -fx-background-radius: 50%;");
         System.out.println("Applied CSS fallback for profile picture");
     }
@@ -133,7 +137,7 @@ public class ProfileController {
 
         Parent root = loader.load();
         Scene scene = new Scene(root);
-        scene.getStylesheets().add(getClass().getClassLoader().getResource("com/example/auth/styles.css").toExternalForm());
+        scene.getStylesheets().add(getClass().getResource("/com/example/auth/styles.css").toExternalForm());
         stage.setScene(scene);
         stage.setTitle("Dashboard");
         stage.setFullScreen(isFullScreen);

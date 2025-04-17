@@ -1,26 +1,42 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
-<?import javafx.scene.text.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Text?>
 
-<VBox alignment="CENTER" spacing="20" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.auth.controller.AddUserController">
-    <Text text="Add New User" style="-fx-font: bold 24px 'System';"/>
-    <Label text="Nom (Last Name)"/>
-    <TextField fx:id="nomField"/>
-    <Label text="Prénom (First Name)"/>
-    <TextField fx:id="prenomField"/>
-    <Label text="Email"/>
-    <TextField fx:id="emailField"/>
-    <Label text="Password"/>
-    <PasswordField fx:id="passwordField"/>
-    <Label text="Travail (Occupation)"/>
-    <TextField fx:id="travailField"/>
-    <Label text="Photo URL"/>
-    <TextField fx:id="photoUrlField"/>
-    <Label text="Numéro de Téléphone"/>
-    <TextField fx:id="numTelField"/>
-    <Label text="Roles (comma-separated)"/>
-    <TextField fx:id="rolesField"/>
-    <Button text="Add User" onAction="#handleAddUser"/>
-    <Label fx:id="messageLabel" text="" textFill="RED"/>
+<VBox alignment="CENTER" spacing="15" style="-fx-background-color: linear-gradient(to bottom, #f0f4f8, #d9e2ec); -fx-padding: 30;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.auth.controller.AddUserController">
+    <Text text="Add New User" style="-fx-font: bold 28px 'Arial'; -fx-fill: #2c3e50; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 5, 0, 2, 2);" />
+    
+    <VBox spacing="10" style="-fx-background-color: white; -fx-border-radius: 10; -fx-background-radius: 10; -fx-padding: 20; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 10, 0, 0, 5);">
+        <Label text="Nom (Last Name)" style="-fx-font: 14px 'Arial'; -fx-text-fill: #34495e;" />
+        <TextField fx:id="nomField" promptText="Enter last name" style="-fx-background-radius: 5; -fx-border-radius: 5; -fx-border-color: #bdc3c7; -fx-padding: 8;" />
+        
+        <Label text="Prénom (First Name)" style="-fx-font: 14px 'Arial'; -fx-text-fill: #34495e;" />
+        <TextField fx:id="prenomField" promptText="Enter first name" style="-fx-background-radius: 5; -fx-border-radius: 5; -fx-border-color: #bdc3c7; -fx-padding: 8;" />
+        
+        <Label text="Email" style="-fx-font: 14px 'Arial'; -fx-text-fill: #34495e;" />
+        <TextField fx:id="emailField" promptText="Enter email" style="-fx-background-radius: 5; -fx-border-radius: 5; -fx-border-color: #bdc3c7; -fx-padding: 8;" />
+        
+        <Label text="Password" style="-fx-font: 14px 'Arial'; -fx-text-fill: #34495e;" />
+        <PasswordField fx:id="passwordField" promptText="Enter password" style="-fx-background-radius: 5; -fx-border-radius: 5; -fx-border-color: #bdc3c7; -fx-padding: 8;" />
+        
+        <Label text="Travail (Occupation)" style="-fx-font: 14px 'Arial'; -fx-text-fill: #34495e;" />
+        <TextField fx:id="travailField" promptText="Enter occupation" style="-fx-background-radius: 5; -fx-border-radius: 5; -fx-border-color: #bdc3c7; -fx-padding: 8;" />
+        
+        <Label text="Photo URL" style="-fx-font: 14px 'Arial'; -fx-text-fill: #34495e;" />
+        <TextField fx:id="photoUrlField" promptText="Enter photo URL" style="-fx-background-radius: 5; -fx-border-radius: 5; -fx-border-color: #bdc3c7; -fx-padding: 8;" />
+        
+        <Label text="Numéro de Téléphone" style="-fx-font: 14px 'Arial'; -fx-text-fill: #34495e;" />
+        <TextField fx:id="numTelField" promptText="Enter phone number" style="-fx-background-radius: 5; -fx-border-radius: 5; -fx-border-color: #bdc3c7; -fx-padding: 8;" />
+        
+        <Label text="Roles (comma-separated)" style="-fx-font: 14px 'Arial'; -fx-text-fill: #34495e;" />
+        <TextField fx:id="rolesField" promptText="Enter roles (e.g., admin,user)" style="-fx-background-radius: 5; -fx-border-radius: 5; -fx-border-color: #bdc3c7; -fx-padding: 8;" />
+        
+        <Button text="Add User" onAction="#handleAddUser" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font: bold 14px 'Arial'; -fx-background-radius: 5; -fx-padding: 10 20; -fx-cursor: hand;" />
+        
+        <Label fx:id="messageLabel" text="" style="-fx-font: 14px 'Arial'; -fx-text-fill: #e74c3c; -fx-padding: 5 0 0 0;" />
+    </VBox>
 </VBox>

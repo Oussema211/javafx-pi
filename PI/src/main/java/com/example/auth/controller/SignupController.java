@@ -217,7 +217,7 @@ public class SignupController {
             if (root == null) {
                 return;
             }
-            Scene scene = new Scene(root, 400, 500);
+            Scene scene = new Scene(root, 700, 700);
             java.net.URL stylesheetUrl = getClass().getClassLoader().getResource("com/example/auth/styles.css");
             if (stylesheetUrl != null) {
                 scene.getStylesheets().add(stylesheetUrl.toExternalForm());
