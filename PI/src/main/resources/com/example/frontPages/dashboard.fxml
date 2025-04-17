@@ -46,6 +46,9 @@
                     </ImageView>
                 </graphic>
             </Hyperlink>
+            <Hyperlink fx:id="stockLink" text="📦 Stocks" graphicTextGap="10" styleClass="nav-link" >
+
+            </Hyperlink>
 
             <Hyperlink fx:id="settings" text="Settings" graphicTextGap="10" styleClass="nav-link">
                 <graphic>

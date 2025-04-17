@@ -35,6 +35,8 @@ public class DashboardFrontController {
     @FXML
     private Hyperlink reclamationButton;
     @FXML
+    private Hyperlink stockLink;
+    @FXML
     private Label welcomeLabel;
     @FXML
     private Label emailLabel;
@@ -66,6 +68,7 @@ public class DashboardFrontController {
         productButton.setOnAction(event -> loadContent("/com/example/frontPages/pages/products.fxml"));
         categoryButton.setOnAction(event -> loadContent("/com/example/frontPages/pages/categories.fxml"));
         reclamationButton.setOnAction(event -> loadContent("/com/example/reclamation/Reclamation.fxml"));
+        stockLink.setOnAction(event -> loadContent("/com/example/Stock/view/FrontOfficeDashboard.fxml"));
         settings.setOnAction(event -> loadContent("/com/example/frontPages/pages/settings.fxml"));
     
         logoutButton.setOnAction(event -> {
