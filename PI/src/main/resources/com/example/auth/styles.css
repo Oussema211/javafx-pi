@@ -144,16 +144,6 @@
     -fx-cursor: hand;
 }
 
-.nav-link:hover {
-    -fx-background-color: #B67332;
-}
-
-.sub-menu {
-    -fx-background-color: #93441A;
-    -fx-background-radius: 0 0 5px 5px;
-    -fx-padding: 5 0 5 0;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 10, 0, 0, 2);
-}
 
 .sub-nav-link {
     -fx-text-fill: #bdc3c7;
@@ -163,10 +153,7 @@
     -fx-cursor: hand;
 }
 
-.sub-nav-link:hover {
-    -fx-background-color: #B67332;
-    -fx-text-fill: white;
-}
+
 
 .dropdown-arrow {
     -fx-rotate: 0;
@@ -192,3 +179,6 @@
     -fx-font-size: 16px;
     -fx-text-fill: #7f8c8d;
 }
+
+
+

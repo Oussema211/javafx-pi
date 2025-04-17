@@ -1,6 +1,42 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?import javafx.scene.layout.VBox?>
-<?import javafx.scene.control.Label?>
-<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" styleClass="main-content">
-    <Label text="Purchasing Management Content" styleClass="content-title"/>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.purchasingbackend.PurchasingController"
+      spacing="15" alignment="CENTER"
+      styleClass="main-content"
+      stylesheets="@/com/example/css/commandecss.css"
+      style="-fx-padding: 20;">
+
+
+
+
+    <HBox spacing="15" alignment="CENTER_LEFT">
+        <Label text="📦 Commandes Finalisées" styleClass="fancy-title"/>
+        <Region fx:id="spacer" HBox.hgrow="ALWAYS"/>
+        <TextField fx:id="searchField"
+                   promptText="🔍 Rechercher utilisateur..."
+                   prefWidth="250"
+                   styleClass="search-field"/>
+
+        <Button text="➕ Nouvelle Commande" onAction="#handleAddCommande" styleClass="add-button"/>
+    </HBox>
+
+
+
+    <!-- 📋 Tableau des commandes -->
+    <TableView fx:id="commandeTable" maxHeight="400" VBox.vgrow="ALWAYS">
+
+    <columns>
+            <TableColumn fx:id="colUser" text="👤 Utilisateur" prefWidth="200"/>
+            <TableColumn fx:id="colDate" text="📅 Date d’Achat" prefWidth="200"/>
+            <TableColumn fx:id="colPrix" text="💰 Prix Total" prefWidth="150"/>
+            <TableColumn fx:id="colProduit" text="🛍 Produits" prefWidth="350"/>
+
+        </columns>
+    </TableView>
+
 </VBox>

@@ -6,8 +6,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+
+
+import com.example.produit.model.Produit;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
 public class ProduitDAO {
-    private static final String URL = "jdbc:mysql://localhost:3306/pidev";
+    private static final String URL = "jdbc:mysql://localhost:3306/pidevv";
     private static final String USER = "root";
     private static final String PASSWORD = "";
 
@@ -27,8 +35,7 @@ public class ProduitDAO {
                     product.setDescription(rs.getString("description"));
                     product.setPrixUnitaire(rs.getFloat("prix_unitaire"));
                     product.setQuantite(rs.getInt("quantite"));
-                    product.setDateCreation(rs.getTimestamp("date_creation") != null ?
-                            rs.getTimestamp("date_creation").toLocalDateTime() : null);
+                    product.setDateCreation(rs.getTimestamp("date_creation") != null ? rs.getTimestamp("date_creation").toLocalDateTime() : null);
                     product.setImageName(rs.getString("image_name"));
 
                     String categoryIdStr = rs.getString("categorie_id");

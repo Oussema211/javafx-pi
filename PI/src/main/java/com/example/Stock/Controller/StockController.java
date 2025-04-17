@@ -7,8 +7,11 @@ import com.example.Stock.service.StockService;
 import com.example.auth.utils.SessionManager;
 import com.example.produit.model.Categorie;
 import com.example.produit.model.Produit;
-import javafx.beans.property.SimpleIntegerProperty;
-import javafx.beans.property.SimpleStringProperty;
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
+import javafx.application.Platform;
+import javafx.geometry.Insets;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -17,16 +20,17 @@ import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.control.Button;
-import javafx.scene.control.Cell;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.animation.FadeTransition;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
-import javafx.util.Callback;
 import javafx.util.Duration;
 import javafx.scene.Scene;
 import javafx.stage.Modality;
@@ -38,20 +42,12 @@ import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
-
-import javafx.scene.control.Alert;
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-
 import java.awt.*;
-import java.awt.Font;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -81,17 +77,10 @@ public class StockController {
     @FXML private DatePicker dateEntreeFilter;
     @FXML private ComboBox<String> entrepotFilter;
     @FXML private Button resetBtn;
-    @FXML private TableView<Stock> stockTable;
-    @FXML private TableColumn<Stock, String> colId;
-    @FXML private TableColumn<Stock, String> colProduit;
-    @FXML private TableColumn<Stock, String> colImage;
-    @FXML private TableColumn<Stock, Integer> colQuantite;
-    @FXML private TableColumn<Stock, String> colDateEntree;
-    @FXML private TableColumn<Stock, Integer> colSeuil;
-    @FXML private TableColumn<Stock, String> colEntrepot;
-    @FXML private TableColumn<Stock, String> colCategorie;
-    @FXML private TableColumn<Stock, Void> colActions;
-
+    @FXML private ListView<Stock> stockList;
+    @FXML private Button sortByNameBtn;
+    @FXML private Button sortByQuantityBtn;
+    @FXML private Button sortByDateBtn;
     private ObservableList<Stock> stockData = FXCollections.observableArrayList();
     private final Map<UUID, Entrepot> entrepotCache = new HashMap<>();
 
@@ -99,11 +88,18 @@ public class StockController {
     public void initialize() {
         loadRealData();
         configureFilters();
-        configureTable();
+        configureList();
         applyFilters();
-        configureTableColumns();
+
+
+
+        // Sorting listeners
+        sortByNameBtn.setOnAction(e -> sortListByName());
+        sortByQuantityBtn.setOnAction(e -> sortListByQuantity());
+        sortByDateBtn.setOnAction(e -> sortListByDate());
+
         // Animation de démarrage
-        FadeTransition fade = new FadeTransition(Duration.millis(1000), stockTable);
+        FadeTransition fade = new FadeTransition(Duration.millis(1000), stockList);
         fade.setFromValue(0.0);
         fade.setToValue(1.0);
         fade.play();
@@ -115,44 +111,187 @@ public class StockController {
     }
 
     public void refreshStockData() {
-        stockData.clear();
-        stockData.addAll(stockService.getAllStocksWithDetails());
-        stockTable.refresh();
+        // Afficher un indicateur de chargement
+        ProgressIndicator progress = new ProgressIndicator();
+        progress.setMaxSize(50, 50);
+        stockList.setPlaceholder(progress);
+
+        // Exécuter en arrière-plan
+        new Thread(() -> {
+            List<Stock> freshData = stockService.getAllStocksWithDetails();
+
+            // Mettre à jour sur le thread UI
+            Platform.runLater(() -> {
+                stockData.setAll(freshData);
+                applyFilters();
+            });
+        }).start();
     }
 
     public UUID getCurrentUserId() {
         return SessionManager.getInstance().getLoggedInUser().getId();
     }
 
-    private void configureTableColumns() {
-        // Configuration des proportions des colonnes
-        final Map<TableColumn<Stock, ?>, Double> columnProportions = new LinkedHashMap<>();
-        columnProportions.put(colId, 0.08);
-        columnProportions.put(colProduit, 0.20);
-        columnProportions.put(colQuantite, 0.10);
-        columnProportions.put(colDateEntree, 0.12);
-        columnProportions.put(colSeuil, 0.08);
-        columnProportions.put(colEntrepot, 0.15);
-        columnProportions.put(colCategorie, 0.15);
-        columnProportions.put(colActions, 0.12);
+    private void configureList() {
+        stockList.setCellFactory(param -> new ListCell<Stock>() {
+            @Override
+            protected void updateItem(Stock stock, boolean empty) {
+                super.updateItem(stock, empty);
 
-        // Listener pour le redimensionnement
-        stockTable.widthProperty().addListener((obs, oldVal, newVal) -> {
-            double tableWidth = newVal.doubleValue();
-            double totalProportions = columnProportions.values().stream().mapToDouble(d -> d).sum();
+                if (empty || stock == null) {
+                    setGraphic(null);
+                    setText(null);
+                    setStyle(""); // Reset style
+                } else {
+                    // Conteneur principal
+                    HBox mainContainer = new HBox(15);
+                    mainContainer.setAlignment(Pos.CENTER_LEFT);
+                    mainContainer.setPadding(new Insets(15));
+                    mainContainer.getStyleClass().add("stock-cell");
 
-            columnProportions.forEach((column, proportion) -> {
-                double calculatedWidth = (proportion / totalProportions) * tableWidth;
-                column.setPrefWidth(calculatedWidth);
-            });
-        });
+                    // Image du produit
+                    ImageView imageView = new ImageView();
+                    try {
+                        if (stock.getProduit() != null && stock.getProduit().getImageName() != null) {
+                            Image img = new Image("file:" + stock.getProduit().getImageName());
+                            imageView.setImage(img);
+                        }
+                    } catch (Exception e) {
+                        imageView.setImage(new Image("file:src/main/resources/icons/default_product.png")); // Fallback image
+                    }
+                    imageView.setFitHeight(60);
+                    imageView.setFitWidth(60);
+                    imageView.setPreserveRatio(true);
+                    imageView.setSmooth(true);
 
-        // Appliquer le style aux colonnes
-        columnProportions.keySet().forEach(column -> {
-            if (column == colId || column == colQuantite || column == colSeuil || column == colDateEntree || column == colActions) {
-                column.setStyle("-fx-alignment: CENTER;");
+                    // Conteneur des informations
+                    VBox infoBox = new VBox(8);
+                    infoBox.setMaxWidth(Double.MAX_VALUE);
+                    HBox.setHgrow(infoBox, Priority.ALWAYS);
+
+                    // Nom du produit et catégorie
+                    HBox titleBox = new HBox(10);
+                    Label nameLabel = new Label(stock.getProduit() != null ? stock.getProduit().getNom() : "Produit inconnu");
+                    nameLabel.getStyleClass().add("stock-name");
+
+                    Label categoryLabel = new Label(stock.getProduit() != null && stock.getProduit().getCategory() != null ?
+                            stock.getProduit().getCategory().getNom() : "Sans catégorie");
+                    categoryLabel.getStyleClass().add("stock-category");
+
+                    titleBox.getChildren().addAll(nameLabel, categoryLabel);
+
+                    // Détails
+                    HBox detailsBox = new HBox(20);
+                    detailsBox.setAlignment(Pos.CENTER_LEFT);
+
+                    Label quantityLabel = new Label("📦 " + (stock.getProduit() != null ? stock.getProduit().getQuantite() : 0));
+                    quantityLabel.getStyleClass().add("stock-detail");
+
+                    Label dateLabel = new Label("📅 " + stock.getDateEntree().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+                    dateLabel.getStyleClass().add("stock-detail");
+
+                    Label warehouseLabel = new Label("🏭 " + formatEntrepots(stock.getEntrepotIds()));
+                    warehouseLabel.getStyleClass().add("stock-detail");
+
+                    detailsBox.getChildren().addAll(quantityLabel, dateLabel, warehouseLabel);
+
+                    // Seuil d'alerte
+                    Label alertLabel = new Label();
+                    if (stock.getProduit() != null && stock.getProduit().getQuantite() < stock.getSeuilAlert()) {
+                        alertLabel.setText("⚠ Stock critique (" + stock.getSeuilAlert() + ")");
+                        alertLabel.getStyleClass().add("stock-alert-critical");
+                    } else {
+                        alertLabel.setText("Seuil: " + stock.getSeuilAlert());
+                        alertLabel.getStyleClass().add("stock-alert-normal");
+                    }
+
+                    infoBox.getChildren().addAll(titleBox, detailsBox, alertLabel);
+
+                    // Conteneur des actions
+                    HBox actionBox = new HBox(10);
+                    actionBox.setAlignment(Pos.CENTER_RIGHT);
+
+                    Button editBtn = new Button("✏ Modifier");
+                    editBtn.getStyleClass().add("action-button");
+                    editBtn.setOnAction(e -> editStock(stock));
+
+                    Button deleteBtn = new Button("🗑 Supprimer");
+                    deleteBtn.getStyleClass().add("action-button-danger");
+                    deleteBtn.setOnAction(e -> deleteStock(stock));
+
+                    actionBox.getChildren().addAll(editBtn, deleteBtn);
+
+
+                    mainContainer.getChildren().addAll(imageView, infoBox, actionBox);
+
+                    // Hover effect
+                    mainContainer.setTranslateY(20);
+                    mainContainer.setOpacity(0);
+                    Timeline timeline = new Timeline(
+                            new KeyFrame(Duration.millis(300), new KeyValue(mainContainer.translateYProperty(), 0)),
+                            new KeyFrame(Duration.millis(300), new KeyValue(mainContainer.opacityProperty(), 1))
+                    );
+                    timeline.play();
+
+                    // Tooltip
+                    Tooltip tooltip = new Tooltip();
+                    // Structured tooltip content with product name, category, and alert threshold
+                    String tooltipText = String.format(
+                            "Produit: %s\nQuantite: %s\nSeuil d'alerte: %d",
+                            stock.getProduit() != null && stock.getProduit().getNom() != null ? stock.getProduit().getNom() : "Inconnu",
+                            stock.getProduit() != null && stock.getProduit().getQuantite() != 0 ? stock.getProduit().getQuantite() : "Inconnu",
+                            stock.getSeuilAlert() != null ? stock.getSeuilAlert() : 0
+                    );
+                    tooltip.setText(tooltipText);
+
+                    // Customize tooltip style for better readability
+                    tooltip.setStyle(
+
+                            "-fx-text-fill:white; " +       // Dark text for high contrast
+                                    "-fx-font-size: 14px; "
+                    );
+                    tooltip.setShowDelay(Duration.millis(200));
+                    Tooltip.install(mainContainer, tooltip);
+
+                    // Context Menu
+                    ContextMenu contextMenu = new ContextMenu();
+                    MenuItem editItem = new MenuItem("Modifier");
+                    editItem.setOnAction(e -> editStock(stock));
+                    MenuItem deleteItem = new MenuItem("Supprimer");
+                    deleteItem.setOnAction(e -> deleteStock(stock));
+                    MenuItem detailsItem = new MenuItem("Voir détails");
+                    detailsItem.setOnAction(e -> showStockDetails(stock));
+                    contextMenu.getItems().addAll(editItem, deleteItem, detailsItem);
+                    setContextMenu(contextMenu);
+
+                    // Double-click to edit
+                    mainContainer.setOnMouseClicked(e -> {
+                        if (e.getClickCount() == 2) {
+                            editStock(stock);
+                        }
+                    });
+
+                    // Accessibility
+                    mainContainer.setAccessibleText(String.format(
+                            "Produit: %s, Quantité: %d, Date Entrée: %s, Seuil: %d",
+                            stock.getProduit() != null ? stock.getProduit().getNom() : "Inconnu",
+                            stock.getProduit() != null ? stock.getProduit().getQuantite() : 0,
+                            stock.getDateEntree().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
+                            stock.getSeuilAlert()
+                    ));
+
+                    // Conditional styling for critical stock
+                    if (stock.getProduit() != null && stock.getProduit().getQuantite() < stock.getSeuilAlert()) {
+                        mainContainer.getStyleClass().add("stock-cell-critical");
+                    }
+
+                    setGraphic(mainContainer);
+                }
             }
         });
+
+        stockList.setItems(stockData);
+        stockList.getStyleClass().add("stock-list");
     }
 
     private void configureFilters() {
@@ -205,7 +344,7 @@ public class StockController {
                 .filter(stock -> filterByDate(stock, selectedDate))
                 .collect(Collectors.toList());
 
-        stockTable.setItems(FXCollections.observableArrayList(filteredList));
+        stockList.setItems(FXCollections.observableArrayList(filteredList));
     }
 
     private boolean filterBySearchText(Stock stock, String searchText) {
@@ -266,99 +405,6 @@ public class StockController {
         applyFilters();
     }
 
-    private void configureTable() {
-        // Colonne ID
-        colId.setCellValueFactory(cellData ->
-                new SimpleStringProperty(cellData.getValue().getId().toString().substring(0, 8)));
-
-        // Colonne Produit
-        colProduit.setCellValueFactory(cellData -> {
-            Produit p = cellData.getValue().getProduit();
-            return new SimpleStringProperty(p != null ? p.getNom() : "Inconnu");
-        });
-
-        // Colonne Image
-        colImage.setCellFactory(column -> new TableCell<Stock, String>() {
-            private final ImageView imageView = new ImageView();
-            {
-                imageView.setFitHeight(40);
-                imageView.setFitWidth(40);
-                imageView.setPreserveRatio(true);
-            }
-
-            @Override
-            protected void updateItem(String imagePath, boolean empty) {
-                super.updateItem(imagePath, empty);
-                if (empty || imagePath == null) {
-                    setGraphic(null);
-                } else {
-                    try {
-                        Image img = new Image("file:" + imagePath);
-                        imageView.setImage(img);
-                        setGraphic(imageView);
-                    } catch (Exception e) {
-                        setGraphic(new Label("No Image"));
-                    }
-                }
-            }
-        });
-
-        // Colonne Quantité
-        colQuantite.setCellValueFactory(cellData -> {
-            Produit p = cellData.getValue().getProduit();
-            return new SimpleIntegerProperty(p != null ? p.getQuantite() : 0).asObject();
-        });
-
-        // Colonne Date Entrée
-        colDateEntree.setCellValueFactory(cellData ->
-                new SimpleStringProperty(cellData.getValue().getDateEntree().format(dateFormatter)));
-
-        // Colonne Seuil Alerte
-        colSeuil.setCellValueFactory(cellData ->
-                new SimpleIntegerProperty(cellData.getValue().getSeuilAlert()).asObject());
-
-        // Colonne Entrepôt
-        colEntrepot.setCellValueFactory(cellData ->
-                new SimpleStringProperty(formatEntrepots(cellData.getValue().getEntrepotIds())));
-
-        // Colonne Catégorie
-        colCategorie.setCellValueFactory(cellData -> {
-            Produit p = cellData.getValue().getProduit();
-            Categorie c = p != null ? p.getCategory() : null;
-            return new SimpleStringProperty(c != null ? c.getNom() : "Inconnue");
-        });
-
-        // Colonne Actions
-        colActions.setCellFactory(column -> new TableCell<Stock, Void>() {
-            private final Button editBtn = new Button("✏️");
-            private final Button deleteBtn = new Button("🗑️");
-            private final HBox box = new HBox(5, editBtn, deleteBtn);
-
-            {
-                box.setAlignment(Pos.CENTER);
-                editBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white;");
-                deleteBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;");
-
-                editBtn.setOnAction(e -> {
-                    Stock stock = getTableView().getItems().get(getIndex());
-                    editStock(stock);
-                });
-                deleteBtn.setOnAction(e -> {
-                    Stock stock = getTableView().getItems().get(getIndex());
-                    deleteStock(stock);
-                });
-            }
-
-            @Override
-            protected void updateItem(Void item, boolean empty) {
-                super.updateItem(item, empty);
-                setGraphic(empty ? null : box);
-            }
-        });
-
-        stockTable.setItems(stockData);
-    }
-
     private String formatEntrepots(Set<UUID> entrepotIds) {
         if (entrepotIds == null || entrepotIds.isEmpty()) {
             return "Aucun entrepôt";
@@ -384,6 +430,7 @@ public class StockController {
             dialogStage.setTitle("Modifier le Stock");
             dialogStage.initModality(Modality.APPLICATION_MODAL);
             dialogStage.setScene(new Scene(root));
+            dialogStage.setOnHidden(e -> refreshStockData());
             dialogStage.setResizable(false);
             dialogStage.showAndWait();
 
@@ -394,19 +441,30 @@ public class StockController {
     }
 
     private void deleteStock(Stock stock) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Confirmation de suppression");
-        alert.setHeaderText("Supprimer le stock");
-        alert.setContentText("Êtes-vous sûr de vouloir supprimer ce stock ?");
+        Alert confirmationAlert = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmationAlert.setTitle("Confirmation de suppression");
+        confirmationAlert.setHeaderText("Supprimer le stock");
+        confirmationAlert.setContentText("Êtes-vous sûr de vouloir supprimer le stock ?");
 
-        Optional<ButtonType> result = alert.showAndWait();
+        Optional<ButtonType> result = confirmationAlert.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
             boolean success = stockService.deleteStock(stock.getId());
+
+            Alert resultAlert = new Alert(
+                    success ? Alert.AlertType.INFORMATION : Alert.AlertType.ERROR
+            );
+            resultAlert.setTitle(success ? "Succès" : "Erreur");
+            resultAlert.setHeaderText(null);
+            resultAlert.setContentText(
+                    success
+                            ? "Le stock a été supprimé avec succès."
+                            : "Échec de la suppression du stock."
+            );
+            resultAlert.showAndWait();
+
             if (success) {
-                stockData.remove(stock);
-                showAlert("Succès", "Stock supprimé avec succès", Alert.AlertType.INFORMATION);
-            } else {
-                showAlert("Erreur", "Échec de la suppression du stock", Alert.AlertType.ERROR);
+                // Rafraîchir les données directement
+                refreshStockData(); // Ajoutez cet appel
             }
         }
     }
@@ -432,6 +490,7 @@ public class StockController {
             dialogStage.setTitle("Ajouter un nouveau stock");
             dialogStage.initModality(Modality.APPLICATION_MODAL);
             dialogStage.setScene(new Scene(root));
+            dialogStage.setOnHidden(e -> refreshStockData());
             dialogStage.showAndWait();
 
         } catch (IOException e) {
@@ -459,23 +518,22 @@ public class StockController {
             Row headerRow = sheet.createRow(0);
 
             for (int i = 0; i < headers.length; i++) {
-                // Utilisation explicite de la classe POI Cell
                 org.apache.poi.ss.usermodel.Cell cell = headerRow.createCell(i);
-                cell.setCellValue(headers[i]);  // Méthode POI
-                cell.setCellStyle(headerStyle);  // Méthode POI
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
             }
 
             // 3. Remplissage des données
             DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
-            for (int i = 0; i < stockTable.getItems().size(); i++) {
-                Stock stock = stockTable.getItems().get(i);
+            for (int i = 0; i < stockList.getItems().size(); i++) {
+                Stock stock = stockList.getItems().get(i);
                 if (stock == null) continue;
 
                 Row row = sheet.createRow(i + 1);
                 Produit p = stock.getProduit();
 
-                // Produit - en utilisant explicitement la classe POI Cell
+                // Produit
                 org.apache.poi.ss.usermodel.Cell produitCell = row.createCell(0);
                 produitCell.setCellValue(p != null ? p.getNom() : "Inconnu");
 
@@ -487,7 +545,18 @@ public class StockController {
                 org.apache.poi.ss.usermodel.Cell dateEntreeCell = row.createCell(2);
                 dateEntreeCell.setCellValue(stock.getDateEntree().format(dateFormatter));
 
-                // ... (autres cellules de la même manière)
+                // Date Sortie
+                org.apache.poi.ss.usermodel.Cell dateSortieCell = row.createCell(3);
+                dateSortieCell.setCellValue(stock.getDateSortie() != null ?
+                        stock.getDateSortie().format(dateFormatter) : "N/A");
+
+                // Entrepôts
+                org.apache.poi.ss.usermodel.Cell entrepotCell = row.createCell(4);
+                entrepotCell.setCellValue(formatEntrepots(stock.getEntrepotIds()));
+
+                // Seuil
+                org.apache.poi.ss.usermodel.Cell seuilCell = row.createCell(5);
+                seuilCell.setCellValue(stock.getSeuilAlert());
             }
 
             // 4. Sauvegarde du fichier
@@ -539,11 +608,9 @@ public class StockController {
             contentStream.fill();
 
             // 4. En-tête avec logos
-            // Logo gauche (remplacer par votre chemin)
             PDImageXObject logoLeft = PDImageXObject.createFromFile("src/main/resources/icons/logo.jpg", document);
             contentStream.drawImage(logoLeft, 30, 750, 40, 40);
 
-            // Logo droit (remplacer par votre chemin)
             PDImageXObject logoRight = PDImageXObject.createFromFile("src/main/resources/icons/esprit.jpg", document);
             contentStream.drawImage(logoRight, 520, 750, 40, 40);
 
@@ -630,7 +697,7 @@ public class StockController {
             boolean fill = false;
             float yPosition = yStart - rowHeight * 2;
 
-            for (Stock stock : stockTable.getItems()) {
+            for (Stock stock : stockList.getItems()) {
                 // Alternance de couleurs
                 if (fill) {
                     contentStream.setNonStrokingColor(245, 247, 250); // Gris clair
@@ -654,7 +721,7 @@ public class StockController {
                 contentStream.endText();
                 nextX += columnWidths[0];
 
-                // Quantité - Note: Changed to get from Produit as shown in your TableView config
+                // Quantité
                 contentStream.beginText();
                 contentStream.newLineAtOffset(nextX + 5, yPosition + 5);
                 contentStream.showText(String.valueOf(p != null ? p.getQuantite() : 0));
@@ -750,16 +817,40 @@ public class StockController {
             e.printStackTrace();
         }
     }
+    private void showStockDetails(Stock stock) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Détails du Stock");
+        alert.setHeaderText(stock.getProduit() != null ? stock.getProduit().getNom() : "Produit inconnu");
+        String details = String.format(
+                "Quantité: %d\nDate Entrée: %s\nEntrepôts: %s\nSeuil d'alerte: %d\nDescription: %s",
+                stock.getProduit() != null ? stock.getProduit().getQuantite() : 0,
+                stock.getDateEntree().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
+                formatEntrepots(stock.getEntrepotIds()),
+                stock.getSeuilAlert(),
+                stock.getProduit() != null && stock.getProduit().getDescription() != null ?
+                        stock.getProduit().getDescription() : "Aucune"
+        );
+        alert.setContentText(details);
+        alert.showAndWait();
+    }
+    private void sortListByName() {
+        List<Stock> sortedList = stockData.stream()
+                .sorted(Comparator.comparing(s -> s.getProduit() != null ? s.getProduit().getNom().toLowerCase() : ""))
+                .collect(Collectors.toList());
+        stockList.setItems(FXCollections.observableArrayList(sortedList));
+    }
 
-    // Helper method to format entrepots (similar to what you have in your TableView)
-    private String formatEntrepots(List<UUID> entrepotIds) {
-        if (entrepotIds == null || entrepotIds.isEmpty()) {
-            return "Aucun";
-        }
-        return entrepotIds.stream()
-                .limit(3)
-                .map(id -> "Entr." + id.toString().substring(0, 4))
-                .collect(Collectors.joining(", "))
-                + (entrepotIds.size() > 3 ? ", ..." : "");
+    private void sortListByQuantity() {
+        List<Stock> sortedList = stockData.stream()
+                .sorted(Comparator.comparingInt(s -> s.getProduit() != null ? s.getProduit().getQuantite() : 0))
+                .collect(Collectors.toList());
+        stockList.setItems(FXCollections.observableArrayList(sortedList));
+    }
+
+    private void sortListByDate() {
+        List<Stock> sortedList = stockData.stream()
+                .sorted(Comparator.comparing(Stock::getDateEntree))
+                .collect(Collectors.toList());
+        stockList.setItems(FXCollections.observableArrayList(sortedList));
     }
 }

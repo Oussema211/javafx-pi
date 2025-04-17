@@ -1,0 +1,133 @@
+/* Style général de la TableView */
+.table-view {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #cccccc;
+    -fx-border-width: 1;
+    -fx-padding: 10;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 4);
+}
+
+/* Style des colonnes */
+.table-column {
+    -fx-alignment: CENTER_LEFT;
+}
+
+/* En-têtes de colonnes */
+.table-view .column-header-background {
+    -fx-background-color: linear-gradient(to bottom, #2196f3, #1976d2);
+    -fx-background-insets: 0;
+    -fx-background-radius: 8 8 0 0;
+    -fx-padding: 8 0 8 0;
+}
+
+.table-view .column-header, .table-view .filler {
+    -fx-size: 40;
+    -fx-border-width: 0 0 1 0;
+    -fx-border-color: transparent transparent #eeeeee transparent;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+}
+
+/* Lignes */
+.table-row-cell {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #f0f0f0;
+    -fx-border-width: 0 0 1 0;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: #f9f9f9;
+}
+
+.table-row-cell:selected {
+    -fx-background-color: #bbdefb;
+}
+
+/* Boutons dans la table */
+.button {
+    -fx-font-size: 12px;
+    -fx-padding: 5 10;
+    -fx-background-radius: 5;
+    -fx-text-fill: black;
+}
+
+.button:hover {
+    -fx-opacity: 0.9;
+}
+
+/* Style spécifique aux boutons d'action */
+.hbox .button {
+    -fx-cursor: hand;
+    -fx-text-fill: white;
+}
+
+/* 🖌 Boutons "Modifier" et "Supprimer" */
+.button-modifier {
+    -fx-cursor: hand;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-color: #fbc02d;
+    -fx-background-radius: 15;
+    -fx-padding: 6 12;
+    -fx-font-size: 12px;
+}
+
+.button-modifier:hover {
+    -fx-background-color: #fdd835;
+}
+
+.button-supprimer {
+    -fx-cursor: hand;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-color: #e53935;
+    -fx-background-radius: 15;
+    -fx-padding: 6 12;
+    -fx-font-size: 12px;
+}
+
+.button-supprimer:hover {
+    -fx-background-color: #d32f2f;
+}
+.fancy-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2c3e50;
+    -fx-padding: 5 10 5 10;
+    -fx-background-color: linear-gradient(to right, #bbdefb, #e3f2fd);
+    -fx-background-radius: 8;
+}
+
+.add-button {
+    -fx-background-color: #4caf50;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 6 12;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+}
+
+.add-button:hover {
+    -fx-background-color: #43a047;
+}
+.search-field {
+    -fx-background-color: white;
+    -fx-border-color: #2196f3;
+    -fx-border-radius: 20;
+    -fx-background-radius: 20;
+    -fx-padding: 6 14;
+    -fx-font-size: 14px;
+    -fx-effect: dropshadow(gaussian, rgba(33,150,243,0.2), 6, 0.1, 0, 2);
+    -fx-prompt-text-fill: #999;
+    -fx-text-fill: #333;
+    -fx-transition: all 0.3s ease-in-out;
+}
+
+.search-field:focused {
+    -fx-border-color: #1976d2;
+    -fx-effect: dropshadow(gaussian, rgba(33,150,243,0.4), 8, 0.3, 0, 4);
+}
+

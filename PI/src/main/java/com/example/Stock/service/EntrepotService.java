@@ -276,4 +276,33 @@ public class EntrepotService {
             return Collections.emptyList();
         }
     }
+    private Integer activeWarehousesCache = null;
+    private long cacheTimestamp = 0;
+    private static final long CACHE_DURATION_MS = 300000; // Cache valide 5 minutes
+
+    public int getActiveWarehousesCount() {
+        // Utiliser le cache si valide
+        if (activeWarehousesCache != null &&
+                System.currentTimeMillis() - cacheTimestamp < CACHE_DURATION_MS) {
+            return activeWarehousesCache;
+        }
+
+        String query = "SELECT COUNT(DISTINCT e.id) FROM entrepot e " +
+                "JOIN stock_entrepot se ON e.id = se.entrepot_id";
+
+        try (PreparedStatement ps = connection.prepareStatement(query);
+             ResultSet rs = ps.executeQuery()) {
+
+            if (rs.next()) {
+                activeWarehousesCache = rs.getInt(1);
+                cacheTimestamp = System.currentTimeMillis();
+                return activeWarehousesCache;
+            }
+        } catch (SQLException e) {
+            System.err.println("Erreur lors du comptage des entrepôts actifs: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return 0;
+    }
 }

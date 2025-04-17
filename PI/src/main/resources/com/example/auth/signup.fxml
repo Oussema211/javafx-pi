@@ -5,52 +5,46 @@
 <?import javafx.scene.image.*?>
 
 <StackPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.auth.controller.SignupController" styleClass="root">
-    <VBox styleClass="vbox" spacing="15">
+    <VBox styleClass="vbox" spacing="15" alignment="CENTER">
+        <!-- Title -->
         <Label text="Sign Up" styleClass="label" style="-fx-font-size: 24px;" alignment="CENTER" />
 
-        <VBox spacing="10">
-            <HBox alignment="CENTER_LEFT" spacing="10">
-                <Label text="First Name" styleClass="label" />
-                <TextField fx:id="prenomField" prefWidth="250" promptText="First Name" styleClass="text-field" />
-            </HBox>
-            <HBox alignment="CENTER_LEFT" spacing="10">
-                <Label text="Last Name" styleClass="label" />
-                <TextField fx:id="nomField" prefWidth="250" promptText="Last Name" styleClass="text-field" />
-            </HBox>
-        </VBox>
+        <!-- Form Fields in a GridPane -->
+        <GridPane hgap="10" vgap="10" alignment="CENTER">
+            <!-- First Name (Prenom) -->
+            <Label text="First Name" styleClass="label" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+            <TextField fx:id="prenomField" prefWidth="250" promptText="First Name" styleClass="text-field" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
-        <VBox spacing="10">
-            <HBox alignment="CENTER_LEFT" spacing="10">
-                <Label text="Email" styleClass="label" />
-                <TextField fx:id="emailField" prefWidth="250" promptText="Email" styleClass="text-field" />
-            </HBox>
-            <HBox alignment="CENTER_LEFT" spacing="10">
-                <Label text="Username" styleClass="label" />
-                <TextField fx:id="usernameField" prefWidth="250" promptText="Username" styleClass="text-field" />
-            </HBox>
-        </VBox>
+            <!-- Last Name (Nom) -->
+            <Label text="Last Name" styleClass="label" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+            <TextField fx:id="nomField" prefWidth="250" promptText="Last Name" styleClass="text-field" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
-        <VBox spacing="10">
-            <HBox alignment="CENTER_LEFT" spacing="10">
-                <Label text="Password" styleClass="label" />
-                <PasswordField fx:id="passwordField" prefWidth="250" promptText="Password" styleClass="password-field" />
-            </HBox>
-            <HBox alignment="CENTER_LEFT" spacing="10">
-                <Label text="Confirm Password" styleClass="label" />
-                <PasswordField fx:id="confirmPasswordField" prefWidth="250" promptText="Confirm Password" styleClass="password-field" />
-            </HBox>
-        </VBox>
+            <!-- Email -->
+            <Label text="Email" styleClass="label" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+            <TextField fx:id="emailField" prefWidth="250" promptText="Email" styleClass="text-field" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
-        <HBox alignment="CENTER_LEFT" spacing="10">
-            <Label text="Work" styleClass="label" />
-            <TextField fx:id="travailField" prefWidth="250" promptText="Work/Occupation" styleClass="text-field" />
-        </HBox>
+            <!-- Username -->
+            <Label text="Username" styleClass="label" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+            <TextField fx:id="usernameField" prefWidth="250" promptText="Username" styleClass="text-field" GridPane.columnIndex="1" GridPane.rowIndex="3" />
 
-        <HBox alignment="CENTER_LEFT" spacing="10">
-            <Label text="Phone Number" styleClass="label" />
-            <TextField fx:id="numTelField" prefWidth="250" promptText="Phone Number" styleClass="text-field" />
-        </HBox>
+            <!-- Password -->
+            <Label text="Password" styleClass="label" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+            <PasswordField fx:id="passwordField" prefWidth="250" promptText="Password" styleClass="password-field" GridPane.columnIndex="1" GridPane.rowIndex="4" />
 
+            <!-- Confirm Password -->
+            <Label text="Confirm Password" styleClass="label" GridPane.columnIndex="0" GridPane.rowIndex="5" />
+            <PasswordField fx:id="confirmPasswordField" prefWidth="250" promptText="Confirm Password" styleClass="password-field" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+
+            <!-- Work (Travail) -->
+            <Label text="Work" styleClass="label" GridPane.columnIndex="0" GridPane.rowIndex="6" />
+            <TextField fx:id="travailField" prefWidth="250" promptText="Work/Occupation" styleClass="text-field" GridPane.columnIndex="1" GridPane.rowIndex="6" />
+
+            <!-- Phone Number (Num Tel) -->
+            <Label text="Phone Number" styleClass="label" GridPane.columnIndex="0" GridPane.rowIndex="7" />
+            <TextField fx:id="numTelField" prefWidth="250" promptText="Phone Number" styleClass="text-field" GridPane.columnIndex="1" GridPane.rowIndex="7" />
+        </GridPane>
+
+        <!-- Photo Selection -->
         <VBox spacing="5" alignment="CENTER">
             <Label text="Profile Photo" styleClass="label" />
             <HBox alignment="CENTER" spacing="10">
@@ -69,10 +63,13 @@
             <Label fx:id="photoErrorLabel" alignment="CENTER" visible="false" />
         </VBox>
 
+        <!-- Sign Up Button -->
         <Button fx:id="signupButton" text="Sign Up" prefWidth="120" styleClass="button" onAction="#onSignupClicked" />
 
+        <!-- Message Label -->
         <Label fx:id="messageLabel" styleClass="message-label" alignment="CENTER" />
 
+        <!-- Login Link -->
         <Hyperlink fx:id="loginLink" text="Already have an account? Login" styleClass="hyperlink" onAction="#onLoginClicked" />
     </VBox>
 </StackPane>

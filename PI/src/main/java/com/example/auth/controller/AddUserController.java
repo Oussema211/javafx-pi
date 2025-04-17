@@ -36,35 +36,62 @@ public class AddUserController {
         String numTel = numTelField.getText().trim();
         String rolesInput = rolesField.getText().trim();
 
+        // Contrôles de saisie
         if (nom.isEmpty() || prenom.isEmpty() || email.isEmpty() || password.isEmpty() || rolesInput.isEmpty()) {
-            messageLabel.setText("Please fill in all required fields");
+            messageLabel.setText("Champs requis manquants !");
             return;
         }
 
-        if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-            messageLabel.setText("Invalid email format");
+        if (!nom.matches("^[a-zA-ZéèàçêâÉÈÀÇÂÊ\\s-]+$")) {
+            messageLabel.setText("Nom invalide !");
+            return;
+        }
+
+        if (!prenom.matches("^[a-zA-ZéèàçêâÉÈÀÇÂÊ\\s-]+$")) {
+            messageLabel.setText("Prénom invalide !");
+            return;
+        }
+
+        if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[a-z]{2,6}$")) {
+            messageLabel.setText("Format email invalide !");
+            return;
+        }
+
+        if (password.length() < 6) {
+            messageLabel.setText("Mot de passe trop court (min 6 caractères) !");
+            return;
+        }
+
+        if (!numTel.isEmpty() && !numTel.matches("^\\d{8}$")) {
+            messageLabel.setText("Numéro de téléphone invalide (8 chiffres) !");
+            return;
+        }
+
+        if (!photoUrl.isEmpty() && !photoUrl.matches("^(http|https)://.*$")) {
+            messageLabel.setText("URL photo invalide !");
             return;
         }
 
         List<String> roles = Arrays.asList(rolesInput.split("\\s*,\\s*"));
         String verificationCode = authService.generateVerificationCode();
-        if (authService.signup(email, password, travail, photoUrl, nom, prenom, numTel, roles, verificationCode)) {
+        boolean success = authService.signup(email, password, travail, photoUrl, nom, prenom, numTel, roles, verificationCode);
+        if (success) {
             try {
-                String emailBody = "<h2>Email Verification</h2>" +
-                        "<p>Your verification code is: <b>" + verificationCode + "</b></p>" +
-                        "<p>Enter this code in the application to verify your account.</p>" +
-                        "<p>This code will expire in 24 hours.</p>";
-                EmailUtil.sendEmail(email, "Verify Your Email", emailBody);
-                messageLabel.setText("User added successfully! Verification code sent.");
+                String emailBody = "<h2>Vérification de l'Email</h2>" +
+                        "<p>Votre code de vérification est : <b>" + verificationCode + "</b></p>" +
+                        "<p>Entrez ce code dans l'application pour vérifier votre compte.</p>" +
+                        "<p>Ce code expirera dans 24 heures.</p>";
+                EmailUtil.sendEmail(email, "Vérifiez Votre Email", emailBody);
+                messageLabel.setText("Utilisateur ajouté avec succès ! Email de vérification envoyé.");
                 clearFields();
                 Stage stage = (Stage) nomField.getScene().getWindow();
                 stage.close();
             } catch (MessagingException e) {
-                messageLabel.setText("User added, but failed to send verification email.");
-                System.err.println("Error sending verification email: " + e.getMessage());
+                messageLabel.setText("Utilisateur ajouté, mais échec de l'envoi de l'email de vérification.");
+                System.err.println("Erreur lors de l'envoi de l'email de vérification : " + e.getMessage());
             }
         } else {
-            messageLabel.setText("Email already exists");
+            messageLabel.setText("Email déjà utilisé !");
         }
     }
 

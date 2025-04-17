@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.chart.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<?import javafx.scene.text.Text?>
+<VBox xmlns="http://javafx.com/javafx/11.0.1"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.Stock.Controller.DashboardController"
+      stylesheets="@FrontOfficeDashboard.css"
+      spacing="25"
+      style="-fx-background-color: #f8fafc; -fx-padding: 25;">
+
+    <!-- Header avec titre et outils -->
+    <HBox styleClass="header-container" spacing="20">
+        <VBox alignment="CENTER_LEFT" spacing="5">
+            <Label text="📊 Tableau de Bord Stock" styleClass="dashboard-title"/>
+            <Label text="🔍 Vue d'ensemble des stocks et entrepôts" styleClass="dashboard-subtitle"/>
+        </VBox>
+
+        <HBox spacing="15" alignment="CENTER_RIGHT" HBox.hgrow="ALWAYS">
+            <!-- Filtres avancés -->
+            <ComboBox fx:id="filterCombo" promptText="🔎 Filtrer par..." styleClass="combo-filter"/>
+
+            <!-- Actualiser -->
+            <Button text="🔄" styleClass="refresh-btn" onAction="#handleRefresh"/>
+        </HBox>
+    </HBox>
+
+    <!-- Filtres temporels -->
+    <HBox fx:id="timeFilterBox" spacing="10" styleClass="filter-container" alignment="CENTER">
+        <!-- Les RadioButton seulement dans le HBox -->
+        <RadioButton text="📅 7 jours" styleClass="time-filter-btn" selected="true">
+            <toggleGroup>
+                <ToggleGroup fx:id="timeFilterGroup"/>
+            </toggleGroup>
+        </RadioButton>
+        <RadioButton text="🗓️ 30 jours" toggleGroup="$timeFilterGroup" styleClass="time-filter-btn"/>
+        <RadioButton text="📆 90 jours" toggleGroup="$timeFilterGroup" styleClass="time-filter-btn"/>
+        <RadioButton text="⏱️ Personnalisé" toggleGroup="$timeFilterGroup" styleClass="time-filter-btn"/>
+    </HBox>
+
+    <!-- Cartes KPI -->
+    <HBox spacing="20" styleClass="kpi-container">
+        <!-- Carte Stock Total -->
+        <VBox styleClass="kpi-card stock-card">
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <Text text="📦" style="-fx-font-size: 24px;"/>
+            </HBox>
+            <Label text="Stocks Totaux" styleClass="kpi-title"/>
+            <Label fx:id="totalStocksLabel" styleClass="kpi-value"/>
+            <HBox spacing="5" alignment="CENTER_LEFT">
+                <Label fx:id="stockTrendLabel" styleClass="kpi-trend"/>
+                <Label text="vs période précédente" styleClass="kpi-subtext"/>
+            </HBox>
+            <Separator styleClass="kpi-separator"/>
+            <Label text="⏱️ Mis à jour: aujourd'hui" styleClass="kpi-update"/>
+        </VBox>
+
+        <!-- Carte Entrepôts Actifs -->
+        <VBox styleClass="kpi-card warehouse-card">
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <Text text="🏭" style="-fx-font-size: 24px;"/>
+            </HBox>
+            <Label text="Entrepôts Actifs" styleClass="kpi-title"/>
+            <Label fx:id="activeWarehousesLabel" styleClass="kpi-value"/>
+            <Label text="📊 Capacité moyenne: 85%" styleClass="kpi-subtext"/>
+            <Separator styleClass="kpi-separator"/>
+            <Label text="🗺️ Voir la carte" styleClass="kpi-link" />
+        </VBox>
+
+        <!-- Carte Alertes -->
+        <VBox styleClass="kpi-card alert-card">
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <Text text="⚠️" style="-fx-font-size: 24px;"/>
+            </HBox>
+            <Label text="Alertes Stock" styleClass="kpi-title"/>
+            <Label fx:id="alertsCountLabel" styleClass="kpi-value"/>
+            <Label text="⏰ Dernière alerte: Produit X" styleClass="kpi-subtext"/>
+            <Separator styleClass="kpi-separator"/>
+            <Label text="🔍 Voir détails" styleClass="kpi-link" onMouseClicked="#showAlerts"/>
+        </VBox>
+    </HBox>
+
+    <!-- Graphiques -->
+    <GridPane styleClass="chart-grid" hgap="20" vgap="20">
+        <columnConstraints>
+            <ColumnConstraints percentWidth="50"/>
+            <ColumnConstraints percentWidth="50"/>
+        </columnConstraints>
+
+        <!-- Graphique Camembert -->
+        <VBox styleClass="chart-card" GridPane.columnIndex="0">
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <Text text="📊" style="-fx-font-size: 20px;"/>
+                <Label text="Répartition par Catégorie" styleClass="chart-title"/>
+
+            </HBox>
+            <PieChart fx:id="stockPieChart" styleClass="chart" legendVisible="false"/>
+            <HBox styleClass="chart-legend" spacing="10">
+                <HBox styleClass="legend-item">
+                    <Text text="🔵" style="-fx-font-size: 16px;"/>
+                    <Label text="Électronique" styleClass="legend-text"/>
+                </HBox>
+                <HBox styleClass="legend-item">
+                    <Text text="🟠" style="-fx-font-size: 16px;"/>
+                    <Label text="Alimentaire" styleClass="legend-text"/>
+                </HBox>
+            </HBox>
+        </VBox>
+
+        <!-- Graphique Barres -->
+        <VBox styleClass="chart-card" GridPane.columnIndex="1">
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <Text text="📈" style="-fx-font-size: 20px;"/>
+                <Label text="Mouvement des Stocks (30j)" styleClass="chart-title"/>
+                <Button text="🕰️ Historique" styleClass="chart-detail-btn" onAction="#showStockHistory"/>
+            </HBox>
+            <BarChart fx:id="stockMovementChart" styleClass="chart">
+                <xAxis>
+                    <CategoryAxis label="Date" styleClass="axis-label"/>
+                </xAxis>
+                <yAxis>
+                    <NumberAxis label="Quantité" styleClass="axis-label"/>
+                </yAxis>
+            </BarChart>
+            <HBox styleClass="chart-controls" spacing="15" alignment="CENTER">
+                <Button text="◀" styleClass="chart-nav-btn" onAction="#previousPeriod"/>
+                <Label text="🗓️ Période: 1-30 Mars 2023" styleClass="period-label"/>
+                <Button text="▶" styleClass="chart-nav-btn" onAction="#nextPeriod"/>
+            </HBox>
+        </VBox>
+    </GridPane>
+
+
+</VBox>

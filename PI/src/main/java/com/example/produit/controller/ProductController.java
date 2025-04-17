@@ -19,12 +19,12 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.FileChooser;
 import java.io.File;
-
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 public class ProductController {
 
@@ -45,8 +45,6 @@ public class ProductController {
     @FXML private Label resultsCountLabel;
 
     private final SessionManager sessionManager = SessionManager.getInstance();
-
-
     private ObservableList<Produit> productList = FXCollections.observableArrayList();
     private ObservableList<Categorie> categoryList = FXCollections.observableArrayList();
     private FilteredList<Produit> filteredList;
@@ -98,7 +96,9 @@ public class ProductController {
                 }
             }
         });
-        imagePreviewColumn.setCellValueFactory(new PropertyValueFactory<>("imageName"));
+        imagePreviewColumn.setCellValueFactory(cellData ->
+                new SimpleStringProperty(cellData.getValue().getImageName()));
+
     }
 
     private void initializeComboBoxes() {
@@ -196,12 +196,13 @@ public class ProductController {
         URL cssUrl = getClass().getResource("/com/example/css/produitdialog.css");
         if (cssUrl != null) {
             dialogPane.getStylesheets().add(cssUrl.toExternalForm());
-            System.out.println("bitch it works");
         } else {
-            System.err.println("Warning: CSS file /com/example/css/produits.css not found. Using default styles.");
+            System.err.println("Warning: CSS file /com/example/css/produitdialog.css not found. Using default styles.");
             dialogPane.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-padding: 10;");
         }
         dialogPane.getStyleClass().add("dialog-pane");
+
+        // Form fields
         TextField nameField = new TextField();
         TextArea descriptionField = new TextArea();
         ComboBox<String> categoryCombo = new ComboBox<>(FXCollections.observableArrayList(
@@ -210,13 +211,26 @@ public class ProductController {
         TextField priceField = new TextField();
         TextField quantityField = new TextField();
         TextField imagePathField = new TextField();
-        imagePathField.setEditable(false); // Make it read-only
+        imagePathField.setEditable(false);
         Button chooseImageButton = new Button("Choose Image");
         ImageView imagePreview = new ImageView();
         imagePreview.setFitWidth(100);
         imagePreview.setFitHeight(100);
         imagePreview.setPreserveRatio(true);
 
+        // Error labels (small font, minimal space)
+        Label nameError = new Label();
+        Label descriptionError = new Label();
+        Label categoryError = new Label();
+        Label priceError = new Label();
+        Label quantityError = new Label();
+        nameError.setStyle("-fx-text-fill: red; -fx-font-size: 10px;");
+        descriptionError.setStyle("-fx-text-fill: red; -fx-font-size: 10px;");
+        categoryError.setStyle("-fx-text-fill: red; -fx-font-size: 10px;");
+        priceError.setStyle("-fx-text-fill: red; -fx-font-size: 10px;");
+        quantityError.setStyle("-fx-text-fill: red; -fx-font-size: 10px;");
+
+        // File chooser setup
         FileChooser fileChooser = new FileChooser();
         fileChooser.getExtensionFilters().addAll(
                 new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg")
@@ -236,6 +250,7 @@ public class ProductController {
             }
         });
 
+        // Populate fields for edit
         if (product != null) {
             nameField.setText(product.getNom());
             descriptionField.setText(product.getDescription());
@@ -253,28 +268,160 @@ public class ProductController {
             }
         }
 
+        // Validation patterns and rules
+        Pattern namePattern = Pattern.compile("^[a-zA-Z0-9\\s-]{3,50}$");
+        Pattern pricePattern = Pattern.compile("^\\d*\\.?\\d+$");
+        Pattern quantityPattern = Pattern.compile("^[0-9]+$");
+
+        // Real-time validation
+        nameField.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal.trim().isEmpty()) {
+                nameError.setText("Name cannot be empty");
+                nameField.setStyle("-fx-border-color: red;");
+            } else if (!namePattern.matcher(newVal).matches()) {
+                nameError.setText("3-50 chars, letters, numbers, spaces, hyphens");
+                nameField.setStyle("-fx-border-color: red;");
+            } else {
+                nameError.setText("");
+                nameField.setStyle("");
+            }
+        });
+
+        descriptionField.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal.trim().isEmpty()) {
+                descriptionError.setText("Description cannot be empty");
+                descriptionField.setStyle("-fx-border-color: red;");
+            } else if (newVal.length() > 200) {
+                descriptionError.setText("Max 200 characters");
+                descriptionField.setStyle("-fx-border-color: red;");
+            } else {
+                descriptionError.setText("");
+                descriptionField.setStyle("");
+            }
+        });
+
+        categoryCombo.valueProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal == null) {
+                categoryError.setText("Select a category");
+                categoryCombo.setStyle("-fx-border-color: red;");
+            } else {
+                categoryError.setText("");
+                categoryCombo.setStyle("");
+            }
+        });
+
+        priceField.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal.trim().isEmpty()) {
+                priceError.setText("Price cannot be empty");
+                priceField.setStyle("-fx-border-color: red;");
+            } else if (!pricePattern.matcher(newVal).matches()) {
+                priceError.setText("Positive number required");
+                priceField.setStyle("-fx-border-color: red;");
+            } else {
+                try {
+                    float price = Float.parseFloat(newVal);
+                    if (price <= 0) {
+                        priceError.setText("Price must be > 0");
+                        priceField.setStyle("-fx-border-color: red;");
+                    } else if (price > 1000000) {
+                        priceError.setText("Price max 1,000,000");
+                        priceField.setStyle("-fx-border-color: red;");
+                    } else {
+                        priceError.setText("");
+                        priceField.setStyle("");
+                    }
+                } catch (NumberFormatException e) {
+                    priceError.setText("Invalid price format");
+                    priceField.setStyle("-fx-border-color: red;");
+                }
+            }
+        });
+
+        quantityField.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal.trim().isEmpty()) {
+                quantityError.setText("Quantity cannot be empty");
+                quantityField.setStyle("-fx-border-color: red;");
+            } else if (!quantityPattern.matcher(newVal).matches()) {
+                quantityError.setText("Positive integer required");
+                quantityField.setStyle("-fx-border-color: red;");
+            } else {
+                try {
+                    int quantity = Integer.parseInt(newVal);
+                    if (quantity <= 0) {
+                        quantityError.setText("Quantity must be > 0");
+                        quantityField.setStyle("-fx-border-color: red;");
+                    } else if (quantity > 10000) {
+                        quantityError.setText("Quantity max 10,000");
+                        quantityField.setStyle("-fx-border-color: red;");
+                    } else {
+                        quantityError.setText("");
+                        quantityField.setStyle("");
+                    }
+                } catch (NumberFormatException e) {
+                    quantityError.setText("Invalid quantity format");
+                    quantityField.setStyle("-fx-border-color: red;");
+                }
+            }
+        });
+
+        // Grid layout with error labels in same row
         GridPane grid = new GridPane();
         grid.setHgap(10);
-        grid.setVgap(10);
+        grid.setVgap(5); // Reduced gap to minimize space
         grid.addRow(0, new Label("Name:"), nameField);
-        grid.addRow(1, new Label("Description:"), descriptionField);
-        grid.addRow(2, new Label("Category:"), categoryCombo);
-        grid.addRow(3, new Label("Price:"), priceField);
-        grid.addRow(4, new Label("Quantity:"), quantityField);
-        grid.addRow(5, new Label("Image:"), imagePathField);
-        grid.addRow(6, new Label(""), chooseImageButton);
-        grid.addRow(7, new Label("Preview:"), imagePreview);
+        grid.add(nameError, 1, 1);
+        grid.addRow(2, new Label("Description:"), descriptionField);
+        grid.add(descriptionError, 1, 3);
+        grid.addRow(4, new Label("Category:"), categoryCombo);
+        grid.add(categoryError, 1, 5);
+        grid.addRow(6, new Label("Price:"), priceField);
+        grid.add(priceError, 1, 7);
+        grid.addRow(8, new Label("Quantity:"), quantityField);
+        grid.add(quantityError, 1, 9);
+        grid.addRow(10, new Label("Image:"), imagePathField);
+        grid.addRow(11, new Label(""), chooseImageButton);
+        grid.addRow(12, new Label("Preview:"), imagePreview);
+
         dialog.getDialogPane().setContent(grid);
 
         ButtonType saveButtonType = new ButtonType("Save", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
 
+        // Disable save button until all validations pass
+        Button saveButton = (Button) dialog.getDialogPane().lookupButton(saveButtonType);
+        saveButton.setDisable(true);
+
+        // Validation check for save button
+        Runnable validateForm = () -> {
+            boolean isValid =
+                    !nameField.getText().trim().isEmpty() &&
+                            namePattern.matcher(nameField.getText()).matches() &&
+                            !descriptionField.getText().trim().isEmpty() &&
+                            descriptionField.getText().length() <= 200 &&
+                            categoryCombo.getValue() != null &&
+                            !priceField.getText().trim().isEmpty() &&
+                            pricePattern.matcher(priceField.getText()).matches() &&
+                            Float.parseFloat(priceField.getText()) > 0 &&
+                            Float.parseFloat(priceField.getText()) <= 1000000 &&
+                            !quantityField.getText().trim().isEmpty() &&
+                            quantityPattern.matcher(quantityField.getText()).matches() &&
+                            Integer.parseInt(quantityField.getText()) > 0 &&
+                            Integer.parseInt(quantityField.getText()) <= 10000;
+            saveButton.setDisable(!isValid);
+        };
+
+        nameField.textProperty().addListener((obs, old, newVal) -> validateForm.run());
+        descriptionField.textProperty().addListener((obs, old, newVal) -> validateForm.run());
+        categoryCombo.valueProperty().addListener((obs, old, newVal) -> validateForm.run());
+        priceField.textProperty().addListener((obs, old, newVal) -> validateForm.run());
+        quantityField.textProperty().addListener((obs, old, newVal) -> validateForm.run());
+
         dialog.setResultConverter(buttonType -> {
             if (buttonType == saveButtonType) {
                 try {
                     Produit newProduct = product != null ? product : new Produit();
-                    newProduct.setNom(nameField.getText());
-                    newProduct.setDescription(descriptionField.getText());
+                    newProduct.setNom(nameField.getText().trim());
+                    newProduct.setDescription(descriptionField.getText().trim());
 
                     String selectedCategoryName = categoryCombo.getValue();
                     Categorie selectedCategory = categoryList.stream()
@@ -299,7 +446,7 @@ public class ProductController {
                     }
                     return newProduct;
                 } catch (NumberFormatException ex) {
-                    Alert alert = new Alert(Alert.AlertType.ERROR, "Invalid number format for price or quantity.");
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "Invalid input format.");
                     alert.showAndWait();
                     return null;
                 }

@@ -23,6 +23,7 @@ public class MainApp extends Application {
     private final ReclamationService reclamationService = new ReclamationService();
     private final MessageReclamationService messageReclamationService = new MessageReclamationService();
 
+
     @Override
     public void start(Stage primaryStage) throws Exception {
         System.out.println("DEBUG: Starting MainApp");

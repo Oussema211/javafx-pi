@@ -27,7 +27,6 @@ public class AddStockController {
     @FXML private Button cancelBtn;
     @FXML private Label statusLabel;
 
-
     private final StockService stockService = new StockService();
     private final ProduitDAO produitService = new ProduitDAO();
     private final EntrepotService entrepotService = new EntrepotService();
@@ -38,33 +37,35 @@ public class AddStockController {
         this.parentController = parentController;
     }
 
+    @FXML
     public void initialize() {
         try {
-            // Load products
+            // Charger tous les produits
             List<Produit> allProduits = produitService.getAllProducts();
-            System.out.println("All products: " + (allProduits != null ? allProduits.size() : "null"));
+
             if (allProduits == null || allProduits.isEmpty()) {
                 statusLabel.setText("Aucun produit disponible");
                 return;
             }
 
-            // Load stocks
-            List<UUID> produitsInStock = stockService.getAllStocks().stream()
+            // Charger les stocks existants
+            List<Stock> existingStocks = stockService.getAllStocks();
+            Set<UUID> produitsDejaEnStock = existingStocks.stream()
                     .map(Stock::getProduitId)
+                    .collect(Collectors.toSet());
+
+            // Filtrer les produits - seulement ceux qui ne sont pas déjà en stock
+            List<Produit> produitsDisponibles = allProduits.stream()
+                    .filter(p -> !produitsDejaEnStock.contains(p.getId()))
                     .collect(Collectors.toList());
-            System.out.println("Products in stock: " + produitsInStock.size());
 
-            // Filter available products
-            List<Produit> availableProduits = allProduits; // Temporarily remove filter for testing
-            // List<Produit> availableProduits = allProduits.stream()
-            //     .filter(p -> !produitsInStock.contains(p.getId()))
-            //     .collect(Collectors.toList());
-            System.out.println("Available products: " + availableProduits.size());
-
-            if (availableProduits.isEmpty()) {
-                statusLabel.setText("Aucun produit disponible après filtrage");
+            if (produitsDisponibles.isEmpty()) {
+                statusLabel.setText("Tous les produits sont déjà en stock");
+                produitCombo.setDisable(true);
+                saveBtn.setDisable(true);
             } else {
-                produitCombo.setItems(FXCollections.observableArrayList(availableProduits));
+                // Configurer la ComboBox des produits
+                produitCombo.setItems(FXCollections.observableArrayList(produitsDisponibles));
                 produitCombo.setCellFactory(param -> new ListCell<>() {
                     @Override
                     protected void updateItem(Produit item, boolean empty) {
@@ -81,8 +82,9 @@ public class AddStockController {
                 });
             }
 
-            // Load entrepots
+            // Configurer la ListView des entrepôts (sélection multiple)
             entrepotList.setItems(FXCollections.observableArrayList(entrepotService.getAllEntrepots()));
+            entrepotList.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
             entrepotList.setCellFactory(param -> new ListCell<>() {
                 @Override
                 protected void updateItem(Entrepot item, boolean empty) {
@@ -91,11 +93,15 @@ public class AddStockController {
                 }
             });
 
+            // Valeurs par défaut
             dateEntreePicker.setValue(LocalDate.now());
+
+            // Gestion des événements
             saveBtn.setOnAction(e -> saveStock());
             cancelBtn.setOnAction(e -> closeWindow());
+
         } catch (Exception e) {
-            statusLabel.setText("Erreur: " + e.getMessage());
+            statusLabel.setText("Erreur lors du chargement: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -125,7 +131,8 @@ public class AddStockController {
                 return;
             }
 
-            if (entrepotList.getSelectionModel().getSelectedItems().isEmpty()) {
+            List<Entrepot> selectedEntrepots = entrepotList.getSelectionModel().getSelectedItems();
+            if (selectedEntrepots.isEmpty()) {
                 showAlert("Erreur", "Veuillez sélectionner au moins un entrepôt", Alert.AlertType.ERROR);
                 return;
             }
@@ -138,8 +145,8 @@ public class AddStockController {
             newStock.setSeuilAlert(seuilAlert);
             newStock.setUserId(parentController.getCurrentUserId());
 
-            // Conversion des entrepôts sélectionnés
-            Set<UUID> selectedEntrepotIds = entrepotList.getSelectionModel().getSelectedItems().stream()
+            // Conversion des entrepôts sélectionnés en Set d'IDs
+            Set<UUID> selectedEntrepotIds = selectedEntrepots.stream()
                     .map(Entrepot::getId)
                     .collect(Collectors.toSet());
             newStock.setEntrepotIds(selectedEntrepotIds);
@@ -148,7 +155,9 @@ public class AddStockController {
             boolean success = stockService.addStock(newStock);
             if (success) {
                 showAlert("Succès", "Stock ajouté avec succès", Alert.AlertType.INFORMATION);
-                parentController.refreshStockData();
+                if (parentController != null) {
+                    parentController.refreshStockData();
+                }
                 closeWindow();
             } else {
                 showAlert("Erreur", "Échec de l'ajout du stock", Alert.AlertType.ERROR);

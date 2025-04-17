@@ -1,42 +1,83 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
-<?import javafx.scene.effect.*?>
-<?import javafx.scene.paint.*?>
-<?import javafx.scene.text.*?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ListView?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.effect.DropShadow?>
 
-<VBox xmlns="http://javafx.com/javafx/8.0.171"
-      xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.example.Evenement.Controller.RegionListController"
-      spacing="35"
-      alignment="TOP_CENTER"
-      style="-fx-background-color: linear-gradient(to bottom, #eef2f3, #dfe6e9); -fx-padding: 50;">
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.example.Evenement.Controller.RegionListController"
+            style="-fx-background-color: linear-gradient(to bottom, #eef2f3, #dfe6e9);">
 
-    <Label text="🌍 Tableau de Bord des Régions"
-           style="-fx-font-size: 32px; -fx-text-fill: #2c3e50; -fx-font-weight: bold; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 4, 0.5, 0, 1);"/>
+    <top>
+        <VBox spacing="10">
+            <padding>
+                <Insets top="20" right="20" bottom="20" left="20"/>
+            </padding>
 
-    <Separator prefWidth="1000" style="-fx-opacity: 0.3;"/>
+            <Label text="🌍 Tableau de Bord des Régions">
+                <font>
+                    <Font name="System Bold" size="24.0"/>
+                </font>
+                <effect>
+                    <DropShadow blurType="GAUSSIAN" color="rgba(0,0,0,0.2)" radius="4" spread="0.5" offsetX="0" offsetY="1"/>
+                </effect>
+            </Label>
 
-    <ListView fx:id="regionTable"
-              prefWidth="1000"
-              prefHeight="500"
-              style="-fx-background-color: white; -fx-background-radius: 16; -fx-border-radius: 16;
-                     -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.08), 12, 0, 0, 4);
-                     -fx-padding: 15;">
-    </ListView>
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <TextField fx:id="searchField" promptText="Rechercher une région..."
+                           HBox.hgrow="ALWAYS"
+                           style="-fx-background-radius: 12; -fx-padding: 8;"/>
+                <Button text="➕ Ajouter une région" onAction="#handleAdd"
+                        style="-fx-background-color: linear-gradient(to right, #43cea2, #185a9d);
+                               -fx-text-fill: white; -fx-font-weight: bold;
+                               -fx-background-radius: 12; -fx-padding: 8 16;"/>
+                <Button text="📅 Ajouter un événement" onAction="#handleAddEvent"
+                        style="-fx-background-color: linear-gradient(to right, #74ebd5, #9face6);
+                               -fx-text-fill: #2c3e50; -fx-font-weight: bold;
+                               -fx-background-radius: 12; -fx-padding: 8 16;"/>
+                <Button text="🔄 Actualiser" onAction="#handleRefresh"
+                        style="-fx-background-color: #3498db; -fx-text-fill: white;
+                               -fx-font-weight: bold; -fx-background-radius: 12; -fx-padding: 8 16;"/>
+            </HBox>
+        </VBox>
+    </top>
 
-    <HBox spacing="30" alignment="CENTER">
-        <Button text="➕ Ajouter une région" onAction="#handleAdd"
-                style="-fx-background-color: linear-gradient(to right, #43cea2, #185a9d); -fx-text-fill: white;
-                       -fx-font-size: 15px; -fx-font-weight: bold; -fx-background-radius: 12;
-                       -fx-padding: 12 24; -fx-cursor: hand;"/>
+    <center>
+        <VBox spacing="10">
+            <padding>
+                <Insets top="10" right="20" bottom="20" left="20"/>
+            </padding>
 
-        <Button text="📅 Ajouter un événement" onAction="#handleAddEvent"
-                style="-fx-background-color: linear-gradient(to right, #74ebd5, #9face6); -fx-text-fill: #2c3e50;
-                       -fx-font-size: 15px; -fx-font-weight: bold; -fx-background-radius: 12;
-                       -fx-padding: 12 24; -fx-cursor: hand;"/>
-    </HBox>
+            <ListView fx:id="regionTable" VBox.vgrow="ALWAYS">
+                <placeholder>
+                    <Label text="Aucune région trouvée"/>
+                </placeholder>
+                <style>
+                    -fx-background-color: white;
+                    -fx-background-radius: 16;
+                    -fx-border-radius: 16;
+                    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.08), 12, 0, 0, 4);
+                    -fx-padding: 15;
+                    -fx-font-size: 16px;
+                </style>
+            </ListView>
+        </VBox>
+    </center>
 
-</VBox>
+    <bottom>
+        <HBox alignment="CENTER_RIGHT" spacing="10">
+            <padding>
+                <Insets top="10" right="20" bottom="10" left="20"/>
+            </padding>
+            <Label fx:id="totalLabel" text="Total: 0 régions"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>

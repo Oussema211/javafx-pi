@@ -8,6 +8,7 @@ import com.example.produit.model.Categorie;
 import com.example.produit.model.Produit;
 
 import java.sql.*;
+import java.sql.Date;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -455,4 +456,101 @@ public class StockService {
                 })
                 .collect(Collectors.toList());
     }
+
+    // Ajoutez ces méthodes à votre StockService existant
+
+    public int getTotalStocks(int timeRange) {
+        String query = "SELECT COUNT(*) FROM stock WHERE date_entree >= ? AND user_id = ?";
+        try (PreparedStatement ps = cnx.prepareStatement(query)) {
+            LocalDate startDate = LocalDate.now().minusDays(timeRange);
+            ps.setDate(1, Date.valueOf(startDate));
+            ps.setString(2, SessionManager.getInstance().getLoggedInUser().getId().toString());
+
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            System.err.println("Erreur getTotalStocks: " + e.getMessage());
+        }
+        return 0;
+    }
+
+    public int getLowStockItemsCount(int timeRange) {
+        String query = "SELECT COUNT(*) FROM stock s " +
+                "JOIN produit p ON s.produit_id = p.id " +
+                "WHERE s.date_entree >= ? AND p.quantite <= s.seuil_alert AND s.user_id = ?";
+        try (PreparedStatement ps = cnx.prepareStatement(query)) {
+            LocalDate startDate = LocalDate.now().minusDays(timeRange);
+            ps.setDate(1, Date.valueOf(startDate));
+            ps.setString(2, SessionManager.getInstance().getLoggedInUser().getId().toString());
+
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            System.err.println("Erreur getLowStockItemsCount: " + e.getMessage());
+        }
+        return 0;
+    }
+
+    public double getStockTrend(int timeRange) {
+        // Compare current period with previous period
+        int currentCount = getTotalStocks(timeRange);
+        int previousCount = getTotalStocks(timeRange * 2) - currentCount;
+
+        if (previousCount == 0) return 0;
+        return ((currentCount - previousCount) / (double) previousCount) * 100;
+    }
+
+    public Map<String, Integer> getStockDistributionByCategory(int timeRange) {
+        Map<String, Integer> distribution = new LinkedHashMap<>();
+        String query = "SELECT c.nom, COUNT(s.id) as count " +
+                "FROM stock s " +
+                "JOIN produit p ON s.produit_id = p.id " +
+                "LEFT JOIN categorie c ON p.categorie_id = c.id " +
+                "WHERE s.date_entree >= ? AND s.user_id = ? " +
+                "GROUP BY c.nom";
+
+        try (PreparedStatement ps = cnx.prepareStatement(query)) {
+            LocalDate startDate = LocalDate.now().minusDays(timeRange);
+            ps.setDate(1, Date.valueOf(startDate));
+            ps.setString(2, SessionManager.getInstance().getLoggedInUser().getId().toString());
+
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                String category = rs.getString(1) != null ? rs.getString(1) : "Sans catégorie";
+                distribution.put(category, rs.getInt(2));
+            }
+        } catch (SQLException e) {
+            System.err.println("Erreur getStockDistributionByCategory: " + e.getMessage());
+        }
+        return distribution;
+    }
+
+    public Map<String, Integer> getStockMovement(int timeRange) {
+        Map<String, Integer> movement = new LinkedHashMap<>();
+        String query = "SELECT DATE(date_entree) as day, COUNT(*) as count " +
+                "FROM stock " +
+                "WHERE date_entree >= ? AND user_id = ? " +
+                "GROUP BY DATE(date_entree) " +
+                "ORDER BY day";
+
+        try (PreparedStatement ps = cnx.prepareStatement(query)) {
+            LocalDate startDate = LocalDate.now().minusDays(timeRange);
+            ps.setDate(1, Date.valueOf(startDate));
+            ps.setString(2, SessionManager.getInstance().getLoggedInUser().getId().toString());
+
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                movement.put(rs.getDate(1).toLocalDate().toString(), rs.getInt(2));
+            }
+        } catch (SQLException e) {
+            System.err.println("Erreur getStockMovement: " + e.getMessage());
+        }
+        return movement;
+    }
+
+
 }
