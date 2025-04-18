@@ -616,3 +616,16 @@
      -fx-background-color: #005bb5;
      -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 5, 0, 0, 1);
  }
+
+.check-box {
+    -fx-pointer-events: auto;
+    -fx-opacity: 1;
+    -fx-font-family: "Inter";
+    -fx-border-color: #e2e8f0;
+    -fx-background-color: #ffffff;
+}
+
+.check-box:selected {
+    -fx-background-color: #6366f1;
+}
+

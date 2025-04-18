@@ -5,6 +5,7 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
@@ -23,6 +24,8 @@
         <Label styleClass="title-label" text="Products" />
         <Label styleClass="subtitle-label" text="Add, view and edit your products all in one place. Need help?" />
         <Region HBox.hgrow="ALWAYS" />
+        <Button fx:id="deleteSelectedButton" onAction="#handleBulkDelete" styleClass="primary-button" text="DELETE SELECTED" disable="true" />
+        <Button fx:id="exportSelectedButton" onAction="#exportToPDF" styleClass="secondary-button" text="EXPORT SELECTED" disable="true" />
         <Button styleClass="secondary-button" text="IMPORT" />
         <Button fx:id="addProductButton" onAction="#handleAddProduct" styleClass="primary-button" text="ADD PRODUCT" />
     </HBox>
@@ -63,6 +66,44 @@
                 </ComboBox>
             </VBox>
 
+            <VBox styleClass="filter-column">
+                <Label styleClass="filter-label" text="PRICE RANGE" />
+                <HBox spacing="5">
+                    <TextField fx:id="minPriceField" promptText="Min" styleClass="filter-field" prefWidth="80" />
+                    <Label text="to" styleClass="filter-label" />
+                    <TextField fx:id="maxPriceField" promptText="Max" styleClass="filter-field" prefWidth="80" />
+                </HBox>
+            </VBox>
+
+            <VBox styleClass="filter-column">
+                <Label styleClass="filter-label" text="QUANTITY RANGE" />
+                <HBox spacing="5">
+                    <TextField fx:id="minQuantityField" promptText="Min" styleClass="filter-field" prefWidth="80" />
+                    <Label text="to" styleClass="filter-label" />
+                    <TextField fx:id="maxQuantityField" promptText="Max" styleClass="filter-field" prefWidth="80" />
+                </HBox>
+            </VBox>
+
+            <VBox styleClass="filter-column">
+                <Label styleClass="filter-label" text="RATING" />
+                <ComboBox fx:id="rateComboBox" promptText="All" styleClass="filter-combo">
+                    <items>
+                        <FXCollections fx:factory="observableArrayList">
+                            <String fx:value="All" />
+                            <String fx:value="4+" />
+                            <String fx:value="3+" />
+                            <String fx:value="2+" />
+                            <String fx:value="1+" />
+                        </FXCollections>
+                    </items>
+                </ComboBox>
+            </VBox>
+
+            <VBox styleClass="filter-column">
+                <Label styleClass="filter-label" text="DATE CREATED" />
+                <DatePicker fx:id="datePicker" styleClass="filter-field" />
+            </VBox>
+
             <VBox alignment="BOTTOM_LEFT" styleClass="filter-column">
                 <Button fx:id="researchButton" onAction="#handleResearch" styleClass="search-button" text="RESEARCH" />
                 <HBox.margin>
@@ -86,6 +127,11 @@
             <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
         </columnResizePolicy>
         <columns>
+            <TableColumn fx:id="selectColumn" text="">
+                <cellValueFactory>
+                    <PropertyValueFactory property="selected" />
+                </cellValueFactory>
+            </TableColumn>
             <TableColumn fx:id="imagePreviewColumn" text="Image">
                 <cellValueFactory>
                     <PropertyValueFactory property="imageName" />

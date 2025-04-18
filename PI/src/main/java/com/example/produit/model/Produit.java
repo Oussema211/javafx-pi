@@ -17,6 +17,7 @@ public class Produit {
     private final IntegerProperty quantite = new SimpleIntegerProperty();
     private final FloatProperty rate = new SimpleFloatProperty();
     private final StringProperty imageName = new SimpleStringProperty();
+    private final BooleanProperty selected = new SimpleBooleanProperty(false);
 
     public Produit() {}
 
@@ -75,10 +76,12 @@ public class Produit {
     public void setImageName(String imageName) { this.imageName.set(imageName); }
     public StringProperty imageNameProperty() { return imageName; }
 
+    public boolean isSelected() { return selected.get(); }
+    public void setSelected(boolean selected) { this.selected.set(selected); }
+    public BooleanProperty selectedProperty() { return selected; }
+
     @Override
     public String toString() {
-        return getNom(); // ou getNom() + " (" + getQuantite() + " en stock)" si tu veux plus d'infos
+        return getNom();
     }
-
-
 }

@@ -6,12 +6,23 @@ import com.example.produit.model.Categorie;
 import com.example.produit.model.Produit;
 import com.example.produit.service.CategorieDAO;
 import com.example.produit.service.ProduitDAO;
+import com.itextpdf.io.font.constants.StandardFonts;
+import com.itextpdf.kernel.font.PdfFont;
+import com.itextpdf.kernel.font.PdfFontFactory;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.element.Paragraph;
+import com.itextpdf.layout.element.Table;
+import com.itextpdf.layout.properties.TextAlignment;
+import com.itextpdf.layout.properties.UnitValue;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -20,15 +31,20 @@ import javafx.scene.layout.HBox;
 import javafx.stage.FileChooser;
 import java.io.File;
 import java.net.URL;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class ProductController {
 
     @FXML private TableView<Produit> productTableView;
+    @FXML private TableColumn<Produit, Boolean> selectColumn;
     @FXML private TableColumn<Produit, String> productColumn;
     @FXML private TableColumn<Produit, String> descriptionColumn;
     @FXML private TableColumn<Produit, String> categoryColumn;
@@ -40,8 +56,16 @@ public class ProductController {
 
     @FXML private TextField searchField;
     @FXML private ComboBox<String> categoryComboBox;
+    @FXML private TextField minPriceField;
+    @FXML private TextField maxPriceField;
+    @FXML private TextField minQuantityField;
+    @FXML private TextField maxQuantityField;
+    @FXML private ComboBox<String> rateComboBox;
+    @FXML private DatePicker datePicker;
     @FXML private Button addProductButton;
     @FXML private Button researchButton;
+    @FXML private Button deleteSelectedButton;
+    @FXML private Button exportSelectedButton;
     @FXML private Label resultsCountLabel;
 
     private final SessionManager sessionManager = SessionManager.getInstance();
@@ -51,16 +75,33 @@ public class ProductController {
 
     @FXML
     public void initialize() {
-        configureTableColumns();
-        initializeComboBoxes();
-        loadInitialData();
-        setupContextMenu();
-        setupActionsColumn();
-        setupResultsCountListener();
-        setupSearchListeners();
+        try {
+            productTableView.setEditable(true);
+            configureTableColumns();
+            initializeComboBoxes();
+            loadInitialData();
+            setupContextMenu();
+            setupActionsColumn();
+            setupResultsCountListener();
+            setupSearchListeners();
+            setupInputValidation();
+            setupSelectionListener();
+            System.out.println("ProductController initialized successfully");
+        } catch (Exception e) {
+            System.err.println("Error in initialize: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     private void configureTableColumns() {
+        selectColumn.setCellValueFactory(new PropertyValueFactory<>("selected"));
+        selectColumn.setCellFactory(CheckBoxTableCell.forTableColumn(selectColumn));
+        selectColumn.setEditable(true);
+        selectColumn.setPrefWidth(40);
+        selectColumn.setMaxWidth(40);
+        selectColumn.setMinWidth(40);
+        System.out.println("selectColumn configured with CheckBoxTableCell");
+
         productColumn.setCellValueFactory(new PropertyValueFactory<>("nom"));
         descriptionColumn.setCellValueFactory(new PropertyValueFactory<>("description"));
         categoryColumn.setCellValueFactory(cellData -> {
@@ -106,6 +147,9 @@ public class ProductController {
         categoryNames.addAll(categoryList.stream().map(Categorie::getNom).toList());
         categoryComboBox.setItems(categoryNames);
         categoryComboBox.getSelectionModel().selectFirst();
+
+        rateComboBox.getItems().addAll("All", "4+", "3+", "2+", "1+");
+        rateComboBox.getSelectionModel().selectFirst();
     }
 
     private void loadInitialData() {
@@ -118,8 +162,112 @@ public class ProductController {
     }
 
     private void setupSearchListeners() {
-        searchField.textProperty().addListener((observable, oldValue, newValue) -> handleResearch());
-        categoryComboBox.valueProperty().addListener((observable, oldValue, newValue) -> handleResearch());
+        searchField.textProperty().addListener((obs, oldVal, newVal) -> handleResearch());
+        categoryComboBox.valueProperty().addListener((obs, oldVal, newVal) -> handleResearch());
+        minPriceField.textProperty().addListener((obs, oldVal, newVal) -> handleResearch());
+        maxPriceField.textProperty().addListener((obs, oldVal, newVal) -> handleResearch());
+        minQuantityField.textProperty().addListener((obs, oldVal, newVal) -> handleResearch());
+        maxQuantityField.textProperty().addListener((obs, oldVal, newVal) -> handleResearch());
+        rateComboBox.valueProperty().addListener((obs, oldVal, newVal) -> handleResearch());
+        datePicker.valueProperty().addListener((obs, oldVal, newVal) -> handleResearch());
+    }
+
+    private void setupInputValidation() {
+        Pattern pricePattern = Pattern.compile("^\\d*\\.?\\d*$");
+        Pattern quantityPattern = Pattern.compile("^[0-9]*$");
+
+        minPriceField.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (!newVal.isEmpty() && !pricePattern.matcher(newVal).matches()) {
+                minPriceField.setStyle("-fx-border-color: red;");
+            } else {
+                try {
+                    if (!newVal.isEmpty()) {
+                        float price = Float.parseFloat(newVal);
+                        if (price < 0 || price > 1000000) {
+                            minPriceField.setStyle("-fx-border-color: red;");
+                            return;
+                        }
+                    }
+                    minPriceField.setStyle("");
+                } catch (NumberFormatException e) {
+                    minPriceField.setStyle("-fx-border-color: red;");
+                }
+            }
+        });
+
+        maxPriceField.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (!newVal.isEmpty() && !pricePattern.matcher(newVal).matches()) {
+                maxPriceField.setStyle("-fx-border-color: red;");
+            } else {
+                try {
+                    if (!newVal.isEmpty()) {
+                        float price = Float.parseFloat(newVal);
+                        if (price < 0 || price > 1000000) {
+                            maxPriceField.setStyle("-fx-border-color: red;");
+                            return;
+                        }
+                    }
+                    maxPriceField.setStyle("");
+                } catch (NumberFormatException e) {
+                    maxPriceField.setStyle("-fx-border-color: red;");
+                }
+            }
+        });
+
+        minQuantityField.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (!newVal.isEmpty() && !quantityPattern.matcher(newVal).matches()) {
+                minQuantityField.setStyle("-fx-border-color: red;");
+            } else {
+                try {
+                    if (!newVal.isEmpty()) {
+                        int quantity = Integer.parseInt(newVal);
+                        if (quantity < 0 || quantity > 10000) {
+                            minQuantityField.setStyle("-fx-border-color: red;");
+                            return;
+                        }
+                    }
+                    minQuantityField.setStyle("");
+                } catch (NumberFormatException e) {
+                    minQuantityField.setStyle("-fx-border-color: red;");
+                }
+            }
+        });
+
+        maxQuantityField.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (!newVal.isEmpty() && !quantityPattern.matcher(newVal).matches()) {
+                maxQuantityField.setStyle("-fx-border-color: red;");
+            } else {
+                try {
+                    if (!newVal.isEmpty()) {
+                        int quantity = Integer.parseInt(newVal);
+                        if (quantity < 0 || quantity > 10000) {
+                            maxQuantityField.setStyle("-fx-border-color: red;");
+                            return;
+                        }
+                    }
+                    maxQuantityField.setStyle("");
+                } catch (NumberFormatException e) {
+                    maxQuantityField.setStyle("-fx-border-color: red;");
+                }
+            }
+        });
+    }
+
+    private void setupSelectionListener() {
+        productList.forEach(product -> {
+            product.selectedProperty().addListener((obs, oldVal, newVal) -> {
+                System.out.println("Checkbox for " + product.getNom() + " changed to " + newVal);
+                updateBulkButtons();
+            });
+        });
+        filteredList.addListener((javafx.collections.ListChangeListener<Produit>) c -> updateBulkButtons());
+    }
+
+    private void updateBulkButtons() {
+        boolean hasSelection = productList.stream().anyMatch(Produit::isSelected);
+        deleteSelectedButton.setDisable(!hasSelection);
+        exportSelectedButton.setDisable(!hasSelection);
+        System.out.println("Bulk buttons updated. Has selection: " + hasSelection);
     }
 
     @FXML
@@ -128,17 +276,52 @@ public class ProductController {
             boolean match = true;
 
             String searchText = searchField.getText() != null ? searchField.getText().toLowerCase().trim() : "";
-            String category = categoryComboBox.getValue();
-
-            // Search text filter (name or description)
             if (!searchText.isEmpty()) {
                 match &= product.getNom().toLowerCase().contains(searchText) ||
                         product.getDescription().toLowerCase().contains(searchText);
             }
 
-            // Category filter
+            String category = categoryComboBox.getValue();
             if (category != null && !category.equals("All")) {
                 match &= product.getCategory() != null && product.getCategory().getNom().equals(category);
+            }
+
+            try {
+                if (!minPriceField.getText().isEmpty()) {
+                    float minPrice = Float.parseFloat(minPriceField.getText());
+                    match &= product.getPrixUnitaire() >= minPrice;
+                }
+                if (!maxPriceField.getText().isEmpty()) {
+                    float maxPrice = Float.parseFloat(maxPriceField.getText());
+                    match &= product.getPrixUnitaire() <= maxPrice;
+                }
+            } catch (NumberFormatException e) {
+                // Invalid input; skip price filter
+            }
+
+            try {
+                if (!minQuantityField.getText().isEmpty()) {
+                    int minQuantity = Integer.parseInt(minQuantityField.getText());
+                    match &= product.getQuantite() >= minQuantity;
+                }
+                if (!maxQuantityField.getText().isEmpty()) {
+                    int maxQuantity = Integer.parseInt(maxQuantityField.getText());
+                    match &= product.getQuantite() <= maxQuantity;
+                }
+            } catch (NumberFormatException e) {
+                // Invalid input; skip quantity filter
+            }
+
+            String rateFilter = rateComboBox.getValue();
+            if (rateFilter != null && !rateFilter.equals("All")) {
+                float minRate = Float.parseFloat(rateFilter.replace("+", ""));
+                match &= product.getRate() != null && product.getRate() >= minRate;
+            }
+
+            LocalDate selectedDate = datePicker.getValue();
+            if (selectedDate != null) {
+                LocalDateTime startOfDay = selectedDate.atStartOfDay();
+                match &= product.getDateCreation() != null && !product.getDateCreation().isBefore(startOfDay);
             }
 
             return match;
@@ -146,6 +329,223 @@ public class ProductController {
 
         productTableView.refresh();
         updateResultsCount();
+    }
+
+    @FXML
+    private void handleBulkDelete() {
+        List<Produit> selectedProducts = productList.stream()
+                .filter(Produit::isSelected)
+                .collect(Collectors.toList());
+
+        if (selectedProducts.isEmpty()) {
+            return;
+        }
+
+        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmation.setTitle("Delete Selected Products");
+        confirmation.setHeaderText("Delete " + selectedProducts.size() + " Product(s)");
+        confirmation.setContentText("Are you sure you want to delete the selected products?");
+        Optional<ButtonType> result = confirmation.showAndWait();
+
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            selectedProducts.forEach(product -> {
+                ProduitDAO.deleteProduct(product.getId());
+                productList.remove(product);
+            });
+            handleResearch();
+        }
+    }
+
+    @FXML
+    private void exportToPDF() {
+        List<Produit> selectedProducts = productList.stream()
+                .filter(Produit::isSelected)
+                .collect(Collectors.toList());
+
+        if (selectedProducts.isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("No Selection");
+            alert.setHeaderText(null);
+            alert.setContentText("Please select at least one product to export.");
+            alert.showAndWait();
+            return;
+        }
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Save PDF File");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF Files", "*.pdf"));
+        File file = fileChooser.showSaveDialog(productTableView.getScene().getWindow());
+
+        if (file != null) {
+            try {
+                PdfWriter writer = new PdfWriter(file);
+                PdfDocument pdf = new PdfDocument(writer);
+                Document document = new Document(pdf);
+
+                // Load Inter font
+                PdfFont font;
+                try {
+                    font = PdfFontFactory.createFont(getClass().getResource("/com/example/fonts/Inter-Regular.ttf").toExternalForm());
+                } catch (Exception e) {
+                    System.err.println("Inter font not found, falling back to Helvetica");
+                    font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+                }
+
+                PdfFont boldFont;
+                try {
+                    boldFont = PdfFontFactory.createFont(getClass().getResource("/com/example/fonts/Inter-Bold.ttf").toExternalForm());
+                } catch (Exception e) {
+                    boldFont = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
+                }
+
+                Paragraph title = new Paragraph("Selected Products Report")
+                        .setFont(boldFont)
+                        .setFontSize(18)
+                        .setFontColor(new com.itextpdf.kernel.colors.DeviceRgb(61, 90, 64)) // #3d5a40
+                        .setTextAlignment(TextAlignment.CENTER)
+                        .setMarginBottom(10);
+                document.add(title);
+
+                Paragraph timestamp = new Paragraph("Generated on " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                        .setFont(font)
+                        .setFontSize(10)
+                        .setTextAlignment(TextAlignment.CENTER)
+                        .setMarginBottom(20);
+                document.add(timestamp);
+
+                // Table
+                float[] columnWidths = {80, 100, 150, 80, 60, 60, 100, 50, 100};
+                Table table = new Table(UnitValue.createPointArray(columnWidths));
+                table.setWidth(UnitValue.createPercentValue(100));
+
+                // Headers
+                String[] headers = {"ID", "Name", "Description", "Category", "Price", "Quantity", "Date Created", "Rate", "Image Name"};
+                for (String header : headers) {
+                    table.addHeaderCell(new com.itextpdf.layout.element.Cell()
+                            .add(new Paragraph(header)
+                                    .setFont(boldFont)
+                                    .setFontSize(10)
+                                    .setFontColor(new com.itextpdf.kernel.colors.DeviceRgb(255, 255, 255)))
+                            .setBackgroundColor(new com.itextpdf.kernel.colors.DeviceRgb(61, 90, 64)) // #6366f1
+                            .setTextAlignment(TextAlignment.CENTER)
+                            .setBorder(new com.itextpdf.layout.borders.SolidBorder(
+                                    new com.itextpdf.kernel.colors.DeviceRgb(226, 232, 240), 1)) // #e2e8f0
+                    );
+                }
+
+                // Rows
+                boolean alternate = false;
+                for (Produit product : selectedProducts) {
+                    table.addCell(new com.itextpdf.layout.element.Cell()
+                            .add(new Paragraph(product.getId().toString())
+                                    .setFont(font)
+                                    .setFontSize(9))
+                            .setBackgroundColor(alternate ?
+                                    new com.itextpdf.kernel.colors.DeviceRgb(248, 250, 252) : // #f8fafc
+                                    new com.itextpdf.kernel.colors.DeviceRgb(255, 255, 255)) // #ffffff
+                            .setBorder(new com.itextpdf.layout.borders.SolidBorder(
+                                    new com.itextpdf.kernel.colors.DeviceRgb(226, 232, 240), 1))
+                    );
+                    table.addCell(new com.itextpdf.layout.element.Cell()
+                            .add(new Paragraph(product.getNom())
+                                    .setFont(font)
+                                    .setFontSize(9))
+                            .setBackgroundColor(alternate ?
+                                    new com.itextpdf.kernel.colors.DeviceRgb(248, 250, 252) :
+                                    new com.itextpdf.kernel.colors.DeviceRgb(255, 255, 255))
+                            .setBorder(new com.itextpdf.layout.borders.SolidBorder(
+                                    new com.itextpdf.kernel.colors.DeviceRgb(226, 232, 240), 1))
+                    );
+                    table.addCell(new com.itextpdf.layout.element.Cell()
+                            .add(new Paragraph(product.getDescription())
+                                    .setFont(font)
+                                    .setFontSize(9))
+                            .setBackgroundColor(alternate ?
+                                    new com.itextpdf.kernel.colors.DeviceRgb(248, 250, 252) :
+                                    new com.itextpdf.kernel.colors.DeviceRgb(255, 255, 255))
+                            .setBorder(new com.itextpdf.layout.borders.SolidBorder(
+                                    new com.itextpdf.kernel.colors.DeviceRgb(226, 232, 240), 1))
+                    );
+                    table.addCell(new com.itextpdf.layout.element.Cell()
+                            .add(new Paragraph(product.getCategory() != null ? product.getCategory().getNom() : "No Category")
+                                    .setFont(font)
+                                    .setFontSize(9))
+                            .setBackgroundColor(alternate ?
+                                    new com.itextpdf.kernel.colors.DeviceRgb(248, 250, 252) :
+                                    new com.itextpdf.kernel.colors.DeviceRgb(255, 255, 255))
+                            .setBorder(new com.itextpdf.layout.borders.SolidBorder(
+                                    new com.itextpdf.kernel.colors.DeviceRgb(226, 232, 240), 1))
+                    );
+                    table.addCell(new com.itextpdf.layout.element.Cell()
+                            .add(new Paragraph(String.format("%.2f", product.getPrixUnitaire()))
+                                    .setFont(font)
+                                    .setFontSize(9))
+                            .setBackgroundColor(alternate ?
+                                    new com.itextpdf.kernel.colors.DeviceRgb(248, 250, 252) :
+                                    new com.itextpdf.kernel.colors.DeviceRgb(255, 255, 255))
+                            .setBorder(new com.itextpdf.layout.borders.SolidBorder(
+                                    new com.itextpdf.kernel.colors.DeviceRgb(226, 232, 240), 1))
+                    );
+                    table.addCell(new com.itextpdf.layout.element.Cell()
+                            .add(new Paragraph(String.valueOf(product.getQuantite()))
+                                    .setFont(font)
+                                    .setFontSize(9))
+                            .setBackgroundColor(alternate ?
+                                    new com.itextpdf.kernel.colors.DeviceRgb(248, 250, 252) :
+                                    new com.itextpdf.kernel.colors.DeviceRgb(255, 255, 255))
+                            .setBorder(new com.itextpdf.layout.borders.SolidBorder(
+                                    new com.itextpdf.kernel.colors.DeviceRgb(226, 232, 240), 1))
+                    );
+                    table.addCell(new com.itextpdf.layout.element.Cell()
+                            .add(new Paragraph(product.getDateCreation().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")))
+                                    .setFont(font)
+                                    .setFontSize(9))
+                            .setBackgroundColor(alternate ?
+                                    new com.itextpdf.kernel.colors.DeviceRgb(248, 250, 252) :
+                                    new com.itextpdf.kernel.colors.DeviceRgb(255, 255, 255))
+                            .setBorder(new com.itextpdf.layout.borders.SolidBorder(
+                                    new com.itextpdf.kernel.colors.DeviceRgb(226, 232, 240), 1))
+                    );
+                    table.addCell(new com.itextpdf.layout.element.Cell()
+                            .add(new Paragraph(product.getRate() != null ? String.format("%.1f", product.getRate()) : "")
+                                    .setFont(font)
+                                    .setFontSize(9))
+                            .setBackgroundColor(alternate ?
+                                    new com.itextpdf.kernel.colors.DeviceRgb(248, 250, 252) :
+                                    new com.itextpdf.kernel.colors.DeviceRgb(255, 255, 255))
+                            .setBorder(new com.itextpdf.layout.borders.SolidBorder(
+                                    new com.itextpdf.kernel.colors.DeviceRgb(226, 232, 240), 1))
+                    );
+                    table.addCell(new com.itextpdf.layout.element.Cell()
+                            .add(new Paragraph(product.getImageName() != null ? product.getImageName() : "")
+                                    .setFont(font)
+                                    .setFontSize(9))
+                            .setBackgroundColor(alternate ?
+                                    new com.itextpdf.kernel.colors.DeviceRgb(248, 250, 252) :
+                                    new com.itextpdf.kernel.colors.DeviceRgb(255, 255, 255))
+                            .setBorder(new com.itextpdf.layout.borders.SolidBorder(
+                                    new com.itextpdf.kernel.colors.DeviceRgb(226, 232, 240), 1))
+                    );
+                    alternate = !alternate;
+                }
+
+                document.add(table);
+                document.close();
+
+                Alert success = new Alert(Alert.AlertType.INFORMATION);
+                success.setTitle("Export Successful");
+                success.setHeaderText(null);
+                success.setContentText("Selected products exported to " + file.getName());
+                success.showAndWait();
+            } catch (Exception e) {
+                Alert error = new Alert(Alert.AlertType.ERROR);
+                error.setTitle("Export Failed");
+                error.setHeaderText(null);
+                error.setContentText("Failed to export products to PDF: " + e.getMessage());
+                error.showAndWait();
+                e.printStackTrace();
+            }
+        }
     }
 
     private void setupActionsColumn() {
@@ -214,7 +614,7 @@ public class ProductController {
             if (result.isPresent() && result.get() == ButtonType.OK) {
                 ProduitDAO.deleteProduct(product.getId());
                 productList.remove(product);
-                handleResearch(); // Refresh table after deletion
+                handleResearch();
             }
         }
     }
@@ -233,7 +633,6 @@ public class ProductController {
         }
         dialogPane.getStyleClass().add("dialog-pane");
 
-        // Form fields
         TextField nameField = new TextField();
         TextArea descriptionField = new TextArea();
         ComboBox<String> categoryCombo = new ComboBox<>(FXCollections.observableArrayList(
@@ -249,7 +648,6 @@ public class ProductController {
         imagePreview.setFitHeight(100);
         imagePreview.setPreserveRatio(true);
 
-        // Error labels (small font, minimal space)
         Label nameError = new Label();
         Label descriptionError = new Label();
         Label categoryError = new Label();
@@ -261,7 +659,6 @@ public class ProductController {
         priceError.setStyle("-fx-text-fill: red; -fx-font-size: 10px;");
         quantityError.setStyle("-fx-text-fill: red; -fx-font-size: 10px;");
 
-        // File chooser setup
         FileChooser fileChooser = new FileChooser();
         fileChooser.getExtensionFilters().addAll(
                 new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg")
@@ -281,7 +678,6 @@ public class ProductController {
             }
         });
 
-        // Populate fields for edit
         if (product != null) {
             nameField.setText(product.getNom());
             descriptionField.setText(product.getDescription());
@@ -299,12 +695,10 @@ public class ProductController {
             }
         }
 
-        // Validation patterns and rules
         Pattern namePattern = Pattern.compile("^[a-zA-Z0-9\\s-]{3,50}$");
         Pattern pricePattern = Pattern.compile("^\\d*\\.?\\d+$");
         Pattern quantityPattern = Pattern.compile("^[0-9]+$");
 
-        // Real-time validation
         nameField.textProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal.trim().isEmpty()) {
                 nameError.setText("Name cannot be empty");
@@ -395,7 +789,6 @@ public class ProductController {
             }
         });
 
-        // Grid layout with error labels in same row
         GridPane grid = new GridPane();
         grid.setHgap(10);
         grid.setVgap(5);
@@ -418,11 +811,9 @@ public class ProductController {
         ButtonType saveButtonType = new ButtonType("Save", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
 
-        // Disable save button until all validations pass
         Button saveButton = (Button) dialog.getDialogPane().lookupButton(saveButtonType);
         saveButton.setDisable(true);
 
-        // Validation check for save button
         Runnable validateForm = () -> {
             boolean isValid =
                     !nameField.getText().trim().isEmpty() &&
@@ -476,7 +867,7 @@ public class ProductController {
                         ProduitDAO.updateProduct(newProduct);
                         productTableView.refresh();
                     }
-                    handleResearch(); // Refresh table after save
+                    handleResearch();
                     return newProduct;
                 } catch (NumberFormatException ex) {
                     Alert alert = new Alert(Alert.AlertType.ERROR, "Invalid input format.");
