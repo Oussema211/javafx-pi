@@ -14,9 +14,9 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
-
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.image.Image?>
+
 <VBox spacing="10" styleClass="main-vbox" stylesheets="@../css/produits.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.produit.controller.ProductController">
 
     <HBox spacing="10" styleClass="title-box">
@@ -41,10 +41,11 @@
         </Label>
         <HBox alignment="CENTER_LEFT" spacing="5">
             <Label styleClass="search-icon" text="" />
-            <TextField fx:id="searchField" prefHeight="40.0" prefWidth="542.0" promptText="Search product" styleClass="search-field">
+            <TextField fx:id="searchField" prefHeight="40.0" prefWidth="542.0" promptText="Search by name or description" styleClass="search-field">
                 <HBox.margin>
                     <Insets bottom="10.0" left="-10.0" />
-                </HBox.margin></TextField>
+                </HBox.margin>
+            </TextField>
             <VBox.margin>
                 <Insets />
             </VBox.margin>
@@ -52,80 +53,18 @@
 
         <HBox spacing="10" styleClass="filter-box">
             <VBox styleClass="filter-column">
-                <Label styleClass="filter-label" text="PRODUCT TYPE">
-                    <VBox.margin>
-                        <Insets />
-                    </VBox.margin></Label>
-                <ComboBox fx:id="productTypeComboBox" promptText="All" styleClass="filter-combo">
-                    <items>
-                        <FXCollections fx:factory="observableArrayList">
-                            <String fx:value="All" />
-                            <String fx:value="Physical" />
-                            <String fx:value="Digital" />
-                        </FXCollections>
-                    </items>
-                </ComboBox>
-            </VBox>
-
-            <VBox styleClass="filter-column">
                 <Label styleClass="filter-label" text="CATEGORY" />
-                <ComboBox fx:id="categoryComboBox" promptText="All" styleClass="filter-combo" />
-            </VBox>
-
-            <VBox styleClass="filter-column">
-                <Label styleClass="filter-label" text="SUPPLIER" />
-                <ComboBox fx:id="supplierComboBox" promptText="All" styleClass="filter-combo">
+                <ComboBox fx:id="categoryComboBox" promptText="All" styleClass="filter-combo">
                     <items>
                         <FXCollections fx:factory="observableArrayList">
                             <String fx:value="All" />
-                            <String fx:value="Outdoor Gear" />
-                            <String fx:value="Marshall Amp" />
-                            <String fx:value="Kasa" />
                         </FXCollections>
                     </items>
                 </ComboBox>
             </VBox>
 
-            <VBox styleClass="filter-column">
-                <Label styleClass="filter-label" text="BRAND" />
-                <ComboBox fx:id="brandComboBox" promptText="All" styleClass="filter-combo">
-                    <items>
-                        <FXCollections fx:factory="observableArrayList">
-                            <String fx:value="All" />
-                            <String fx:value="Corsair" />
-                            <String fx:value="Marshall" />
-                            <String fx:value="Kasa" />
-                        </FXCollections>
-                    </items>
-                </ComboBox>
-                <HBox.margin>
-                    <Insets />
-                </HBox.margin>
-            </VBox>
-
-            <VBox styleClass="filter-column">
-                <Label styleClass="filter-label" text="STATUS" />
-                <ComboBox fx:id="statusComboBox" promptText="Active" styleClass="filter-combo">
-                    <items>
-                        <FXCollections fx:factory="observableArrayList">
-                            <String fx:value="All" />
-                            <String fx:value="Active" />
-                            <String fx:value="Inactive" />
-                            <String fx:value="Draft" />
-                        </FXCollections>
-                    </items>
-                </ComboBox>
-            </VBox>
-
-            <!-- Tags Filter -->
-            <VBox styleClass="filter-column">
-                <Label styleClass="filter-label" text="TAGS" />
-                <TextField fx:id="tagsField" promptText="Enter tags" styleClass="filter-field" />
-            </VBox>
-
-            <!-- Search Button -->
             <VBox alignment="BOTTOM_LEFT" styleClass="filter-column">
-                <Button fx:id="searchButton" styleClass="search-button" text="SEARCH" />
+                <Button fx:id="researchButton" onAction="#handleResearch" styleClass="search-button" text="RESEARCH" />
                 <HBox.margin>
                     <Insets />
                 </HBox.margin>
@@ -134,7 +73,7 @@
     </VBox>
 
     <HBox styleClass="results-header" spacing="5" alignment="CENTER_LEFT">
-        <Label fx:id="resultsCountLabel" styleClass="results-count" text="SHOWING 0 ACTIVE PRODUCTS" />
+        <Label fx:id="resultsCountLabel" styleClass="results-count" text="SHOWING 0 PRODUCTS" />
         <ImageView fx:id="TuneIcon" fitHeight="20" fitWidth="20">
             <image>
                 <Image url="@../../../icons/tune.png" />
@@ -149,7 +88,7 @@
         <columns>
             <TableColumn fx:id="imagePreviewColumn" text="Image">
                 <cellValueFactory>
-                    <PropertyValueFactory property="image" />
+                    <PropertyValueFactory property="imageName" />
                 </cellValueFactory>
             </TableColumn>
             <TableColumn fx:id="productColumn" text="Product">

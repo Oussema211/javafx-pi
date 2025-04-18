@@ -39,9 +39,9 @@ public class ProductController {
     @FXML private TableColumn<Produit, String> imagePreviewColumn;
 
     @FXML private TextField searchField;
-    @FXML private ComboBox<String> productTypeComboBox;
     @FXML private ComboBox<String> categoryComboBox;
     @FXML private Button addProductButton;
+    @FXML private Button researchButton;
     @FXML private Label resultsCountLabel;
 
     private final SessionManager sessionManager = SessionManager.getInstance();
@@ -57,6 +57,7 @@ public class ProductController {
         setupContextMenu();
         setupActionsColumn();
         setupResultsCountListener();
+        setupSearchListeners();
     }
 
     private void configureTableColumns() {
@@ -98,14 +99,12 @@ public class ProductController {
         });
         imagePreviewColumn.setCellValueFactory(cellData ->
                 new SimpleStringProperty(cellData.getValue().getImageName()));
-
     }
 
     private void initializeComboBoxes() {
-        productTypeComboBox.getItems().addAll("All", "Physical", "Digital");
-        categoryComboBox.setItems(FXCollections.observableArrayList(
-                categoryList.stream().map(Categorie::getNom).toList()
-        ));
+        ObservableList<String> categoryNames = FXCollections.observableArrayList("All");
+        categoryNames.addAll(categoryList.stream().map(Categorie::getNom).toList());
+        categoryComboBox.setItems(categoryNames);
         categoryComboBox.getSelectionModel().selectFirst();
     }
 
@@ -115,6 +114,37 @@ public class ProductController {
         productList.addAll(ProduitDAO.getAllProducts());
         filteredList = new FilteredList<>(productList, p -> true);
         productTableView.setItems(filteredList);
+        updateResultsCount();
+    }
+
+    private void setupSearchListeners() {
+        searchField.textProperty().addListener((observable, oldValue, newValue) -> handleResearch());
+        categoryComboBox.valueProperty().addListener((observable, oldValue, newValue) -> handleResearch());
+    }
+
+    @FXML
+    private void handleResearch() {
+        filteredList.setPredicate(product -> {
+            boolean match = true;
+
+            String searchText = searchField.getText() != null ? searchField.getText().toLowerCase().trim() : "";
+            String category = categoryComboBox.getValue();
+
+            // Search text filter (name or description)
+            if (!searchText.isEmpty()) {
+                match &= product.getNom().toLowerCase().contains(searchText) ||
+                        product.getDescription().toLowerCase().contains(searchText);
+            }
+
+            // Category filter
+            if (category != null && !category.equals("All")) {
+                match &= product.getCategory() != null && product.getCategory().getNom().equals(category);
+            }
+
+            return match;
+        });
+
+        productTableView.refresh();
         updateResultsCount();
     }
 
@@ -184,6 +214,7 @@ public class ProductController {
             if (result.isPresent() && result.get() == ButtonType.OK) {
                 ProduitDAO.deleteProduct(product.getId());
                 productList.remove(product);
+                handleResearch(); // Refresh table after deletion
             }
         }
     }
@@ -367,7 +398,7 @@ public class ProductController {
         // Grid layout with error labels in same row
         GridPane grid = new GridPane();
         grid.setHgap(10);
-        grid.setVgap(5); // Reduced gap to minimize space
+        grid.setVgap(5);
         grid.addRow(0, new Label("Name:"), nameField);
         grid.add(nameError, 1, 1);
         grid.addRow(2, new Label("Description:"), descriptionField);
@@ -438,12 +469,14 @@ public class ProductController {
                     if (product == null) {
                         newProduct.setId(UUID.randomUUID());
                         newProduct.setDateCreation(LocalDateTime.now());
+                        newProduct.setUserId(currentUser != null ? currentUser.getId() : null);
                         ProduitDAO.saveProduct(newProduct);
                         productList.add(newProduct);
                     } else {
                         ProduitDAO.updateProduct(newProduct);
                         productTableView.refresh();
                     }
+                    handleResearch(); // Refresh table after save
                     return newProduct;
                 } catch (NumberFormatException ex) {
                     Alert alert = new Alert(Alert.AlertType.ERROR, "Invalid input format.");
