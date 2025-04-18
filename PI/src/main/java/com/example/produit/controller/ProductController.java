@@ -309,7 +309,6 @@ public class ProductController {
                     match &= product.getQuantite() <= maxQuantity;
                 }
             } catch (NumberFormatException e) {
-                // Invalid input; skip quantity filter
             }
 
             String rateFilter = rateComboBox.getValue();
@@ -321,8 +320,13 @@ public class ProductController {
             LocalDate selectedDate = datePicker.getValue();
             if (selectedDate != null) {
                 LocalDateTime startOfDay = selectedDate.atStartOfDay();
-                match &= product.getDateCreation() != null && !product.getDateCreation().isBefore(startOfDay);
+                LocalDateTime endOfDay = startOfDay.plusDays(1); // Exclusive upper bound
+
+                match &= product.getDateCreation() != null
+                        && !product.getDateCreation().isBefore(startOfDay)
+                        && product.getDateCreation().isBefore(endOfDay);
             }
+
 
             return match;
         });
