@@ -29,8 +29,14 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.FileChooser;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import java.io.File;
+import java.net.URI;
 import java.net.URL;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -72,6 +78,8 @@ public class ProductController {
     private ObservableList<Produit> productList = FXCollections.observableArrayList();
     private ObservableList<Categorie> categoryList = FXCollections.observableArrayList();
     private FilteredList<Produit> filteredList;
+    private static final String TEXTCORTEX_API_KEY = "gAAAAABoAtEETm6B9AD03NeVrbiZO8f9DUqIIohjLqf08F2j1kXt5dV7f4srb6uyv26bQcaj1-KIA997E6h87YXWWHYaMN9iIAz3MVJg1kJKOcpAxaqhEjlyrDZ6e5aQo-QjtVeVWIIaQntdMPKqDPBsRWyxjtOhC-Z9Yuf37sungaGnwp-oBUE=";
+    private static final String TEXTCORTEX_API_URL = "https://api.textcortex.com/v1/texts/products/descriptions";
 
     @FXML
     public void initialize() {
@@ -97,9 +105,6 @@ public class ProductController {
         selectColumn.setCellValueFactory(new PropertyValueFactory<>("selected"));
         selectColumn.setCellFactory(CheckBoxTableCell.forTableColumn(selectColumn));
         selectColumn.setEditable(true);
-        selectColumn.setPrefWidth(40);
-        selectColumn.setMaxWidth(40);
-        selectColumn.setMinWidth(40);
         System.out.println("selectColumn configured with CheckBoxTableCell");
 
         productColumn.setCellValueFactory(new PropertyValueFactory<>("nom"));
@@ -309,6 +314,7 @@ public class ProductController {
                     match &= product.getQuantite() <= maxQuantity;
                 }
             } catch (NumberFormatException e) {
+                // Invalid input; skip quantity filter
             }
 
             String rateFilter = rateComboBox.getValue();
@@ -320,13 +326,8 @@ public class ProductController {
             LocalDate selectedDate = datePicker.getValue();
             if (selectedDate != null) {
                 LocalDateTime startOfDay = selectedDate.atStartOfDay();
-                LocalDateTime endOfDay = startOfDay.plusDays(1); // Exclusive upper bound
-
-                match &= product.getDateCreation() != null
-                        && !product.getDateCreation().isBefore(startOfDay)
-                        && product.getDateCreation().isBefore(endOfDay);
+                match &= product.getDateCreation() != null && !product.getDateCreation().isBefore(startOfDay);
             }
-
 
             return match;
         });
@@ -402,14 +403,16 @@ public class ProductController {
                     boldFont = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
                 }
 
+                // Title
                 Paragraph title = new Paragraph("Selected Products Report")
                         .setFont(boldFont)
                         .setFontSize(18)
-                        .setFontColor(new com.itextpdf.kernel.colors.DeviceRgb(61, 90, 64)) // #3d5a40
+                        .setFontColor(new com.itextpdf.kernel.colors.DeviceRgb(99, 102, 241)) // #6366f1
                         .setTextAlignment(TextAlignment.CENTER)
                         .setMarginBottom(10);
                 document.add(title);
 
+                // Timestamp
                 Paragraph timestamp = new Paragraph("Generated on " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
                         .setFont(font)
                         .setFontSize(10)
@@ -430,7 +433,7 @@ public class ProductController {
                                     .setFont(boldFont)
                                     .setFontSize(10)
                                     .setFontColor(new com.itextpdf.kernel.colors.DeviceRgb(255, 255, 255)))
-                            .setBackgroundColor(new com.itextpdf.kernel.colors.DeviceRgb(61, 90, 64)) // #6366f1
+                            .setBackgroundColor(new com.itextpdf.kernel.colors.DeviceRgb(99, 102, 241)) // #6366f1
                             .setTextAlignment(TextAlignment.CENTER)
                             .setBorder(new com.itextpdf.layout.borders.SolidBorder(
                                     new com.itextpdf.kernel.colors.DeviceRgb(226, 232, 240), 1)) // #e2e8f0
@@ -623,6 +626,53 @@ public class ProductController {
         }
     }
 
+    private String generateProductDescription(String brand, String category, String name) {
+        try {
+            HttpClient client = HttpClient.newHttpClient();
+            JSONObject payload = new JSONObject();
+            payload.put("name", name);
+            payload.put("category", category);
+            payload.put("formality", "default");
+            payload.put("max_tokens", 200);
+            payload.put("n", 1);
+            payload.put("source_lang", "fr");
+            payload.put("target_lang", "fr");
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(TEXTCORTEX_API_URL))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + TEXTCORTEX_API_KEY)
+                    .POST(HttpRequest.BodyPublishers.ofString(payload.toString()))
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            System.out.println("TextCortex API Response: " + response.body()); // Debug
+            if (response.statusCode() == 200) {
+                JSONObject jsonResponse = new JSONObject(response.body());
+                JSONArray outputs = jsonResponse.getJSONObject("data").getJSONArray("outputs");
+                if (!outputs.isEmpty()) {
+                    String description = outputs.getJSONObject(0).getString("text");
+                    return description.length() > 200 ? description.substring(0, 200) : description;
+                }
+            } else {
+                System.err.println("TextCortex API Error: " + response.statusCode() + " - " + response.body());
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("API Error");
+                alert.setHeaderText(null);
+                alert.setContentText("Failed to generate description: HTTP " + response.statusCode());
+                alert.showAndWait();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("API Error");
+            alert.setHeaderText(null);
+            alert.setContentText("Failed to generate description: " + e.getMessage());
+            alert.showAndWait();
+        }
+        return "";
+    }
+
     private void showProductDialog(Produit product) {
         Dialog<Produit> dialog = new Dialog<>();
         dialog.setTitle(product == null ? "New Product" : "Edit Product");
@@ -647,6 +697,8 @@ public class ProductController {
         TextField imagePathField = new TextField();
         imagePathField.setEditable(false);
         Button chooseImageButton = new Button("Choose Image");
+        Button generateDescriptionButton = new Button("Generate Description");
+        generateDescriptionButton.getStyleClass().add("secondary-button");
         ImageView imagePreview = new ImageView();
         imagePreview.setFitWidth(100);
         imagePreview.setFitHeight(100);
@@ -679,6 +731,23 @@ public class ProductController {
                     Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to load image.");
                     alert.showAndWait();
                 }
+            }
+        });
+
+        generateDescriptionButton.setOnAction(e -> {
+            String name = nameField.getText().trim();
+            String category = categoryCombo.getValue();
+            if (name.isEmpty() || category == null) {
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("Input Required");
+                alert.setHeaderText(null);
+                alert.setContentText("Please enter a product name and select a category.");
+                alert.showAndWait();
+                return;
+            }
+            String description = generateProductDescription(name, category, name);
+            if (!description.isEmpty()) {
+                descriptionField.setText(description);
             }
         });
 
@@ -799,16 +868,17 @@ public class ProductController {
         grid.addRow(0, new Label("Name:"), nameField);
         grid.add(nameError, 1, 1);
         grid.addRow(2, new Label("Description:"), descriptionField);
-        grid.add(descriptionError, 1, 3);
-        grid.addRow(4, new Label("Category:"), categoryCombo);
-        grid.add(categoryError, 1, 5);
-        grid.addRow(6, new Label("Price:"), priceField);
-        grid.add(priceError, 1, 7);
-        grid.addRow(8, new Label("Quantity:"), quantityField);
-        grid.add(quantityError, 1, 9);
-        grid.addRow(10, new Label("Image:"), imagePathField);
-        grid.addRow(11, new Label(""), chooseImageButton);
-        grid.addRow(12, new Label("Preview:"), imagePreview);
+        grid.add(generateDescriptionButton, 1, 3);
+        grid.add(descriptionError, 1, 4);
+        grid.addRow(5, new Label("Category:"), categoryCombo);
+        grid.add(categoryError, 1, 6);
+        grid.addRow(7, new Label("Price:"), priceField);
+        grid.add(priceError, 1, 8);
+        grid.addRow(9, new Label("Quantity:"), quantityField);
+        grid.add(quantityError, 1, 10);
+        grid.addRow(11, new Label("Image:"), imagePathField);
+        grid.addRow(12, new Label(""), chooseImageButton);
+        grid.addRow(13, new Label("Preview:"), imagePreview);
 
         dialog.getDialogPane().setContent(grid);
 

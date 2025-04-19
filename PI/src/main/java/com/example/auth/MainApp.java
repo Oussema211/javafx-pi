@@ -55,7 +55,7 @@ public class MainApp extends Application {
         }
 
         // Create scene
-        Scene scene = new Scene(root, 800, 600);
+        Scene scene = new Scene(root, 1400, 740);
 
         // Load stylesheet
         URL stylesheetUrl = getClass().getResource("/com/example/auth/styles.css");
