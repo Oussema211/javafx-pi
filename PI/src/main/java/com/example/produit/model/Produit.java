@@ -1,8 +1,9 @@
 package com.example.produit.model;
 
 import javafx.beans.property.*;
-
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class Produit {
@@ -18,8 +19,11 @@ public class Produit {
     private final FloatProperty rate = new SimpleFloatProperty();
     private final StringProperty imageName = new SimpleStringProperty();
     private final BooleanProperty selected = new SimpleBooleanProperty(false);
+    private final ListProperty<Commentaire> commentaires = new SimpleListProperty<>(javafx.collections.FXCollections.observableArrayList());
 
-    public Produit() {}
+    public Produit() {
+        this.commentaires.set(javafx.collections.FXCollections.observableArrayList());
+    }
 
     public Produit(UUID id, Categorie category, UUID userId, String nom, String description,
                    float prixUnitaire, LocalDateTime dateCreation, int quantite, Float rate, String imageName) {
@@ -33,6 +37,7 @@ public class Produit {
         setQuantite(quantite);
         setRate(rate);
         setImageName(imageName);
+        this.commentaires.set(javafx.collections.FXCollections.observableArrayList());
     }
 
     // Getters and Setters
@@ -79,6 +84,15 @@ public class Produit {
     public boolean isSelected() { return selected.get(); }
     public void setSelected(boolean selected) { this.selected.set(selected); }
     public BooleanProperty selectedProperty() { return selected; }
+
+    public List<Commentaire> getCommentaires() { return commentaires.get(); }
+    public void setCommentaires(List<Commentaire> commentaires) { this.commentaires.set(javafx.collections.FXCollections.observableArrayList(commentaires)); }
+    public ListProperty<Commentaire> commentairesProperty() { return commentaires; }
+    public void addCommentaire(Commentaire commentaire) {
+        if (commentaire != null) {
+            this.commentaires.add(commentaire);
+        }
+    }
 
     @Override
     public String toString() {

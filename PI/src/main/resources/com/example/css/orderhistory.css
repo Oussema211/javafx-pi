@@ -1,0 +1,36 @@
+/* Applique à tout l'historique */
+#orderScrollPane {
+    -fx-background-color: transparent;
+}
+
+/* Les "cartes" de commandes */
+.order-card {
+    -fx-background-color: white;
+    -fx-padding: 20;
+    -fx-spacing: 10;
+    -fx-border-radius: 15;
+    -fx-background-radius: 15;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0.5, 0, 2);
+    -fx-border-color: #e0e0e0;
+    -fx-border-width: 1;
+}
+
+/* Titre de la commande */
+.order-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2e2e2e;
+}
+
+/* Date d'achat */
+.order-date {
+    -fx-font-size: 14px;
+    -fx-text-fill: #6e6e6e;
+}
+
+/* Prix total */
+.order-price {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #4caf50;
+}

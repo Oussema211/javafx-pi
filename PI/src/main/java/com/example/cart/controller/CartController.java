@@ -145,5 +145,22 @@ public class CartController {
             e.printStackTrace();
         }
     }
+    @FXML
+    private void handleOrderHistory() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/frontPages/pages/OrderHistory.fxml"));
+            Parent orderHistoryPage = loader.load();
+
+            BorderPane root = (BorderPane) cartTable.getScene().lookup("#borderPane");
+            if (root != null) {
+                root.setCenter(orderHistoryPage);
+            } else {
+                Stage stage = (Stage) cartTable.getScene().getWindow();
+                stage.getScene().setRoot(orderHistoryPage);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
 }

@@ -24,7 +24,9 @@
     <HBox spacing="20" alignment="CENTER">
         <Button text=" Vider Panier" styleClass="secondary-button" onAction="#handleClearCart"/>
         <Button fx:id="checkoutButton" text="✅ Commander" styleClass="primary-button" onAction="#handleCheckout" maxWidth="200"/>
+        <Button fx:id="orderHistoryButton" text="🧾 Voir Mes Commandes" styleClass="secondary-button" onAction="#handleOrderHistory" />
 
     </HBox>
+
 
 </VBox>
