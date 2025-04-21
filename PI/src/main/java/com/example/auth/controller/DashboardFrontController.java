@@ -1,5 +1,6 @@
 package com.example.auth.controller;
 
+import com.example.reclamation.controller.NavbarController;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -45,11 +46,13 @@ public class DashboardFrontController {
 
     private Stage primaryStage;
     @FXML private Hyperlink profileButton;
+    private static NavbarController navbarController;
 
 
 
 
-    private void loadContent(String fxmlPath) {
+    public void loadContent(String fxmlPath) {
+
         try {
             System.out.println("Loading FXML: " + getClass().getResource(fxmlPath));
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
@@ -83,12 +86,25 @@ public class DashboardFrontController {
     @FXML
     public void initialize() {
         System.out.println("DashboardController initialized");
+        try {
+            FXMLLoader navbarLoader = new FXMLLoader(getClass().getResource("/com/example/frontPages/Navbar.fxml"));
+            Parent navbar = navbarLoader.load();
+            navbarController = navbarLoader.getController(); // récupère le controller
+            navbarController.setDashboardFrontController(this);
+
+            borderPane.setTop(navbar); // insère la navbar en haut
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Failed to load Navbar.fxml: " + e.getMessage());
+        }
+
         System.out.println("borderPane: " + borderPane);
         System.out.println("dashboardButton: " + dashboardButton);
         System.out.println("logoutButton: " + logoutButton);
 
         dashboardButton.setOnAction(event -> loadContent("/com/example/frontPages/pages/dashboard.fxml"));
-        achat.setOnAction(event -> loadContent("/com/example/frontPages/pages/achat.fxml"));
+        achat.setOnAction(event -> loadContent("/com/example/frontPages/pages/cart.fxml"));
+
         productButton.setOnAction(event -> loadContent("/com/example/frontPages/pages/products.fxml"));
         categoryButton.setOnAction(event -> loadContent("/com/example/frontPages/pages/categories.fxml"));
         reclamationButton.setOnAction(event -> loadContent("/com/example/reclamation/Reclamation.fxml"));
@@ -133,6 +149,10 @@ public class DashboardFrontController {
     public void setPrimaryStage(Stage stage) {
         this.primaryStage = stage;
     }
+    public static NavbarController getNavbarController() {
+        return navbarController;
+    }
+
     public BorderPane getBorderPane() {
         return borderPane;
     }

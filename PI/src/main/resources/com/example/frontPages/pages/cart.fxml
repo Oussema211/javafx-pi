@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.cart.controller.CartController"
+      spacing="20" alignment="CENTER" styleClass="main-content" stylesheets="@cart.css">
+
+    <Label text="🛒 Mon Panier" styleClass="content-title"/>
+
+    <TableView fx:id="cartTable" prefWidth="800">
+        <columns>
+            <TableColumn fx:id="colImage" text="Image" prefWidth="150"/>
+            <TableColumn fx:id="colProduit" text="Produit" prefWidth="250"/>
+            <TableColumn fx:id="colQuantite" text="Quantité" prefWidth="150"/>
+            <TableColumn fx:id="colPrix" text="Prix Total" prefWidth="150"/>
+            <TableColumn fx:id="colActions" text="Actions" prefWidth="150"/>
+        </columns>
+    </TableView>
+
+
+    <Label fx:id="totalLabel" text="Total : 0.00 DT" styleClass="total-label"/>
+
+    <HBox spacing="20" alignment="CENTER">
+        <Button text=" Vider Panier" styleClass="secondary-button" onAction="#handleClearCart"/>
+        <Button fx:id="checkoutButton" text="✅ Commander" styleClass="primary-button" onAction="#handleCheckout" maxWidth="200"/>
+
+    </HBox>
+
+</VBox>

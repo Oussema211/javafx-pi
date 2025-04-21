@@ -1,10 +1,12 @@
 package com.example.produit.controller;
 
+import com.example.cart.CartManager;
 import com.example.produit.model.Produit;
 import com.example.produit.service.ProduitDAO;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
@@ -130,10 +132,21 @@ public class ProductCardController implements Initializable {
         Button addToCartButton = new Button("Add to Cart");
         addToCartButton.getStyleClass().add("add-to-cart-button");
         addToCartButton.setOnAction(event -> {
-            System.out.println("Added to cart: " + product.getNom());
+            CartManager.addProduct(product);
+            showAddedNotification(product.getNom());
         });
+
+
 
         card.getChildren().addAll(imageView, nameLabel, descriptionText, priceLabel, quantityLabel, categoryLabel, addToCartButton);
         return card;
     }
+    private void showAddedNotification(String productName) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Produit ajouté");
+        alert.setHeaderText(null);
+        alert.setContentText(productName + " a été ajouté au panier !");
+        alert.showAndWait();
+    }
+
 }
