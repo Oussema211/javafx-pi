@@ -1,6 +1,8 @@
 package com.example.cart.controller;
 
 import com.example.cart.model.CartItem;
+import javafx.animation.FadeTransition;
+import javafx.animation.TranslateTransition;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -13,6 +15,8 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
 import javafx.scene.Parent;
+import javafx.util.Duration;
+
 import java.io.IOException;
 
 import java.io.File;
@@ -90,6 +94,18 @@ public class CartController {
 
         cartTable.setItems(CartManager.getCartItems());
         updateTotal();
+        animateCartTable();
+        FadeTransition fadeBtn1 = new FadeTransition(Duration.millis(800), checkoutButton);
+        fadeBtn1.setFromValue(0);
+        fadeBtn1.setToValue(1);
+        fadeBtn1.play();
+
+        FadeTransition fadeBtn2 = new FadeTransition(Duration.millis(800), totalLabel);
+        fadeBtn2.setFromValue(0);
+        fadeBtn2.setToValue(1);
+        fadeBtn2.play();
+
+
     }
 
     private void addActionButtonsToTable() {
@@ -162,5 +178,23 @@ public class CartController {
             e.printStackTrace();
         }
     }
+    private void animateCartTable() {
+        javafx.application.Platform.runLater(() -> {
+            cartTable.lookupAll(".table-row-cell").forEach(row -> {
+                FadeTransition fade = new FadeTransition(Duration.millis(600), row);
+                fade.setFromValue(0);
+                fade.setToValue(1);
+
+                TranslateTransition slide = new TranslateTransition(Duration.millis(600), row);
+                slide.setFromX(-50); // démarre légèrement décalé à gauche
+                slide.setToX(0); // revient à la position normale
+
+                fade.play();
+                slide.play();
+            });
+        });
+    }
+
+
 
 }

@@ -70,3 +70,22 @@
 .button:hover {
     -fx-opacity: 0.9;
 }
+.button:hover {
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 10, 0.5, 0, 0);
+    -fx-cursor: hand;
+}
+.table-row-cell {
+    -fx-background-color: white;
+    -fx-border-color: #ddd;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 8;
+}
+
+.table-row-cell:hover {
+    -fx-background-color: #e3f2fd;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.15), 10, 0.5, 0, 0);
+    -fx-scale-x: 1.01;
+    -fx-scale-y: 1.01;
+}

@@ -34,3 +34,35 @@
     -fx-font-weight: bold;
     -fx-text-fill: #4caf50;
 }
+/* 🎨 Fond de la section Statistiques */
+.stats-section {
+    -fx-background-color: linear-gradient(to right, #6a11cb, #2575fc);
+    -fx-padding: 30px;
+    -fx-alignment: center;
+    -fx-spacing: 20px;
+    -fx-background-radius: 15px;
+}
+
+/* 🎨 Carte individuelle de statistique */
+.stat-card {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 15px;
+    -fx-padding: 20px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.15), 10, 0.3, 0, 5);
+    -fx-min-width: 150px;
+    -fx-alignment: center;
+}
+
+/* 🖌️ Titre de chaque statistique */
+.stat-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333333;
+}
+
+/* 🖌️ Valeur de la statistique */
+.stat-value {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #4caf50;
+}
