@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Leaflet Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
+
+        /* Fix for tile rendering issues */
+        .leaflet-container {
+            background: #f8fafc !important;
+        }
+
+        .leaflet-tile-container {
+            pointer-events: none;
+            will-change: transform;
+        }
+
+        .leaflet-tile {
+            box-shadow: none !important;
+            border: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+    </style>
+</head>
+<body>
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+<script>
+    var marker;
+    var map;
+    var currentLayer;
+
+    var baseLayers = {
+        "OpenStreetMap": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            keepBuffer: 8,
+            updateWhenIdle: false,
+            updateWhenZooming: false
+        }),
+        "Satellite": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19,
+            keepBuffer: 8,
+            updateWhenIdle: false,
+            updateWhenZooming: false
+        })
+    };
+
+    window.L_DISABLE_3D = true;
+
+    function initMap() {
+        if (window.mapInitialized) return;
+        window.mapInitialized = true;
+
+        // Désactiver les animations problématiques
+        L.DomEvent.TRANSITION = false;
+        L.Browser.any3d = false;
+
+        var map = L.map('map', {
+            preferCanvas: true,
+            zoomControl: false,
+            attributionControl: false,
+            fadeAnimation: false,
+            zoomAnimation: false,
+            markerZoomAnimation: false,
+            renderer: L.canvas(),
+            inertia: false
+        }).setView([36.8065, 10.1815], 13);
+
+        // Configuration spéciale pour les tuiles
+        L.TileLayer.include({
+            _update: function() {
+                if (!this._map) return;
+                L.GridLayer.prototype._update.call(this);
+            }
+        });
+
+        var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            minZoom: 3,
+            keepBuffer: 10,
+            updateWhenIdle: true,
+            crossOrigin: true,
+            detectRetina: false
+        }).addTo(map);
+
+        // Forcer le redimensionnement initial
+        setTimeout(function() {
+            map.invalidateSize({animate: false, pan: false});
+            map._resetView(map.getCenter(), map.getZoom(), true);
+
+            // Notifier JavaFX que la carte est prête
+            if (window.javaBridge) {
+                window.javaBridge.onMapReady();
+            }
+        }, 500);
+    }
+
+    // Appeler initMap avec plusieurs garanties
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(initMap, 300);
+    });
+    window.onload = initMap;
+    setTimeout(initMap, 1000);
+
+    function forceRedraw() {
+        const resizeAttempts = 3;
+        for(let i = 0; i < resizeAttempts; i++) {
+            setTimeout(() => {
+                if(map) {
+                    map.invalidateSize({animate: false, pan: false});
+                    map._resetView(map.getCenter(), map.getZoom());
+                }
+            }, i * 150);
+        }
+    }
+    function setMapType(type) {
+        if (!map || !baseLayers[type]) return;
+
+        if (currentLayer) {
+            map.removeLayer(currentLayer);
+        }
+        currentLayer = baseLayers[type];
+        currentLayer.addTo(map);
+
+        setTimeout(function() {
+            map.invalidateSize();
+        }, 100);
+    }
+
+    function setMapView(lat, lng) {
+        if (!map || !marker) return;
+        map.setView([lat, lng], 15, {animate: false});
+        marker.setLatLng([lat, lng]);
+        updatePosition();
+    }
+
+    function updatePosition() {
+        var pos = marker.getLatLng();
+        if (window.javaBridge && typeof window.javaBridge.onLocationChanged === 'function') {
+            window.javaBridge.onLocationChanged(pos.lat, pos.lng);
+        }
+    }
+
+    // Initialize map when document is fully loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(initMap, 500);
+    });
+
+    // Backup initialization
+    window.onload = function() {
+        if (!map) setTimeout(initMap, 500);
+    };
+</script>
+</body>
+</html>

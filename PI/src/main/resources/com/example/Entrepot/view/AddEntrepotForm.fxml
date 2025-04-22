@@ -7,10 +7,11 @@
 <?import javafx.scene.effect.*?>
 <?import javafx.scene.shape.*?>
 
+<?import com.example.Stock.Controller.*?>
 <VBox fx:controller="com.example.Stock.Controller.AddEntrepotController"
       xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
-      prefWidth="550" prefHeight="600" spacing="20"
-      style="-fx-background-color: #f8f9fa; -fx-padding: 25;">
+      prefWidth="900" prefHeight="700" spacing="20"
+      style="-fx-background-color: #f8f9fa; -fx-padding: 25;"  stylesheets="@css/map.css">
 
     <!-- En-tête avec icône Unicode -->
     <HBox alignment="CENTER_LEFT" spacing="10">
@@ -19,72 +20,101 @@
                style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: linear-gradient(to right, #2c3e50, #3498db);"/>
     </HBox>
 
-    <!-- Carte de formulaire avec ombre portée -->
-    <StackPane>
-        <Rectangle arcWidth="15" arcHeight="15" fill="WHITE"
-                   stroke="#e0e0e0" strokeType="INSIDE" strokeWidth="1">
-            <effect>
-                <DropShadow color="rgba(0,0,0,0.1)" radius="10" spread="0.2"/>
-            </effect>
-        </Rectangle>
+    <!-- Division en deux parties -->
+    <SplitPane dividerPositions="0.5" orientation="HORIZONTAL">
+        <!-- Première partie : Formulaire -->
+        <StackPane>
+            <Rectangle arcWidth="15" arcHeight="15" fill="WHITE"
+                       stroke="#e0e0e0" strokeType="INSIDE" strokeWidth="1">
+                <effect>
+                    <DropShadow color="rgba(0,0,0,0.1)" radius="10" spread="0.2"/>
+                </effect>
+            </Rectangle>
 
-        <GridPane hgap="15" vgap="20">
-            <padding>
-                <Insets top="20" right="20" bottom="20" left="20"/>
-            </padding>
+            <ScrollPane fitToWidth="true" hbarPolicy="NEVER">
+                <GridPane hgap="15" vgap="20">
+                    <padding>
+                        <Insets top="20" right="20" bottom="20" left="20"/>
+                    </padding>
 
-            <!-- Nom -->
-            <Label text="📛 Nom" GridPane.columnIndex="0" GridPane.rowIndex="0"
-                   style="-fx-font-weight: bold; -fx-text-fill: #495057;"/>
-            <TextField fx:id="nomField" GridPane.columnIndex="1" GridPane.rowIndex="0"
-                       promptText="Entrez le nom de l'entrepôt"
-                       style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #ced4da; -fx-padding: 8;"/>
+                    <!-- Nom -->
+                    <Label text="📛 Nom" GridPane.columnIndex="0" GridPane.rowIndex="0"
+                           style="-fx-font-weight: bold; -fx-text-fill: #495057;"/>
+                    <TextField fx:id="nomField" GridPane.columnIndex="1" GridPane.rowIndex="0"
+                               promptText="Entrez le nom de l'entrepôt"
+                               style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #ced4da; -fx-padding: 8;"/>
 
-            <!-- Adresse -->
-            <Label text="📍 Adresse" GridPane.columnIndex="0" GridPane.rowIndex="1"
-                   style="-fx-font-weight: bold; -fx-text-fill: #495057;"/>
-            <TextField fx:id="adresseField" GridPane.columnIndex="1" GridPane.rowIndex="1"
-                       promptText="Entrez l'adresse complète"
-                       style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #ced4da; -fx-padding: 8;"/>
+                    <!-- Adresse -->
+                    <Label text="📍 Adresse" GridPane.columnIndex="0" GridPane.rowIndex="1"
+                           style="-fx-font-weight: bold; -fx-text-fill: #495057;"/>
+                    <TextField fx:id="adresseField" GridPane.columnIndex="1" GridPane.rowIndex="1"
+                               promptText="Entrez l'adresse complète"
+                               style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #ced4da; -fx-padding: 8;"/>
 
-            <!-- Ville -->
-            <Label text="🏙️ Ville" GridPane.columnIndex="0" GridPane.rowIndex="2"
-                   style="-fx-font-weight: bold; -fx-text-fill: #495057;"/>
-            <TextField fx:id="villeField" GridPane.columnIndex="1" GridPane.rowIndex="2"
-                       promptText="Entrez la ville"
-                       style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #ced4da; -fx-padding: 8;"/>
+                    <!-- Ville -->
+                    <Label text="🏙️ Ville" GridPane.columnIndex="0" GridPane.rowIndex="2"
+                           style="-fx-font-weight: bold; -fx-text-fill: #495057;"/>
+                    <TextField fx:id="villeField" GridPane.columnIndex="1" GridPane.rowIndex="2"
+                               promptText="Entrez la ville"
+                               style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #ced4da; -fx-padding: 8;"/>
 
-            <!-- Espace -->
-            <Label text="📏 Superficie (m²)" GridPane.columnIndex="0" GridPane.rowIndex="3"
-                   style="-fx-font-weight: bold; -fx-text-fill: #495057;"/>
-            <TextField fx:id="espaceField" GridPane.columnIndex="1" GridPane.rowIndex="3"
-                       promptText="Surface en mètres carrés"
-                       style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #ced4da; -fx-padding: 8;"/>
+                    <!-- Espace -->
+                    <Label text="📏 Superficie (m²)" GridPane.columnIndex="0" GridPane.rowIndex="3"
+                           style="-fx-font-weight: bold; -fx-text-fill: #495057;"/>
+                    <TextField fx:id="espaceField" GridPane.columnIndex="1" GridPane.rowIndex="3"
+                               promptText="Surface en mètres carrés"
+                               style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #ced4da; -fx-padding: 8;"/>
 
-            <!-- Séparateur avec icône -->
-            <HBox alignment="CENTER" spacing="10" GridPane.columnIndex="0" GridPane.rowIndex="4" GridPane.columnSpan="2">
-                <Line endX="100" stroke="#dee2e6"/>
-                <Label text="🌍" style="-fx-font-size: 18px; -fx-opacity: 0.7;"/>
-                <Line endX="100" stroke="#dee2e6"/>
-            </HBox>
+                    <!-- Séparateur avec icône -->
+                    <HBox alignment="CENTER" spacing="10" GridPane.columnIndex="0" GridPane.rowIndex="4" GridPane.columnSpan="2">
+                        <Line endX="100" stroke="#dee2e6"/>
+                        <Label text="🌍" style="-fx-font-size: 18px; -fx-opacity: 0.7;"/>
+                        <Line endX="100" stroke="#dee2e6"/>
+                    </HBox>
 
-            <!-- Coordonnées GPS -->
-            <Label text="Coordonnées GPS" GridPane.columnIndex="0" GridPane.rowIndex="5"
-                   style="-fx-font-weight: bold; -fx-text-fill: #495057;" GridPane.columnSpan="2"/>
+                    <!-- Coordonnées GPS -->
+                    <Label text="Coordonnées GPS" GridPane.columnIndex="0" GridPane.rowIndex="5"
+                           style="-fx-font-weight: bold; -fx-text-fill: #495057;" GridPane.columnSpan="2"/>
 
-            <Label text="↔️ Latitude" GridPane.columnIndex="0" GridPane.rowIndex="6"
-                   style="-fx-font-weight: bold; -fx-text-fill: #495057;"/>
-            <TextField fx:id="latitudeField" GridPane.columnIndex="1" GridPane.rowIndex="6"
-                       promptText="Ex: 36.8065"
-                       style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #ced4da; -fx-padding: 8;"/>
+                    <Label text="↔️ Latitude" GridPane.columnIndex="0" GridPane.rowIndex="6"
+                           style="-fx-font-weight: bold; -fx-text-fill: #495057;"/>
+                    <TextField fx:id="latitudeField" GridPane.columnIndex="1" GridPane.rowIndex="6"
+                               promptText="Ex: 36.8065"
+                               style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #ced4da; -fx-padding: 8;"/>
 
-            <Label text="↕️ Longitude" GridPane.columnIndex="0" GridPane.rowIndex="7"
-                   style="-fx-font-weight: bold; -fx-text-fill: #495057;"/>
-            <TextField fx:id="longitudeField" GridPane.columnIndex="1" GridPane.rowIndex="7"
-                       promptText="Ex: 10.1815"
-                       style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #ced4da; -fx-padding: 8;"/>
-        </GridPane>
-    </StackPane>
+                    <Label text="↕️ Longitude" GridPane.columnIndex="0" GridPane.rowIndex="7"
+                           style="-fx-font-weight: bold; -fx-text-fill: #495057;"/>
+                    <TextField fx:id="longitudeField" GridPane.columnIndex="1" GridPane.rowIndex="7"
+                               promptText="Ex: 10.1815"
+                               style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #ced4da; -fx-padding: 8;"/>
+
+                    <HBox alignment="CENTER" spacing="10" GridPane.columnIndex="0" GridPane.rowIndex="8" GridPane.columnSpan="2">
+                        <Button fx:id="searchLocationBtn" text="🔍 Rechercher sur la carte"
+                                style="-fx-background-color: #007bff; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 8;"/>
+                    </HBox>
+                </GridPane>
+            </ScrollPane>
+        </StackPane>
+
+        <!-- Deuxième partie : Carte -->
+        <StackPane>
+            <Rectangle arcWidth="15" arcHeight="15" fill="WHITE"
+                       stroke="#e0e0e0" strokeType="INSIDE" strokeWidth="1">
+                <effect>
+                    <DropShadow color="rgba(0,0,0,0.1)" radius="10" spread="0.2"/>
+                </effect>
+            </Rectangle>
+
+            <VBox spacing="10" alignment="TOP_RIGHT" stylesheets="css/map.css">
+                <ComboBox fx:id="mapTypeSelector" style="-fx-background-color: white; -fx-pref-width: 150;"/>
+            </VBox>
+
+            <StackPane fx:id="mapContainer" styleClass="map-container">
+                <MapView fx:id="mapView" styleClass="map-webview" stylesheets="@css/map.css"/>
+            </StackPane>
+
+        </StackPane>
+    </SplitPane>
 
     <!-- Boutons avec styles améliorés -->
     <HBox spacing="15" alignment="CENTER_RIGHT">

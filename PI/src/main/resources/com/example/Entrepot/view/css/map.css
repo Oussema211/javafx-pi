@@ -1,0 +1,126 @@
+/* Styles généraux */
+.root {
+    -fx-font-family: "Arial";
+    -fx-background-color: #f0f2f5;
+}
+
+/* Conteneur de la carte */
+.map-container {
+    -fx-border-color: #d1d5db;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-background-color: white;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0.2, 0, 0);
+    -fx-min-height: 400px;
+    -fx-pref-height: 500px;
+}/* Supprimer toutes les transformations 3D */
+.leaflet-container {
+    background: #f8f9fa !important;
+    transform: none !important;
+    overflow: hidden !important;
+}
+
+.leaflet-tile {
+    image-rendering: crisp-edges;
+    margin: 0 !important;
+    border: 0 !important;
+    padding: 0 !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+}
+
+.leaflet-tile-container {
+    will-change: auto !important;
+    transform: none !important;
+}
+
+/* Dans votre fichier CSS */
+.leaflet-container {
+    background: #f8f9fa !important;
+    transform: none !important;
+}
+
+.leaflet-tile {
+    image-rendering: crisp-edges;
+    margin: 0 !important;
+    border: 0 !important;
+    padding: 0 !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+}
+
+.leaflet-tile-container {
+    will-change: auto !important;
+    transform: none !important;
+}
+
+.map-webview {
+    -fx-opacity: 0.999; /* Contournement bug de rendu WebView */
+}
+
+.header-box {
+    -fx-alignment: center-left;
+    -fx-spacing: 10;
+}
+
+.header-icon {
+    -fx-font-size: 30px;
+}
+
+.header-title {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: linear-gradient(to right, #2c3e50, #3498db);
+}
+
+/* Conteneurs de formulaire */
+.form-container {
+    -fx-background-color: white;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0.2, 0, 0);
+    -fx-padding: 15;
+}
+
+.form-rectangle {
+    -fx-fill: white;
+    -fx-stroke: #e0e0e0;
+    -fx-stroke-type: inside;
+    -fx-stroke-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0.2, 0, 0);
+}
+
+/* Boutons */
+.button-container {
+    -fx-spacing: 15;
+    -fx-alignment: center-right;
+    -fx-padding: 10 0 0 0;
+}
+
+.cancel-btn {
+    -fx-background-color: #6c757d;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 10 25;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+}
+
+.cancel-btn:hover {
+    -fx-background-color: #5a6268;
+}
+
+.save-btn {
+    -fx-background-color: linear-gradient(to right, #28a745, #20c997);
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 10 25;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+}
+
+.save-btn:hover {
+    -fx-background-color: linear-gradient(to right, #218838, #1aa179);
+}

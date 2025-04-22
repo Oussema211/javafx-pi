@@ -116,3 +116,18 @@
     -fx-text-fill: #1e3a8a;
     -fx-font-weight: bold;
 }
+.entrepot-detail {
+    -fx-text-fill: #555;
+    -fx-font-size: 12px;
+}
+
+#map-container {
+    -fx-border-color: #ccc;
+    -fx-border-radius: 5px;
+    -fx-border-width: 1px;
+    -fx-padding: 5px;
+}
+
+.location-field {
+    -fx-pref-width: 120px;
+}

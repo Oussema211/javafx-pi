@@ -175,7 +175,16 @@ public class EntrepotController {
                 });
 
                 setGraphic(mainContainer);
+
+
+                if (entrepot.getLatitude() != null && entrepot.getLongitude() != null) {
+                    Label gpsLabel = new Label("🌍 " + entrepot.getLatitude() + ", " + entrepot.getLongitude());
+                    gpsLabel.getStyleClass().add("entrepot-detail");
+                    detailsBox.getChildren().add(gpsLabel);
+                }
+
             }
+
         });
         entrepotList.setItems(entrepotData);
         entrepotList.getStyleClass().add("stock-list");

@@ -305,4 +305,19 @@ public class EntrepotService {
 
         return 0;
     }
+    public boolean saveEntrepot(Entrepot entrepot) {
+        // Si l'entrepôt a déjà un ID, c'est une mise à jour
+        if (entrepot.getId() != null) {
+            // Vérifier d'abord si l'entrepôt existe
+            Entrepot existing = getEntrepotById(entrepot.getId());
+            if (existing != null) {
+                return updateEntrepot(entrepot);
+            }
+        }
+
+        // Sinon, c'est un nouvel entrepôt
+        return addEntrepot(entrepot);
+    }
+
+
 }
