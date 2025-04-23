@@ -2,13 +2,14 @@ package com.example.reclamation.service;
 
 import utils.MyDatabase;
 
-import com.example.auth.model.User;
-import com.example.reclamation.model.MessageReclamation;
 import com.example.reclamation.model.Reclamation;
 import com.example.reclamation.model.Status;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.example.reclamation.model.Tag;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.net.URI;
+import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.sql.*;
@@ -17,12 +18,19 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class ReclamationService {
     private final Connection conn;
+    private final HttpClient httpClient;
+    private final ObjectMapper objectMapper;
+    private final TagService tagService;
 
     public ReclamationService() {
         conn = MyDatabase.getInstance().getCnx();
+        httpClient = HttpClient.newHttpClient();
+        objectMapper = new ObjectMapper();
+        tagService = new TagService();
         try (Statement stmt = conn.createStatement()) {
             String sql = "CREATE TABLE IF NOT EXISTS reclamations (" +
                     "id VARCHAR(255) PRIMARY KEY, " +
@@ -32,13 +40,83 @@ public class ReclamationService {
                     "rate INT NOT NULL, " +
                     "title VARCHAR(255) NOT NULL, " +
                     "description VARCHAR(255) NOT NULL, " +
-                    "statut VARCHAR(255) NOT NULL, " + // Still stored as VARCHAR in DB
+                    "statut VARCHAR(255) NOT NULL, " +
                     "FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE, " +
                     "FOREIGN KEY (tag_id) REFERENCES tag(id) ON DELETE SET NULL)";
             stmt.execute(sql);
         } catch (SQLException e) {
             System.err.println("Error initializing reclamations table: " + e.getMessage());
         }
+    }
+        public String assignTagToReclamation(UUID id) throws Exception {
+        // Step 1: Retrieve the reclamation by ID
+        Reclamation reclamation = getReclamationById(id);
+        if (reclamation == null) {
+            return null;
+        }
+
+        // Step 2: Fetch all tags
+        List<Tag> tags = tagService.getAllTags();
+        if (tags.isEmpty()) {
+            System.err.println("No tags found in the database.");
+            return null;
+        }
+
+        // Step 3: Create a comma-separated string of tag names
+        String formattedTags = tags.stream()
+                .map(Tag::getName)
+                .collect(Collectors.joining(", "));
+
+        // Step 4: Build the prompt for the Gemini API
+        String description = reclamation.getDescription();
+        String prompt = "answer with only one of those tags: " + formattedTags + " to this reclamation " + description;
+
+        // Step 5: Get the Gemini API key from environment variables
+        String apiKey = "AIzaSyBaRoGkT-edsd9WToHHsSjEaCfaNzLcYM4";
+        if (apiKey == null || apiKey.isEmpty()) {
+            throw new RuntimeException("Gemini API key is not set in the environment.");
+        }
+
+        // Step 6: Call the Gemini API
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(new URI("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=" + apiKey))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(
+                        objectMapper.writeValueAsString(Map.of(
+                                "contents", List.of(Map.of(
+                                        "parts", List.of(Map.of("text", prompt))
+                                ))
+                        ))
+                ))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            System.err.println("Gemini API request failed with status: " + response.statusCode());
+            return null;
+        }
+
+        // Step 7: Parse the response
+        ObjectNode root = objectMapper.readValue(response.body(), ObjectNode.class);
+        String responseText = root.path("candidates").get(0).path("content").path("parts").get(0).path("text").asText("").trim();
+        System.out.println("Gemini response: " + responseText);
+
+        // Step 8: Find the tag by name
+        Tag tag = tagService.getTagByName(responseText);
+        if (tag == null) {
+            System.err.println("Tag not found: " + responseText);
+            return null;
+        }
+
+        // Step 9: Assign the tag to the reclamation and update the database
+        reclamation.setTagId(tag.getId());
+        boolean updated = updateReclamation(reclamation);
+        if (!updated) {
+            System.err.println("Failed to update reclamation with tag: " + responseText);
+            return null;
+        }
+
+        return responseText;
     }
 
     public boolean addReclamation(UUID userId, UUID tagId, int rate, String title, String description, Status statut) {
@@ -49,14 +127,40 @@ public class ReclamationService {
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, id.toString());
             pstmt.setString(2, userId.toString());
-            pstmt.setString(3, tagId != null ? tagId.toString() : null);
+            pstmt.setString(3, null); // Set tag_id to null initially; assignTagToReclamation will set it
             pstmt.setTimestamp(4, new Timestamp(dateReclamation.getTime()));
             pstmt.setInt(5, rate);
             pstmt.setString(6, title);
             pstmt.setString(7, description);
             pstmt.setString(8, statut.getDisplayName());
-            pstmt.executeUpdate();
-            return true;
+            int rowsAffected = pstmt.executeUpdate();
+    
+            if (rowsAffected > 0) {
+                // Call assignTagToReclamation to automatically assign a tag
+                try {
+                    String assignedTag = assignTagToReclamation(id);
+                    if (assignedTag == null && tagId != null) {
+                        // Fallback to provided tagId if assignTagToReclamation fails
+                        Reclamation reclamation = getReclamationById(id);
+                        if (reclamation != null) {
+                            reclamation.setTagId(tagId);
+                            updateReclamation(reclamation);
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("Failed to assign tag to reclamation: " + e.getMessage());
+                    // Fallback to provided tagId if available
+                    if (tagId != null) {
+                        Reclamation reclamation = getReclamationById(id);
+                        if (reclamation != null) {
+                            reclamation.setTagId(tagId);
+                            updateReclamation(reclamation);
+                        }
+                    }
+                }
+                return true;
+            }
+            return false;
         } catch (SQLException e) {
             if (e.getMessage().contains("FOREIGN KEY")) {
                 System.err.println("Foreign key error: User ID " + userId + " does not exist.");
@@ -89,60 +193,7 @@ public class ReclamationService {
         }
         return null;
     }
-     public String addReclamationToCsv(UUID reclamationId) throws Exception {
-        // 1) Load the reclamation
-        Reclamation rec = reclamationService.getReclamationById(reclamationId);
-        if (rec == null) {
-            throw new IllegalArgumentException("Reclamation not found: " + reclamationId);
-        }
-
-        // 2) Find the first admin reply
-        List<MessageReclamation> messages = getMessagesForReclamation(reclamationId);
-        MessageReclamation adminMsg = null;
-        for (MessageReclamation msg : messages) {
-            User u = authService.getUserById(msg.getUserId());
-            if (u != null && u.hasRole("ROLE_ADMIN")) {
-                adminMsg = msg;
-                break;
-            }
-        }
-        if (adminMsg == null) {
-            throw new IllegalStateException("No admin response found for reclamation: " + reclamationId);
-        }
-
-        // 3) Build JSON payload
-        String reclamationText = (rec.getTitle() + " " + rec.getDescription()).trim();
-        String responseText = adminMsg.getContenu();
-        Map<String, String> payload = Map.of(
-            "reclamation", reclamationText,
-            "response", responseText
-        );
-        String requestJson = objectMapper.writeValueAsString(payload);
-
-        // 4) Call Flask API
-        HttpRequest request = HttpRequest.newBuilder()
-            .uri(new URI("http://localhost:5000/add_reclamations"))
-            .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(requestJson))
-            .build();
-        HttpResponse<String> resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        JsonNode root = objectMapper.readTree(resp.body());
-
-        // 5) Handle response
-        if (resp.statusCode() == 200) {
-            if (root.has("added") && root.get("added").asBoolean()) {
-                return "Reclamation added to CSV successfully";
-            } else if (root.has("skipped")) {
-                return "Reclamation skipped: " + root.get("skipped").toString();
-            } else {
-                throw new RuntimeException("Unexpected API response: " + resp.body());
-            }
-        } else {
-            String error = root.path("error").asText("Retraining failed");
-            String details = root.path("details").asText("");
-            throw new RuntimeException(error + (details.isEmpty() ? "" : ": " + details));
-        }
-    }
+    
 
     // Read: Get all reclamations
     public List<Reclamation> getAllReclamations() {
@@ -201,4 +252,6 @@ public class ReclamationService {
             return false;
         }
     }
+
+    
 }

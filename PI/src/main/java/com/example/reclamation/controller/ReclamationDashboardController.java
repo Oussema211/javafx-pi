@@ -18,6 +18,8 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.effect.DropShadow;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
@@ -125,47 +127,120 @@ public class ReclamationDashboardController {
         updateFlowPane();
     }
 
-    private VBox createReclamationCard(Reclamation reclamation) {
-        VBox card = new VBox(12);
-        card.setPadding(new Insets(20));
-        card.setPrefWidth(320);
-        card.setPrefHeight(220);
-        card.setAlignment(Pos.TOP_LEFT);
+   private VBox createReclamationCard(Reclamation reclamation) {
+    VBox card = new VBox(12);
+    card.setPadding(new Insets(20));
+    card.setPrefSize(320, 220);
+    card.setAlignment(Pos.TOP_LEFT);
 
-        Stop[] stops = new Stop[]{ new Stop(0, Color.web("#ffffff")), new Stop(1, Color.web("#f1f5f9")) };
-        LinearGradient grad = new LinearGradient(0,0,0,1,true,CycleMethod.NO_CYCLE,stops);
-        card.setStyle("-fx-background-color: linear-gradient(to bottom, #ffffff, #f1f5f9); -fx-border-color: #e2e8f0; -fx-background-radius: 15; -fx-border-radius: 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1),10,0,0,2);");
+    Stop[] stops = {new Stop(0, Color.web("#ffffff")), new Stop(1, Color.web("#f1f5f9"))};
+    LinearGradient gradient = new LinearGradient(0, 0, 0, 1, true, CycleMethod.NO_CYCLE, stops);
+    card.setStyle("-fx-background-color: linear-gradient(to bottom, #ffffff, #f1f5f9); -fx-border-color: #e2e8f0; -fx-border-radius: 15; -fx-background-radius: 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1),10,0,0,2);");
 
-        Label userIdLabel = new Label("User ID: " + reclamation.getUserId());
-        userIdLabel.setStyle("-fx-font-size:13; -fx-text-fill:#64748b;");
-        LocalDateTime dt = LocalDateTime.ofInstant(Instant.ofEpochMilli(reclamation.getDateReclamation().getTime()), ZoneId.systemDefault());
-        Label dateLabel = new Label("Date: " + DATE_FORMATTER.format(dt));
-        dateLabel.setStyle("-fx-font-size:13; -fx-text-fill:#64748b;");
-        Label rateLabel = new Label("Rate: " + reclamation.getRate() + " ★");
-        rateLabel.setStyle("-fx-font-size:13; -fx-text-fill:#f59e0b; -fx-font-weight:bold;");
-        Label titleLabel = new Label(reclamation.getTitle());
-        titleLabel.setWrapText(true);
-        titleLabel.setMaxWidth(280);
-        titleLabel.setStyle("-fx-font-size:16; -fx-text-fill:#1e3a8a; -fx-font-weight:bold;");
-        Label statusLabel = new Label(reclamation.getStatut().toString());
-        statusLabel.setStyle(getStatusStyle(reclamation.getStatut().toString()));
-        statusLabel.setAlignment(Pos.CENTER);
-        statusLabel.setPadding(new Insets(6,12,6,12));
+    Label titleLabel = new Label(reclamation.getTitle());
+    titleLabel.setStyle("-fx-font-size:16; -fx-text-fill:#1e3a8a; -fx-font-weight:bold;");
+    titleLabel.setWrapText(true);
+    titleLabel.setMaxWidth(280);
 
-        Button editBtn = createModernButton("Edit","#3b82f6"); editBtn.setOnAction(e-> showEditReclamationForm(reclamation));
-        Button delBtn = createModernButton("Delete","#ef4444"); delBtn.setOnAction(e-> deleteReclamation(reclamation));
-        Button msgBtn = createModernButton("Messages","#8b5cf6"); msgBtn.setOnAction(e-> showMessagesWindow(reclamation));
-        Button autoBtn = createModernButton("Auto-Reply","#059669"); autoBtn.setOnAction(e-> {
-            try{ String rep = messageReclamationService.generateAutoReply(sessionManager.getLoggedInUser().getId(), reclamation.getId()); loadReclamations(); showAlert("Auto-Reply",rep,Alert.AlertType.INFORMATION);}catch(Exception ex){showAlert("Error","Failed: "+ex.getMessage(),Alert.AlertType.ERROR);} });
+    Label userIdLabel = new Label("User ID: " + reclamation.getUserId());
+    userIdLabel.setStyle("-fx-font-size:13; -fx-text-fill:#64748b;");
 
-        HBox btnBox = new HBox(8, editBtn, delBtn, msgBtn, autoBtn);
-        btnBox.setAlignment(Pos.CENTER);
-        btnBox.setPadding(new Insets(10,0,0,0));
+    LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(reclamation.getDateReclamation().getTime()), ZoneId.systemDefault());
+    Label dateLabel = new Label("Date: " + DATE_FORMATTER.format(dateTime));
+    dateLabel.setStyle("-fx-font-size:13; -fx-text-fill:#64748b;");
 
-        card.getChildren().addAll(titleLabel, userIdLabel, dateLabel, rateLabel, statusLabel, btnBox);
-        applyCardAnimation(card);
-        return card;
+    Label rateLabel = new Label("Rate: " + reclamation.getRate() + " ★");
+    rateLabel.setStyle("-fx-font-size:13; -fx-text-fill:#f59e0b; -fx-font-weight:bold;");
+
+    Label statusLabel = new Label(reclamation.getStatut().toString());
+    statusLabel.setStyle(getStatusStyle(reclamation.getStatut().toString()));
+    statusLabel.setAlignment(Pos.CENTER);
+    statusLabel.setPadding(new Insets(6, 12, 6, 12));
+
+    // Create icon buttons
+    Button editBtn = createIconButton("/icons/edit.png", "#3b82f6", "Edit Reclamation");
+    editBtn.setOnAction(e -> showEditReclamationForm(reclamation));
+
+    Button delBtn = createIconButton("/icons/delete.png", "#ef4444", "Delete Reclamation");
+    delBtn.setOnAction(e -> deleteReclamation(reclamation));
+
+    Button msgBtn = createIconButton("/icons/m.png", "#8b5cf6", "View Messages");
+    msgBtn.setOnAction(e -> showMessagesWindow(reclamation));
+
+    Button autoBtn = createIconButton("/icons/a.png", "#059669", "Generate Auto-Reply");
+    autoBtn.setOnAction(e -> {
+        try {
+            String rep = messageReclamationService.generateAutoReply(sessionManager.getLoggedInUser().getId(), reclamation.getId());
+            loadReclamations();
+            showAlert("Auto-Reply Generated", rep, Alert.AlertType.INFORMATION);
+        } catch (Exception ex) {
+            showAlert("Error", "Failed to generate auto-reply: " + ex.getMessage(), Alert.AlertType.ERROR);
+        }
+    });
+
+    Button csvBtn = createIconButton("/icons/c.png", "#10b981", "Export to CSV");
+    csvBtn.setOnAction(e -> {
+        try {
+            String res = messageReclamationService.addReclamationToCsv(reclamation.getId());
+            showAlert("CSV Export", res, Alert.AlertType.INFORMATION);
+        } catch (Exception ex) {
+            showAlert("CSV Error", "Failed to export CSV: " + ex.getMessage(), Alert.AlertType.ERROR);
+        }
+    });
+
+    // Arrange buttons in two rows
+    HBox topButtonBox = new HBox(8, autoBtn, csvBtn);
+    topButtonBox.setAlignment(Pos.CENTER);
+    topButtonBox.setPadding(new Insets(5, 0, 0, 0));
+
+    HBox bottomButtonBox = new HBox(8, editBtn, delBtn, msgBtn);
+    bottomButtonBox.setAlignment(Pos.CENTER);
+    bottomButtonBox.setPadding(new Insets(5, 0, 0, 0));
+
+    card.getChildren().addAll(titleLabel, userIdLabel, dateLabel, rateLabel, statusLabel, topButtonBox, bottomButtonBox);
+    applyCardAnimation(card);
+    return card;
+}
+
+private Button createIconButton(String iconPath, String bgColor, String tooltipText) {
+    Button button = new Button();
+    try {
+        Image image = new Image(getClass().getResourceAsStream(iconPath));
+        ImageView icon = new ImageView(image);
+        icon.setFitWidth(18);
+        icon.setFitHeight(18);
+        button.setGraphic(icon);
+    } catch (Exception e) {
+        System.err.println("Error loading icon: " + iconPath);
+        button.setText("?");
     }
+
+    button.setStyle("-fx-background-color: " + bgColor + "; -fx-background-radius: 50%; -fx-padding: 8; -fx-cursor: hand;");
+    button.setPrefSize(32, 32);
+    button.setEffect(new DropShadow(5, Color.gray(0.3)));
+
+    String darkerColor = darkenColor(bgColor);
+    button.setOnMouseEntered(e -> {
+        button.setStyle("-fx-background-color: " + darkerColor + "; -fx-background-radius: 50%; -fx-padding: 8; -fx-cursor: hand;");
+        ScaleTransition st = new ScaleTransition(Duration.millis(200), button);
+        st.setToX(1.1);
+        st.setToY(1.1);
+        st.play();
+    });
+    button.setOnMouseExited(e -> {
+        button.setStyle("-fx-background-color: " + bgColor + "; -fx-background-radius: 50%; -fx-padding: 8; -fx-cursor: hand;");
+        ScaleTransition st = new ScaleTransition(Duration.millis(200), button);
+        st.setToX(1.0);
+        st.setToY(1.0);
+        st.play();
+    });
+
+    Tooltip tooltip = new Tooltip(tooltipText);
+    tooltip.setStyle("-fx-font-size: 12px; -fx-background-color: rgba(44, 62, 80, 0.95); -fx-text-fill: white;");
+    button.setTooltip(tooltip);
+
+    return button;
+}
 
     private void applyCardAnimation(VBox card) {
         ScaleTransition hover = new ScaleTransition(Duration.millis(200), card);
