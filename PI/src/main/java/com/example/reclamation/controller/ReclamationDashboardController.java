@@ -2,6 +2,7 @@ package com.example.reclamation.controller;
 
 import com.example.reclamation.model.Reclamation;
 import com.example.reclamation.model.Status;
+import com.example.reclamation.service.MessageReclamationService;
 import com.example.reclamation.service.ReclamationService;
 import utils.SessionManager;
 import com.example.auth.model.User;
@@ -41,13 +42,14 @@ import java.util.stream.Collectors;
 
 public class ReclamationDashboardController {
 
-    @FXML private Label welcomeLabel;
+     @FXML private Label welcomeLabel;
     @FXML private FlowPane reclamationsFlowPane;
     @FXML private TextField searchField;
     @FXML private Button clearSearchButton;
 
     private final SessionManager sessionManager = SessionManager.getInstance();
     private final ReclamationService reclamationService = new ReclamationService();
+    private final MessageReclamationService messageReclamationService = new MessageReclamationService();
     private static final DropShadow CARD_SHADOW = new DropShadow(15, Color.gray(0.4, 0.6));
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private ObservableList<Reclamation> reclamationsList;
@@ -152,8 +154,19 @@ public class ReclamationDashboardController {
 
         Button messagesButton = createModernButton("Messages", "#8b5cf6");
         messagesButton.setOnAction(e -> showMessagesWindow(reclamation));
+        Button autoReplyButton = createModernButton("Auto-Reply", "#059669");
+        autoReplyButton.setOnAction(e -> {
+            try {
+                UUID userId = sessionManager.getLoggedInUser().getId();
+                String reply = messageReclamationService.generateAutoReply(userId, reclamation.getId());
+                loadReclamations();
+                showAlert("Auto-Reply Generated", reply, Alert.AlertType.INFORMATION);
+            } catch (Exception ex) {
+                showAlert("Error", "Failed to generate auto-reply: " + ex.getMessage(), Alert.AlertType.ERROR);
+            }
+        });
 
-        HBox buttonBox = new HBox(8, editButton, deleteButton, messagesButton);
+        HBox buttonBox = new HBox(8, editButton, deleteButton, messagesButton, autoReplyButton);
         buttonBox.setAlignment(Pos.CENTER);
         buttonBox.setPadding(new Insets(10, 0, 0, 0));
 
