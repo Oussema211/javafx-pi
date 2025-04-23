@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import com.example.cart.OrderHistoryManager;
 
 public class LoginController {
     @FXML private TextField usernameField;
@@ -102,6 +103,7 @@ public class LoginController {
         }
 
         sessionManager.setLoggedInUser(user);
+        OrderHistoryManager.reloadHistoryFromDatabase();
 
         // Redirect based on user role
         String fxmlFile = user.hasRole("ROLE_ADMIN") ? "/com/example/auth/dashboard.fxml" : "/com/example/frontPages/dashboard.fxml";

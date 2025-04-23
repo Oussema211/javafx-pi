@@ -1,6 +1,7 @@
 package com.example.produit.controller;
 
 import com.example.auth.utils.SessionManager;
+import com.example.cart.CartManager;  // Added import for CartManager
 import com.example.produit.model.Commentaire;
 import com.example.produit.model.Produit;
 import com.example.produit.service.CommentaireDAO;
@@ -77,7 +78,6 @@ public class ProductCardController implements Initializable {
         nextButton.setDisable(endIndex >= allProducts.size());
     }
 
-
     @FXML
     private void handlePrevious() {
         if (currentPage > 1) {
@@ -145,7 +145,8 @@ public class ProductCardController implements Initializable {
         Button addToCartButton = new Button("Add to Cart");
         addToCartButton.getStyleClass().add("add-to-cart-button");
         addToCartButton.setOnAction(event -> {
-            System.out.println("Added to cart: " + product.getNom());
+            CartManager.addProduct(product);  // Updated to use CartManager
+            showAddedNotification(product.getNom());
         });
 
         card.setOnMouseClicked(event -> showProductDialog(product));
@@ -231,7 +232,9 @@ public class ProductCardController implements Initializable {
         Button addToCartButton = new Button("Add to Cart");
         addToCartButton.getStyleClass().add("dialog-add-to-cart");
         addToCartButton.setOnAction(event -> {
-            System.out.println("Added " + qtySpinner.getValue() + " of " + product.getNom() + " to cart");
+            int quantity = qtySpinner.getValue();
+            CartManager.addProduct(product);
+            showAddedNotification(product.getNom());
         });
         actionBox.getChildren().addAll(qtyLabel, qtySpinner, addToCartButton);
 
@@ -427,6 +430,14 @@ public class ProductCardController implements Initializable {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.getDialogPane().getStyleClass().add("error-dialog");
+        alert.showAndWait();
+    }
+
+    private void showAddedNotification(String productName) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Produit ajouté");
+        alert.setHeaderText(null);
+        alert.setContentText(productName + " a été ajouté au panier !");
         alert.showAndWait();
     }
 }

@@ -29,7 +29,6 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.FileChooser;
-import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.File;
 import java.net.URI;
@@ -78,8 +77,8 @@ public class ProductController {
     private ObservableList<Produit> productList = FXCollections.observableArrayList();
     private ObservableList<Categorie> categoryList = FXCollections.observableArrayList();
     private FilteredList<Produit> filteredList;
-    private static final String TEXTCORTEX_API_KEY = "gAAAAABoAtEETm6B9AD03NeVrbiZO8f9DUqIIohjLqf08F2j1kXt5dV7f4srb6uyv26bQcaj1-KIA997E6h87YXWWHYaMN9iIAz3MVJg1kJKOcpAxaqhEjlyrDZ6e5aQo-QjtVeVWIIaQntdMPKqDPBsRWyxjtOhC-Z9Yuf37sungaGnwp-oBUE=";
-    private static final String TEXTCORTEX_API_URL = "https://api.textcortex.com/v1/texts/products/descriptions";
+    private static final String GROQ_API_KEY = "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";
+    private static final String GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 
     @FXML
     public void initialize() {
@@ -629,33 +628,40 @@ public class ProductController {
     private String generateProductDescription(String brand, String category, String name) {
         try {
             HttpClient client = HttpClient.newHttpClient();
-            JSONObject payload = new JSONObject();
-            payload.put("name", name);
-            payload.put("category", category);
-            payload.put("formality", "default");
-            payload.put("max_tokens", 200);
-            payload.put("n", 1);
-            payload.put("source_lang", "fr");
-            payload.put("target_lang", "fr");
+            String prompt = "Génère une description attrayante en français de 200 caractères maximum pour un produit agricole nommé '" + name + "' dans la catégorie '" + category + "' destiné à un marché fermier.";
+
+            String jsonBody = """
+                {
+                  "messages": [
+                    {
+                      "role": "user",
+                      "content": "%s"
+                    }
+                  ],
+                  "model": "llama3-8b-8192",
+                  "temperature": 1,
+                  "max_tokens": 100
+                }
+                """.formatted(prompt);
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(TEXTCORTEX_API_URL))
+                    .uri(URI.create(GROQ_API_URL))
                     .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + TEXTCORTEX_API_KEY)
-                    .POST(HttpRequest.BodyPublishers.ofString(payload.toString()))
+                    .header("Authorization", "Bearer " + GROQ_API_KEY)
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                     .build();
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            System.out.println("TextCortex API Response: " + response.body()); // Debug
+            System.out.println("Groq API Response: " + response.body()); // Debug
             if (response.statusCode() == 200) {
                 JSONObject jsonResponse = new JSONObject(response.body());
-                JSONArray outputs = jsonResponse.getJSONObject("data").getJSONArray("outputs");
-                if (!outputs.isEmpty()) {
-                    String description = outputs.getJSONObject(0).getString("text");
-                    return description.length() > 200 ? description.substring(0, 200) : description;
-                }
+                String description = jsonResponse.getJSONArray("choices")
+                        .getJSONObject(0)
+                        .getJSONObject("message")
+                        .getString("content");
+                return description.length() > 250 ? description.substring(0, 250) : description;
             } else {
-                System.err.println("TextCortex API Error: " + response.statusCode() + " - " + response.body());
+                System.err.println("Groq API Error: " + response.statusCode() + " - " + response.body());
                 Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setTitle("API Error");
                 alert.setHeaderText(null);
@@ -789,7 +795,7 @@ public class ProductController {
             if (newVal.trim().isEmpty()) {
                 descriptionError.setText("Description cannot be empty");
                 descriptionField.setStyle("-fx-border-color: red;");
-            } else if (newVal.length() > 200) {
+            } else if (newVal.length() > 300) {
                 descriptionError.setText("Max 200 characters");
                 descriptionField.setStyle("-fx-border-color: red;");
             } else {
