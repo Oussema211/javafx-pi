@@ -42,10 +42,11 @@ import java.util.stream.Collectors;
 
 public class ReclamationDashboardController {
 
-     @FXML private Label welcomeLabel;
+    @FXML private Label welcomeLabel;
     @FXML private FlowPane reclamationsFlowPane;
     @FXML private TextField searchField;
     @FXML private Button clearSearchButton;
+    @FXML private Button retrainButton;  // new button to retrain model
 
     private final SessionManager sessionManager = SessionManager.getInstance();
     private final ReclamationService reclamationService = new ReclamationService();
@@ -67,40 +68,58 @@ public class ReclamationDashboardController {
         welcomeLabel.setText("Welcome, " + user.getPrenom() + " " + user.getNom() + "!");
         applyFadeIn(welcomeLabel);
 
+        // Center the search, clear, and retrain controls under the welcome label
+        Parent parent = welcomeLabel.getParent();
+        if (parent instanceof VBox) {
+            HBox controlsBox = new HBox(10, searchField, clearSearchButton, retrainButton);
+            controlsBox.setAlignment(Pos.CENTER);
+            controlsBox.setPadding(new Insets(10, 0, 10, 0));
+            ((VBox) parent).getChildren().add(1, controlsBox);
+        }
+
         setupFlowPane();
         setupSearch();
+        setupRetrain();
         loadReclamations();
+    }
+
+    private void setupRetrain() {
+        retrainButton.setStyle("-fx-background-color: #f59e0b; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 6 12;");
+        retrainButton.setOnMouseEntered(e -> retrainButton.setStyle("-fx-background-color: #d97706; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 6 12;"));
+        retrainButton.setOnMouseExited(e -> retrainButton.setStyle("-fx-background-color: #f59e0b; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 6 12;"));
+        retrainButton.setOnAction(e -> {
+            try {
+                String result = messageReclamationService.retrainModel();
+                showAlert("Model Retrained", result, Alert.AlertType.INFORMATION);
+            } catch (Exception ex) {
+                showAlert("Retrain Error", "Failed to retrain model: " + ex.getMessage(), Alert.AlertType.ERROR);
+            }
+        });
     }
 
     private void setupFlowPane() {
         reclamationsFlowPane.setStyle("-fx-background-color: transparent;");
         reclamationsFlowPane.sceneProperty().addListener((obs, oldScene, newScene) -> {
-            if (newScene != null) {
-                reclamationsFlowPane.prefWidthProperty().bind(newScene.widthProperty());
-            }
+            if (newScene != null) reclamationsFlowPane.prefWidthProperty().bind(newScene.widthProperty());
         });
-        reclamationsFlowPane.setPrefWidth(800); // Fallback width
+        reclamationsFlowPane.setPrefWidth(800);
     }
 
     private void setupSearch() {
         filteredReclamations = FXCollections.observableArrayList();
-        searchField.textProperty().addListener((obs, oldValue, newValue) -> {
-            filterReclamations(newValue.trim());
-        });
+        searchField.textProperty().addListener((obs, oldValue, newValue) -> filterReclamations(newValue.trim()));
         clearSearchButton.setOnAction(e -> {
             searchField.clear();
             filterReclamations("");
         });
     }
-
     private void filterReclamations(String query) {
-        if (query.isEmpty()) {
-            filteredReclamations.setAll(reclamationsList);
-        } else {
-            String lowerQuery = query.toLowerCase();
+        if (query.isEmpty()) filteredReclamations.setAll(reclamationsList);
+        else {
+            String lower = query.toLowerCase();
             filteredReclamations.setAll(reclamationsList.stream()
-                .filter(r -> r.getTitle().toLowerCase().contains(lowerQuery) ||
-                            r.getStatut().toString().toLowerCase().contains(lowerQuery))
+                .filter(r -> r.getTitle().toLowerCase().contains(lower) ||
+                             r.getStatut().toString().toLowerCase().contains(lower))
                 .collect(Collectors.toList()));
         }
         updateFlowPane();
@@ -113,67 +132,38 @@ public class ReclamationDashboardController {
         card.setPrefHeight(220);
         card.setAlignment(Pos.TOP_LEFT);
 
-        // Gradient background
-        Stop[] stops = new Stop[]{
-            new Stop(0, Color.web("#ffffff")),
-            new Stop(1, Color.web("#f1f5f9"))
-        };
-        LinearGradient gradient = new LinearGradient(0, 0, 0, 1, true, CycleMethod.NO_CYCLE, stops);
-        card.setStyle("-fx-background-color: linear-gradient(to bottom, #ffffff, #f1f5f9); " +
-                      "-fx-border-color: #e2e8f0; -fx-border-radius: 15; -fx-background-radius: 15; " +
-                      "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 0, 2);");
+        Stop[] stops = new Stop[]{ new Stop(0, Color.web("#ffffff")), new Stop(1, Color.web("#f1f5f9")) };
+        LinearGradient grad = new LinearGradient(0,0,0,1,true,CycleMethod.NO_CYCLE,stops);
+        card.setStyle("-fx-background-color: linear-gradient(to bottom, #ffffff, #f1f5f9); -fx-border-color: #e2e8f0; -fx-background-radius: 15; -fx-border-radius: 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1),10,0,0,2);");
 
-        // Labels
         Label userIdLabel = new Label("User ID: " + reclamation.getUserId());
-        userIdLabel.setStyle("-fx-font-family: 'Arial'; -fx-font-size: 13; -fx-text-fill: #64748b;");
-
-        LocalDateTime dateTime = LocalDateTime.ofInstant(
-            Instant.ofEpochMilli(reclamation.getDateReclamation().getTime()), ZoneId.systemDefault());
-        Label dateLabel = new Label("Date: " + DATE_FORMATTER.format(dateTime));
-        dateLabel.setStyle("-fx-font-family: 'Arial'; -fx-font-size: 13; -fx-text-fill: #64748b;");
-
+        userIdLabel.setStyle("-fx-font-size:13; -fx-text-fill:#64748b;");
+        LocalDateTime dt = LocalDateTime.ofInstant(Instant.ofEpochMilli(reclamation.getDateReclamation().getTime()), ZoneId.systemDefault());
+        Label dateLabel = new Label("Date: " + DATE_FORMATTER.format(dt));
+        dateLabel.setStyle("-fx-font-size:13; -fx-text-fill:#64748b;");
         Label rateLabel = new Label("Rate: " + reclamation.getRate() + " ★");
-        rateLabel.setStyle("-fx-font-family: 'Arial'; -fx-font-size: 13; -fx-text-fill: #f59e0b; -fx-font-weight: bold;");
-
+        rateLabel.setStyle("-fx-font-size:13; -fx-text-fill:#f59e0b; -fx-font-weight:bold;");
         Label titleLabel = new Label(reclamation.getTitle());
-        titleLabel.setStyle("-fx-font-family: 'Arial'; -fx-font-size: 16; -fx-text-fill: #1e3a8a; -fx-font-weight: bold;");
         titleLabel.setWrapText(true);
         titleLabel.setMaxWidth(280);
-
+        titleLabel.setStyle("-fx-font-size:16; -fx-text-fill:#1e3a8a; -fx-font-weight:bold;");
         Label statusLabel = new Label(reclamation.getStatut().toString());
         statusLabel.setStyle(getStatusStyle(reclamation.getStatut().toString()));
-        statusLabel.setPadding(new Insets(6, 12, 6, 12));
         statusLabel.setAlignment(Pos.CENTER);
+        statusLabel.setPadding(new Insets(6,12,6,12));
 
-        // Action buttons
-        Button editButton = createModernButton("Edit", "#3b82f6");
-        editButton.setOnAction(e -> showEditReclamationForm(reclamation));
+        Button editBtn = createModernButton("Edit","#3b82f6"); editBtn.setOnAction(e-> showEditReclamationForm(reclamation));
+        Button delBtn = createModernButton("Delete","#ef4444"); delBtn.setOnAction(e-> deleteReclamation(reclamation));
+        Button msgBtn = createModernButton("Messages","#8b5cf6"); msgBtn.setOnAction(e-> showMessagesWindow(reclamation));
+        Button autoBtn = createModernButton("Auto-Reply","#059669"); autoBtn.setOnAction(e-> {
+            try{ String rep = messageReclamationService.generateAutoReply(sessionManager.getLoggedInUser().getId(), reclamation.getId()); loadReclamations(); showAlert("Auto-Reply",rep,Alert.AlertType.INFORMATION);}catch(Exception ex){showAlert("Error","Failed: "+ex.getMessage(),Alert.AlertType.ERROR);} });
 
-        Button deleteButton = createModernButton("Delete", "#ef4444");
-        deleteButton.setOnAction(e -> deleteReclamation(reclamation));
+        HBox btnBox = new HBox(8, editBtn, delBtn, msgBtn, autoBtn);
+        btnBox.setAlignment(Pos.CENTER);
+        btnBox.setPadding(new Insets(10,0,0,0));
 
-        Button messagesButton = createModernButton("Messages", "#8b5cf6");
-        messagesButton.setOnAction(e -> showMessagesWindow(reclamation));
-        Button autoReplyButton = createModernButton("Auto-Reply", "#059669");
-        autoReplyButton.setOnAction(e -> {
-            try {
-                UUID userId = sessionManager.getLoggedInUser().getId();
-                String reply = messageReclamationService.generateAutoReply(userId, reclamation.getId());
-                loadReclamations();
-                showAlert("Auto-Reply Generated", reply, Alert.AlertType.INFORMATION);
-            } catch (Exception ex) {
-                showAlert("Error", "Failed to generate auto-reply: " + ex.getMessage(), Alert.AlertType.ERROR);
-            }
-        });
-
-        HBox buttonBox = new HBox(8, editButton, deleteButton, messagesButton, autoReplyButton);
-        buttonBox.setAlignment(Pos.CENTER);
-        buttonBox.setPadding(new Insets(10, 0, 0, 0));
-
-        card.getChildren().addAll(titleLabel, userIdLabel, dateLabel, rateLabel, statusLabel, buttonBox);
-
+        card.getChildren().addAll(titleLabel, userIdLabel, dateLabel, rateLabel, statusLabel, btnBox);
         applyCardAnimation(card);
-
         return card;
     }
 

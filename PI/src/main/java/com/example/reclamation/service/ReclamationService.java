@@ -1,9 +1,16 @@
 package com.example.reclamation.service;
 
 import utils.MyDatabase;
+
+import com.example.auth.model.User;
+import com.example.reclamation.model.MessageReclamation;
 import com.example.reclamation.model.Reclamation;
 import com.example.reclamation.model.Status;
+import com.fasterxml.jackson.databind.JsonNode;
 
+import java.net.URI;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Date;
@@ -18,9 +25,9 @@ public class ReclamationService {
         conn = MyDatabase.getInstance().getCnx();
         try (Statement stmt = conn.createStatement()) {
             String sql = "CREATE TABLE IF NOT EXISTS reclamations (" +
-                    "id VARCHAR(36) PRIMARY KEY, " +
-                    "user_id VARCHAR(36) NOT NULL, " +
-                    "tag_id VARCHAR(36), " +
+                    "id VARCHAR(255) PRIMARY KEY, " +
+                    "user_id VARCHAR(255) NOT NULL, " +
+                    "tag_id VARCHAR(255), " +
                     "date_reclamation DATETIME NOT NULL, " +
                     "rate INT NOT NULL, " +
                     "title VARCHAR(255) NOT NULL, " +
@@ -81,6 +88,60 @@ public class ReclamationService {
             System.err.println("Error fetching reclamation by ID: " + e.getMessage());
         }
         return null;
+    }
+     public String addReclamationToCsv(UUID reclamationId) throws Exception {
+        // 1) Load the reclamation
+        Reclamation rec = reclamationService.getReclamationById(reclamationId);
+        if (rec == null) {
+            throw new IllegalArgumentException("Reclamation not found: " + reclamationId);
+        }
+
+        // 2) Find the first admin reply
+        List<MessageReclamation> messages = getMessagesForReclamation(reclamationId);
+        MessageReclamation adminMsg = null;
+        for (MessageReclamation msg : messages) {
+            User u = authService.getUserById(msg.getUserId());
+            if (u != null && u.hasRole("ROLE_ADMIN")) {
+                adminMsg = msg;
+                break;
+            }
+        }
+        if (adminMsg == null) {
+            throw new IllegalStateException("No admin response found for reclamation: " + reclamationId);
+        }
+
+        // 3) Build JSON payload
+        String reclamationText = (rec.getTitle() + " " + rec.getDescription()).trim();
+        String responseText = adminMsg.getContenu();
+        Map<String, String> payload = Map.of(
+            "reclamation", reclamationText,
+            "response", responseText
+        );
+        String requestJson = objectMapper.writeValueAsString(payload);
+
+        // 4) Call Flask API
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(new URI("http://localhost:5000/add_reclamations"))
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(requestJson))
+            .build();
+        HttpResponse<String> resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        JsonNode root = objectMapper.readTree(resp.body());
+
+        // 5) Handle response
+        if (resp.statusCode() == 200) {
+            if (root.has("added") && root.get("added").asBoolean()) {
+                return "Reclamation added to CSV successfully";
+            } else if (root.has("skipped")) {
+                return "Reclamation skipped: " + root.get("skipped").toString();
+            } else {
+                throw new RuntimeException("Unexpected API response: " + resp.body());
+            }
+        } else {
+            String error = root.path("error").asText("Retraining failed");
+            String details = root.path("details").asText("");
+            throw new RuntimeException(error + (details.isEmpty() ? "" : ": " + details));
+        }
     }
 
     // Read: Get all reclamations

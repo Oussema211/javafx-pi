@@ -7,11 +7,11 @@
     <Text text="Reclamations Dashboard" style="-fx-font: bold 28px 'Arial'; -fx-fill: #1e3a8a; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 5, 0, 0, 2);"/>
     <Label fx:id="welcomeLabel" text="Welcome, Admin!" style="-fx-font: normal 18px 'Arial'; -fx-text-fill: #475569;"/>
     
-    <HBox spacing="10" alignment="CENTER">
-        <TextField fx:id="searchField" promptText="Search by Title or Status..." style="-fx-background-color: #ffffff; -fx-border-color: #cbd5e1; -fx-border-radius: 20; -fx-background-radius: 20; -fx-padding: 8 15; -fx-font-family: 'Arial'; -fx-font-size: 14; -fx-pref-width: 300;"/>
-        <Button fx:id="clearSearchButton" text="Clear" style="-fx-background-color: #ef4444; -fx-text-fill: white; -fx-font-family: 'Arial'; -fx-font-weight: bold; -fx-background-radius: 15; -fx-padding: 8 15;" onAction="#clearSearch"/>
-    </HBox>
-    
+   <HBox spacing="10">
+    <TextField fx:id="searchField" promptText="Search reclamations..." />
+    <Button fx:id="clearSearchButton" text="Clear" onAction="#clearSearch" />
+    <Button fx:id="retrainButton" text="Retrain Model"/>
+</HBox>
     <ScrollPane fitToWidth="true" style="-fx-background-color: transparent; -fx-border-color: transparent;">
         <FlowPane fx:id="reclamationsFlowPane" hgap="20" vgap="20" alignment="TOP_CENTER" style="-fx-padding: 20;"/>
     </ScrollPane>
