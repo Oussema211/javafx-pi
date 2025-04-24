@@ -2,6 +2,7 @@ package com.example.reclamation.controller;
 
 import com.example.reclamation.model.Reclamation;
 import com.example.reclamation.model.Status;
+import com.example.reclamation.service.MessageReclamationService;
 import com.example.reclamation.service.ReclamationService;
 import com.example.auth.utils.SessionManager;
 import com.example.auth.model.User;
@@ -48,12 +49,17 @@ import java.util.stream.Collectors;
 
 public class ReclamationDashboardController {
 
+    
     @FXML private FlowPane reclamationsFlowPane;
     @FXML private TextField searchField;
     @FXML private Button clearSearchButton;
+    @FXML private Button retrainButton;  // new button to retrain model
+
 
     private final SessionManager sessionManager = SessionManager.getInstance();
     private final ReclamationService reclamationService = new ReclamationService();
+    private final AuthService authService = new AuthService();
+    private final MessageReclamationService messageReclamationService = new MessageReclamationService();
     private static final DropShadow CARD_SHADOW = new DropShadow(15, Color.gray(0.4, 0.6));
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private ObservableList<Reclamation> reclamationsList;
@@ -68,46 +74,175 @@ public class ReclamationDashboardController {
             return;
         }
 
-        
 
         setupFlowPane();
         setupSearch();
+        setupRetrain();
         loadReclamations();
+    }
+
+    private void setupRetrain() {
+        retrainButton.setStyle("-fx-background-color: #f59e0b; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 6 12;");
+        retrainButton.setOnMouseEntered(e -> retrainButton.setStyle("-fx-background-color: #d97706; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 6 12;"));
+        retrainButton.setOnMouseExited(e -> retrainButton.setStyle("-fx-background-color: #f59e0b; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 6 12;"));
+        retrainButton.setOnAction(e -> {
+            try {
+                String result = messageReclamationService.retrainModel();
+                showAlert("Model Retrained", result, Alert.AlertType.INFORMATION);
+            } catch (Exception ex) {
+                showAlert("Retrain Error", "Failed to retrain model: " + ex.getMessage(), Alert.AlertType.ERROR);
+            }
+        });
     }
 
     private void setupFlowPane() {
         reclamationsFlowPane.setStyle("-fx-background-color: transparent;");
         reclamationsFlowPane.sceneProperty().addListener((obs, oldScene, newScene) -> {
-            if (newScene != null) {
-                reclamationsFlowPane.prefWidthProperty().bind(newScene.widthProperty());
-            }
+            if (newScene != null) reclamationsFlowPane.prefWidthProperty().bind(newScene.widthProperty());
         });
-        reclamationsFlowPane.setPrefWidth(800); 
+        reclamationsFlowPane.setPrefWidth(800);
     }
 
     private void setupSearch() {
         filteredReclamations = FXCollections.observableArrayList();
-        searchField.textProperty().addListener((obs, oldValue, newValue) -> {
-            filterReclamations(newValue.trim());
-        });
+        searchField.textProperty().addListener((obs, oldValue, newValue) -> filterReclamations(newValue.trim()));
         clearSearchButton.setOnAction(e -> {
             searchField.clear();
             filterReclamations("");
         });
     }
-
     private void filterReclamations(String query) {
-        if (query.isEmpty()) {
-            filteredReclamations.setAll(reclamationsList);
-        } else {
-            String lowerQuery = query.toLowerCase();
+        if (query.isEmpty()) filteredReclamations.setAll(reclamationsList);
+        else {
+            String lower = query.toLowerCase();
             filteredReclamations.setAll(reclamationsList.stream()
-                .filter(r -> r.getTitle().toLowerCase().contains(lowerQuery) ||
-                            r.getStatut().toString().toLowerCase().contains(lowerQuery))
+                .filter(r -> r.getTitle().toLowerCase().contains(lower) ||
+                             r.getStatut().toString().toLowerCase().contains(lower))
                 .collect(Collectors.toList()));
         }
         updateFlowPane();
     }
+
+    private VBox createReclamationCard(Reclamation reclamation) {
+        VBox card = new VBox(12);
+        card.setPadding(new Insets(20));
+        card.setPrefSize(320, 280);
+        card.setAlignment(Pos.TOP_LEFT);
+        card.setStyle("-fx-background-color: linear-gradient(to bottom, #ffffff, #f1f5f9); " +
+                      "-fx-border-color: #e2e8f0; -fx-border-radius: 15; -fx-background-radius: 15; " +
+                      "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 0, 2);");
+    
+        // Profile image
+        AuthService authService = new AuthService();
+        User user = authService.getUserById(reclamation.getUserId());
+    
+        ImageView profilePicture = new ImageView();
+        profilePicture.setFitWidth(60);
+        profilePicture.setFitHeight(60);
+        profilePicture.setClip(new Circle(30, 30, 28));
+    
+        String profilePhotoPath = (user != null && user.getPhotoUrl() != null) ? user.getPhotoUrl() : null;
+        if (profilePhotoPath != null && !profilePhotoPath.isEmpty()) {
+            try {
+                Image image = new Image(getClass().getResourceAsStream(profilePhotoPath));
+                if (!image.isError()) {
+                    profilePicture.setImage(image);
+                } else {
+                    loadFallbackImage(profilePicture, user);
+                }
+            } catch (Exception e) {
+                loadFallbackImage(profilePicture, user);
+            }
+        } else {
+            loadFallbackImage(profilePicture, user);
+        }
+    
+        // Hover animation
+        ScaleTransition hover = new ScaleTransition(Duration.millis(200), profilePicture);
+        hover.setToX(1.1); hover.setToY(1.1);
+        profilePicture.setOnMouseEntered(e -> {
+            profilePicture.setEffect(new DropShadow(10, Color.gray(0.4, 0.6)));
+            hover.play();
+        });
+        profilePicture.setOnMouseExited(e -> {
+            profilePicture.setEffect(null);
+            hover.setToX(1.0); hover.setToY(1.0);
+            hover.play();
+        });
+    
+        // Labels
+        Label nameLabel = new Label((user != null ? user.getPrenom() + " " + user.getNom() : "Unknown"));
+        nameLabel.setStyle("-fx-font-size: 13; -fx-text-fill: #64748b;");
+    
+        Label titleLabel = new Label(reclamation.getTitle());
+        titleLabel.setStyle("-fx-font-size: 16; -fx-text-fill: #1e3a8a; -fx-font-weight: bold;");
+        titleLabel.setWrapText(true);
+        titleLabel.setMaxWidth(280);
+    
+        Label descLabel = new Label("Context: " + reclamation.getDescription());
+        descLabel.setStyle("-fx-font-size: 13; -fx-text-fill: #000000; -fx-font-weight: bold;");
+        descLabel.setWrapText(true);
+        descLabel.setMaxWidth(280);
+        descLabel.setMaxHeight(40);
+        descLabel.setTextOverrun(OverrunStyle.ELLIPSIS);
+    
+        LocalDateTime dateTime = LocalDateTime.ofInstant(
+            Instant.ofEpochMilli(reclamation.getDateReclamation().getTime()), ZoneId.systemDefault());
+        Label dateLabel = new Label("Date: " + DATE_FORMATTER.format(dateTime));
+        dateLabel.setStyle("-fx-font-size: 13; -fx-text-fill: #64748b;");
+    
+        Label statusLabel = new Label(reclamation.getStatut().toString());
+        statusLabel.setStyle(getStatusStyle(reclamation.getStatut().toString()));
+        statusLabel.setAlignment(Pos.CENTER);
+        statusLabel.setPadding(new Insets(6, 12, 6, 12));
+    
+        Button editBtn = createIconButton("/icons/edit.png", "#3b82f6", "Edit Reclamation");
+    editBtn.setOnAction(e -> showEditReclamationForm(reclamation));
+
+    Button delBtn = createIconButton("/icons/delete.png", "#ef4444", "Delete Reclamation");
+    delBtn.setOnAction(e -> deleteReclamation(reclamation));
+
+    Button msgBtn = createIconButton("/icons/m.png", "#8b5cf6", "View Messages");
+    msgBtn.setOnAction(e -> showMessagesWindow(reclamation));
+
+    Button autoBtn = createIconButton("/icons/a.png", "#059669", "Generate Auto-Reply");
+    autoBtn.setOnAction(e -> {
+        try {
+            String rep = messageReclamationService.generateAutoReply(sessionManager.getLoggedInUser().getId(), reclamation.getId());
+            loadReclamations();
+            showAlert("Auto-Reply Generated", rep, Alert.AlertType.INFORMATION);
+        } catch (Exception ex) {
+            showAlert("Error", "Failed to generate auto-reply: " + ex.getMessage(), Alert.AlertType.ERROR);
+        }
+    });
+
+    Button csvBtn = createIconButton("/icons/c.png", "#10b981", "Export to CSV");
+    csvBtn.setOnAction(e -> {
+        try {
+            String res = messageReclamationService.addReclamationToCsv(reclamation.getId());
+            showAlert("CSV Export", res, Alert.AlertType.INFORMATION);
+        } catch (Exception ex) {
+            showAlert("CSV Error", "Failed to export CSV: " + ex.getMessage(), Alert.AlertType.ERROR);
+        }
+    });
+    
+        // Layouts
+        HBox imageAndTitleBox = new HBox(12, profilePicture, new VBox(6, titleLabel, nameLabel));
+        imageAndTitleBox.setAlignment(Pos.CENTER_LEFT);
+    
+        HBox topButtonBox = new HBox(8, autoBtn, csvBtn);
+        topButtonBox.setAlignment(Pos.CENTER);
+    
+        HBox bottomButtonBox = new HBox(8, editBtn, delBtn, msgBtn);
+        bottomButtonBox.setAlignment(Pos.CENTER);
+    
+        card.getChildren().addAll(imageAndTitleBox, descLabel, dateLabel, statusLabel, topButtonBox, bottomButtonBox);
+        applyCardAnimation(card);
+    
+        return card;
+    }
+    
+    
     private void loadFallbackImage(ImageView avatar, User user) {
     String initials = (user != null && user.getPrenom() != null && user.getNom() != null)
         ? (user.getPrenom().charAt(0) + "" ).toUpperCase()
@@ -127,116 +262,46 @@ public class ReclamationDashboardController {
     avatar.setImage(textAvatar.snapshot(null, null));
 }
 
-private VBox createReclamationCard(Reclamation reclamation) {
-    VBox card = new VBox(12);
-    card.setPadding(new Insets(20));
-    card.setPrefWidth(320);
-    card.setPrefHeight(260); // Increased height to accommodate two-line description
-    card.setAlignment(Pos.TOP_LEFT);
-
-    // Gradient background
-    Stop[] stops = new Stop[]{
-        new Stop(0, Color.web("#ffffff")),
-        new Stop(1, Color.web("#f1f5f9"))
-    };
-    LinearGradient gradient = new LinearGradient(0, 0, 0, 1, true, CycleMethod.NO_CYCLE, stops);
-    card.setStyle("-fx-background-color: linear-gradient(to bottom, #ffffff, #f1f5f9); " +
-                  "-fx-border-color: #e2e8f0; -fx-border-radius: 15; -fx-background-radius: 15; " +
-                  "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 0, 2);");
-
-    // Profile image
-    AuthService authService = new AuthService(); // Initialize AuthService
-    User user = authService.getUserById(reclamation.getUserId());
-    ImageView profilePicture = new ImageView();
-    profilePicture.setFitWidth(60);
-    profilePicture.setFitHeight(60);
-    profilePicture.setClip(new Circle(30, 30, 28)); // Circular clip
-    profilePicture.setStyle("-fx-border-color: #6C983B; -fx-border-width: 2; -fx-border-radius: 50;");
-
-    String profilePhotoPath = (user != null && user.getPhotoUrl() != null) ? user.getPhotoUrl() : null;
-    if (profilePhotoPath != null && !profilePhotoPath.isEmpty()) {
-        System.out.println("Attempting to load profile picture from resource: " + profilePhotoPath);
-        try {
-            // Load the image as a resource from the classpath
-            Image image = new Image(getClass().getResourceAsStream(profilePhotoPath));
-            if (!image.isError()) {
-                profilePicture.setImage(image);
-            } else {
-                System.err.println("Error loading profile image: Image is corrupted or invalid.");
-                loadFallbackImage(profilePicture, user);
-            }
-        } catch (Exception e) {
-            System.err.println("Error loading profile image: " + e.getMessage());
-            loadFallbackImage(profilePicture, user);
-        }
-    } else {
-        System.err.println("Profile photo path is null or empty for user: " + reclamation.getUserId());
-        loadFallbackImage(profilePicture, user);
+private Button createIconButton(String iconPath, String bgColor, String tooltipText) {
+    Button button = new Button();
+    try {
+        Image image = new Image(getClass().getResourceAsStream(iconPath));
+        ImageView icon = new ImageView(image);
+        icon.setFitWidth(18);
+        icon.setFitHeight(18);
+        button.setGraphic(icon);
+    } catch (Exception e) {
+        System.err.println("Error loading icon: " + iconPath);
+        button.setText("?");
     }
 
-    ScaleTransition imageHover = new ScaleTransition(Duration.millis(200), profilePicture);
-    imageHover.setToX(1.1);
-    imageHover.setToY(1.1);
-    profilePicture.setOnMouseEntered(e -> {
-        profilePicture.setEffect(new DropShadow(10, Color.gray(0.4, 0.6)));
-        imageHover.play();
+    button.setStyle("-fx-background-color: " + bgColor + "; -fx-background-radius: 50%; -fx-padding: 8; -fx-cursor: hand;");
+    button.setPrefSize(32, 32);
+    button.setEffect(new DropShadow(5, Color.gray(0.3)));
+
+    String darkerColor = darkenColor(bgColor);
+    button.setOnMouseEntered(e -> {
+        button.setStyle("-fx-background-color: " + darkerColor + "; -fx-background-radius: 50%; -fx-padding: 8; -fx-cursor: hand;");
+        ScaleTransition st = new ScaleTransition(Duration.millis(200), button);
+        st.setToX(1.1);
+        st.setToY(1.1);
+        st.play();
     });
-    profilePicture.setOnMouseExited(e -> {
-        profilePicture.setEffect(null);
-        imageHover.setToX(1.0);
-        imageHover.setToY(1.0);
-        imageHover.play();
+    button.setOnMouseExited(e -> {
+        button.setStyle("-fx-background-color: " + bgColor + "; -fx-background-radius: 50%; -fx-padding: 8; -fx-cursor: hand;");
+        ScaleTransition st = new ScaleTransition(Duration.millis(200), button);
+        st.setToX(1.0);
+        st.setToY(1.0);
+        st.play();
     });
 
-    // Labels
-    Label userIdLabel = new Label((user != null ? user.getPrenom() + " "  : "Unknown"));
-    userIdLabel.setStyle("-fx-font-family: 'Arial'; -fx-font-size: 13; -fx-text-fill: #64748b;");
+    Tooltip tooltip = new Tooltip(tooltipText);
+    tooltip.setStyle("-fx-font-size: 12px; -fx-background-color: rgba(44, 62, 80, 0.95); -fx-text-fill: white;");
+    button.setTooltip(tooltip);
 
-    LocalDateTime dateTime = LocalDateTime.ofInstant(
-        Instant.ofEpochMilli(reclamation.getDateReclamation().getTime()), ZoneId.systemDefault());
-    Label descLabel = new Label("Context: " + reclamation.getDescription());
-    descLabel.setStyle("-fx-font-family: 'Arial'; -fx-font-size: 13; -fx-text-fill: #000000; -fx-font-weight: bold;");
-    descLabel.setWrapText(true);
-    descLabel.setMaxWidth(280); 
-    descLabel.setMaxHeight(40);
-    descLabel.setTextOverrun(OverrunStyle.ELLIPSIS); 
-
-    Label dateLabel = new Label("Date: " + DATE_FORMATTER.format(dateTime));
-    dateLabel.setStyle("-fx-font-family: 'Arial'; -fx-font-size: 13; -fx-text-fill: #64748b;");
-
-    Label titleLabel = new Label(reclamation.getTitle());
-    titleLabel.setStyle("-fx-font-family: 'Arial'; -fx-font-size: 16; -fx-text-fill: #1e3a8a; -fx-font-weight: bold;");
-    titleLabel.setWrapText(true);
-    titleLabel.setMaxWidth(280);
-
-    Label statusLabel = new Label(reclamation.getStatut().toString());
-    statusLabel.setStyle(getStatusStyle(reclamation.getStatut().toString()));
-    statusLabel.setPadding(new Insets(6, 12, 6, 12));
-    statusLabel.setAlignment(Pos.CENTER);
-
-    Button editButton = createModernButton("Edit", "#3b82f6");
-    editButton.setOnAction(e -> showEditReclamationForm(reclamation));
-
-    Button deleteButton = createModernButton("Delete", "#ef4444");
-    deleteButton.setOnAction(e -> deleteReclamation(reclamation));
-
-    Button messagesButton = createModernButton("Messages", "#8b5cf6");
-    messagesButton.setOnAction(e -> showMessagesWindow(reclamation));
-
-    HBox buttonBox = new HBox(8, editButton, deleteButton, messagesButton);
-    buttonBox.setAlignment(Pos.CENTER);
-    buttonBox.setPadding(new Insets(10, 0, 0, 0));
-
-    HBox topBox = new HBox(12);
-    topBox.setAlignment(Pos.CENTER_LEFT);
-    topBox.getChildren().addAll(profilePicture, new VBox(8, titleLabel, userIdLabel));
-
-    card.getChildren().addAll(topBox, descLabel, dateLabel, statusLabel, buttonBox);
-
-    applyCardAnimation(card);
-
-    return card;
+    return button;
 }
+
     private void applyCardAnimation(VBox card) {
         ScaleTransition hover = new ScaleTransition(Duration.millis(200), card);
         hover.setFromX(1.0);
@@ -444,7 +509,6 @@ private VBox createReclamationCard(Reclamation reclamation) {
         }
     }
 
-  
 
     private Stage createStyledStage(String title) {
         Stage stage = new Stage();
