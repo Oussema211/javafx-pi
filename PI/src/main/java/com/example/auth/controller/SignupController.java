@@ -1,6 +1,7 @@
 package com.example.auth.controller;
 
 import com.example.auth.service.AuthService;
+import com.example.auth.service.GeminiChatService;
 import com.example.auth.utils.EmailUtil;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -9,7 +10,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.application.Platform; // Added import
+import javafx.application.Platform;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.opencv.core.*;
@@ -17,6 +18,7 @@ import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.videoio.VideoCapture;
+import javafx.scene.layout.VBox;
 
 import javax.mail.MessagingException;
 import java.io.*;
@@ -40,8 +42,13 @@ public class SignupController {
     @FXML private Label photoErrorLabel;
     @FXML private Button signupButton;
     @FXML private Hyperlink loginLink;
+    @FXML private VBox chatCard;
+    @FXML private TextArea chatHistory;
+    @FXML private TextField chatInput;
+    @FXML private Button sendChatButton;
 
     private AuthService authService = new AuthService();
+    private GeminiChatService chatService;
     private VideoCapture capture;
     private CascadeClassifier faceDetector;
     private boolean isCapturing = false;
@@ -87,6 +94,9 @@ public class SignupController {
             } else {
                 System.out.println("Profile_photos directory already exists or failed to create");
             }
+
+            chatService = new GeminiChatService();
+            System.out.println("chatCard: " + chatCard);
         } catch (Exception e) {
             System.err.println("ERROR: " + e.getMessage());
             messageLabel.setText("Cannot initialize face detection");
@@ -207,6 +217,12 @@ public class SignupController {
                 } else {
                     System.err.println("Warning: modern-theme.css not found");
                 }
+                cssResource = getClass().getResource("/com/example/auth/chat.css");
+                if (cssResource != null) {
+                    scene.getStylesheets().add(cssResource.toExternalForm());
+                } else {
+                    System.err.println("Warning: chat.css not found");
+                }
                 stage.setScene(scene);
                 stage.setFullScreen(isFullScreen);
                 stage.show();
@@ -271,6 +287,12 @@ public class SignupController {
             } else {
                 System.err.println("Warning: styles.css not found");
             }
+            cssResource = getClass().getResource("/com/example/auth/chat.css");
+            if (cssResource != null) {
+                scene.getStylesheets().add(cssResource.toExternalForm());
+            } else {
+                System.err.println("Warning: chat.css not found");
+            }
             stage.setScene(scene);
             stage.setFullScreen(isFullScreen);
             stage.show();
@@ -330,6 +352,31 @@ public class SignupController {
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
+            }
+        }).start();
+    }
+
+    @FXML
+    private void sendChatMessage() {
+        String message = chatInput.getText().trim();
+        if (message.isEmpty()) {
+            return;
+        }
+
+        chatHistory.appendText("You: " + message + "\n");
+        chatInput.clear();
+
+        new Thread(() -> {
+            try {
+                String response = chatService.sendMessage(message);
+                Platform.runLater(() -> {
+                    chatHistory.appendText("AgriChat: " + response + "\n");
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    chatHistory.appendText("AgriChat: Error: " + e.getMessage() + "\n");
+                });
+                System.err.println("DEBUG: Error sending chat message: " + e.getMessage());
             }
         }).start();
     }

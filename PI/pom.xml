@@ -13,6 +13,8 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <javafx.version>17.0.9</javafx.version>
+        <opencv.version>4.9.0-0</opencv.version>
+        <jackson.version>2.17.2</jackson.version>
     </properties>
 
     <dependencies>
@@ -42,7 +44,7 @@
         <dependency>
             <groupId>org.openpnp</groupId>
             <artifactId>opencv</artifactId>
-            <version>4.9.0-0</version>
+            <version>${opencv.version}</version>
         </dependency>
 
         <!-- MySQL -->
@@ -66,7 +68,7 @@
             <version>0.4</version>
         </dependency>
 
-        <!-- JSON -->
+        <!-- JSON and Jackson (for GeminiChatService) -->
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
@@ -75,9 +77,17 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.17.2</version>
+            <version>${jackson.version}</version>
         </dependency>
 
+        <!-- Dotenv for GeminiChatService -->
+        <dependency>
+            <groupId>io.github.cdimascio</groupId>
+            <artifactId>dotenv-java</artifactId>
+            <version>3.0.2</version>
+        </dependency>
+
+        <!-- PDF Libraries -->
         <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>itext7-core</artifactId>
@@ -89,8 +99,6 @@
             <artifactId>font-asian</artifactId>
             <version>7.2.5</version>
         </dependency>
-
-        <!-- PDFBox -->
         <dependency>
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>pdfbox</artifactId>
@@ -108,13 +116,6 @@
             <artifactId>poi-ooxml</artifactId>
             <version>5.2.3</version>
         </dependency>
-
-        <dependency>
-            <groupId>org.json</groupId>
-            <artifactId>json</artifactId>
-            <version>20231013</version>
-        </dependency>
-
     </dependencies>
 
     <build>
@@ -128,6 +129,8 @@
                     <include>**/*.jpg</include>
                     <include>**/*.png</include>
                     <include>**/*.xml</include>
+                    <include>**/*.env</include> <!-- Added to include .env file -->
+
                 </includes>
                 <filtering>false</filtering>
             </resource>

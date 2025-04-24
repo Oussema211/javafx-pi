@@ -2,6 +2,7 @@ package com.example.auth.controller;
 
 import com.example.auth.model.User;
 import com.example.auth.service.AuthService;
+import com.example.auth.service.GeminiChatService;
 import com.example.auth.utils.SessionManager;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -19,17 +20,17 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.Videoio;
+import com.example.cart.OrderHistoryManager;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import com.example.cart.OrderHistoryManager;
 
 public class LoginController {
     @FXML private TextField usernameField;
@@ -41,9 +42,14 @@ public class LoginController {
     @FXML private Label messageLabel;
     @FXML private Button signInWithFaceButton;
     @FXML private ImageView webcamPreview;
+    @FXML private VBox chatCard;
+    @FXML private TextArea chatHistory;
+    @FXML private TextField chatInput;
+    @FXML private Button sendChatButton;
 
     private AuthService authService = new AuthService();
     private SessionManager sessionManager = SessionManager.getInstance();
+    private GeminiChatService chatService;
     private VideoCapture capture;
     private CascadeClassifier faceDetector;
     private boolean isCapturing = false;
@@ -77,6 +83,11 @@ public class LoginController {
                 messageLabel.setText("Cannot load face detection");
             }
 
+            // Initialize GeminiChatService
+            chatService = new GeminiChatService();
+
+            // Debug: Confirm chatCard is injected
+            System.out.println("chatCard: " + chatCard);
         } catch (UnsatisfiedLinkError e) {
             System.err.println("ERROR: Failed to load OpenCV native library: " + e.getMessage());
             messageLabel.setText("Cannot load OpenCV library");
@@ -116,8 +127,12 @@ public class LoginController {
         java.net.URL stylesheetUrl = getClass().getClassLoader().getResource("com/example/auth/styles.css");
         if (stylesheetUrl != null) {
             scene.getStylesheets().add(stylesheetUrl.toExternalForm());
+        }
+        stylesheetUrl = getClass().getClassLoader().getResource("com/example/auth/chat.css");
+        if (stylesheetUrl != null) {
+            scene.getStylesheets().add(stylesheetUrl.toExternalForm());
         } else {
-            System.out.println("DEBUG: Could not find styles.css in onLoginClicked");
+            System.out.println("DEBUG: Could not find chat.css");
         }
 
         stage.setScene(scene);
@@ -151,7 +166,7 @@ public class LoginController {
             loadScene("/com/example/auth/signup.fxml");
         } catch (IOException e) {
             messageLabel.setText("Error loading signup page");
-            System.out.println("DEBUG: Error switching to signup screen: " + e.getMessage());
+            System.out.println("DEBUG: sentChatMessageError switching to signup screen: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -165,11 +180,38 @@ public class LoginController {
         }
     }
 
+    @FXML
+    private void sendChatMessage() {
+        String message = chatInput.getText().trim();
+        if (message.isEmpty()) {
+            return;
+        }
+
+        // Append user message to chat history
+        chatHistory.appendText("You: " + message + "\n");
+        chatInput.clear();
+
+        // Send message to GeminiChatService in a separate thread
+        new Thread(() -> {
+            try {
+                String response = chatService.sendMessage(message);
+                Platform.runLater(() -> {
+                    chatHistory.appendText("AgriChat: " + response + "\n");
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    chatHistory.appendText("AgriChat: Error: " + e.getMessage() + "\n");
+                });
+                System.err.println("DEBUG: Error sending chat message: " + e.getMessage());
+            }
+        }).start();
+    }
+
     private void startFaceCapture() {
         // Try different camera indices and backends
         boolean opened = false;
         for (int i = 0; i < 3; i++) {
-            System.out.println("Trying camera index " + i + " with default backend...");
+            System.out.println("Trying camera index " + i + " with default backend");
             capture = new VideoCapture(i);
             if (capture.isOpened()) {
                 opened = true;
@@ -181,7 +223,7 @@ public class LoginController {
         if (!opened) {
             // Try DirectShow backend
             for (int i = 0; i < 3; i++) {
-                System.out.println("Trying camera index " + i + " with DirectShow backend...");
+                System.out.println("Trying camera index " + i + " with DirectShow backend");
                 capture = new VideoCapture(i, Videoio.CAP_DSHOW);
                 if (capture.isOpened()) {
                     opened = true;
@@ -198,23 +240,23 @@ public class LoginController {
         }
 
         System.out.println("Webcam opened successfully.");
-        
+
         captureStage = new Stage();
         captureStage.setTitle("Face Capture");
-        
+
         ImageView captureView = new ImageView();
         captureView.setFitWidth(640);
         captureView.setFitHeight(480);
         captureView.setPreserveRatio(true);
-        
+
         Button captureButton = new Button("Capture");
         captureButton.setOnAction(e -> captureAndVerifyFace());
-        
+
         VBox root = new VBox(10, captureView, captureButton);
         Scene scene = new Scene(root);
         captureStage.setScene(scene);
         captureStage.show();
-        
+
         isCapturing = true;
         signInWithFaceButton.setText("Stop Face Capture");
 
@@ -228,13 +270,13 @@ public class LoginController {
                 }
                 MatOfRect faces = new MatOfRect();
                 faceDetector.detectMultiScale(frame, faces);
-                
+
                 for (Rect rect : faces.toArray()) {
-                    Imgproc.rectangle(frame, new Point(rect.x, rect.y), 
-                        new Point(rect.x + rect.width, rect.y + rect.height), 
-                        new Scalar(0, 255, 0), 3);
+                    Imgproc.rectangle(frame, new Point(rect.x, rect.y),
+                            new Point(rect.x + rect.width, rect.y + rect.height),
+                            new Scalar(0, 255, 0), 3);
                 }
-                
+
                 Image fxImage = matToImage(frame);
                 Platform.runLater(() -> captureView.setImage(fxImage));
             } else {
@@ -246,7 +288,7 @@ public class LoginController {
     private void stopFaceCapture() {
         isCapturing = false;
         signInWithFaceButton.setText("Sign In With Face");
-        
+
         if (timer != null && !timer.isShutdown()) {
             timer.shutdown();
             try {
@@ -255,12 +297,12 @@ public class LoginController {
                 System.err.println("Exception in stopping the frame capture: " + e);
             }
         }
-        
+
         if (capture != null && capture.isOpened()) {
             capture.release();
             System.out.println("Webcam released in stopFaceCapture.");
         }
-        
+
         if (captureStage != null) {
             captureStage.close();
             System.out.println("Webcam window closed.");
@@ -276,17 +318,17 @@ public class LoginController {
             }
             MatOfRect faces = new MatOfRect();
             faceDetector.detectMultiScale(frame, faces);
-            
+
             if (!faces.empty()) {
                 Rect face = faces.toArray()[0];
                 Mat liveFace = new Mat(frame, face);
-                
+
                 String email = usernameField.getText().trim();
                 if (email.isEmpty()) {
                     Platform.runLater(() -> messageLabel.setText("Please enter an email"));
                     return;
                 }
-                
+
                 System.out.println("Looking for face data with email: '" + email + "'");
                 File storedFaceFile = new File("faces/" + email + ".jpg");
                 System.out.println("Checking file at: " + storedFaceFile.getAbsolutePath());
@@ -295,13 +337,13 @@ public class LoginController {
                     System.out.println("Files in faces directory: " + Arrays.toString(new File("faces").list()));
                     return;
                 }
-                
+
                 Mat storedFace = Imgcodecs.imread(storedFaceFile.getPath());
                 if (storedFace.empty()) {
                     Platform.runLater(() -> messageLabel.setText("Failed to load stored face"));
                     return;
                 }
-                
+
                 Imgproc.resize(liveFace, liveFace, new Size(100, 100));
                 Imgproc.resize(storedFace, storedFace, new Size(100, 100));
 
@@ -370,8 +412,12 @@ public class LoginController {
         java.net.URL stylesheetUrl = getClass().getClassLoader().getResource("com/example/auth/styles.css");
         if (stylesheetUrl != null) {
             scene.getStylesheets().add(stylesheetUrl.toExternalForm());
+        }
+        stylesheetUrl = getClass().getClassLoader().getResource("com/example/auth/chat.css");
+        if (stylesheetUrl != null) {
+            scene.getStylesheets().add(stylesheetUrl.toExternalForm());
         } else {
-            System.out.println("DEBUG: Could not find styles.css");
+            System.out.println("DEBUG: Could not find chat.css");
         }
         stage.setScene(scene);
         stage.setFullScreen(isFullScreen);
