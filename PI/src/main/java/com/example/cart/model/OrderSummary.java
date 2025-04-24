@@ -1,10 +1,14 @@
 package com.example.cart.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class OrderSummary {
-    private String id;         // UUID de la commande
-    private String userId;     // UUID de l'utilisateur
-    private String dateAchat;  // Date d'achat au format String
-    private double prixTotal;  // Prix total de la commande
+    private String id;
+    private String userId;
+    private String dateAchat;
+    private double prixTotal;
+    private List<ProduitCommande> produitsCommandes = new ArrayList<>(); // ✅ Initialisation
 
     public OrderSummary(String id, String userId, String dateAchat, double prixTotal) {
         this.id = id;
@@ -13,7 +17,14 @@ public class OrderSummary {
         this.prixTotal = prixTotal;
     }
 
-    // Getters
+    public List<ProduitCommande> getProduitsCommandes() {
+        return produitsCommandes; // Plus besoin de null check
+    }
+
+    public void setProduitsCommandes(List<ProduitCommande> produitsCommandes) {
+        this.produitsCommandes = produitsCommandes;
+    }
+
     public String getId() {
         return id;
     }
@@ -30,7 +41,6 @@ public class OrderSummary {
         return prixTotal;
     }
 
-    // Setters
     public void setId(String id) {
         this.id = id;
     }

@@ -47,8 +47,14 @@ public class OrderHistoryController {
             card.getChildren().addAll(titleLabel, dateLabel, priceLabel);
             card.setPrefWidth(500);
 
+            // 🔥 Effet de clic pour afficher les détails
+            card.setOnMouseClicked(e -> {
+                new com.example.cart.view.OrderDetailsDialog(order).showAndWait();
+            });
+
             orderContainer.getChildren().add(card);
         }
+
 
         updateStats();
 
