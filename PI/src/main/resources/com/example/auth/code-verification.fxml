@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.text.Font?>
+
+<VBox alignment="CENTER" spacing="20" styleClass="card" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.auth.controller.CodeVerificationController">
+    <Label text="Enter the 6-digit code sent to your email" wrapText="true">
+        <font>
+            <Font name="System Bold" size="16"/>
+        </font>
+    </Label>
+    <TextField fx:id="codeField" promptText="Verification Code"/>
+    <Button text="Verify" onAction="#onVerifyClicked"/>
+    <Label fx:id="messageLabel" text=""/>
+</VBox>

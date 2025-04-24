@@ -57,36 +57,36 @@ public class ProfileController {
         String profilePhotoPath = currentUser.getProfilePhotoPath();
         System.out.println("Profile photo path: " + profilePhotoPath);
 
-        if (profilePhotoPath != null && !profilePhotoPath.isEmpty()) {
-            try {
-                // Load image directly from path or file
-                Image image;
-                if (profilePhotoPath.startsWith("/")) {
-                    // Resource path
-                    if (getClass().getResource(profilePhotoPath) == null) {
-                        System.err.println("Resource not found: " + profilePhotoPath);
-                        loadFallbackImage();
-                        return;
-                    }
-                    image = new Image(getClass().getResourceAsStream(profilePhotoPath));
-                } else {
-                    // File path
-                    image = new Image("file:" + profilePhotoPath);
-                }
+        if (profilePhotoPath == null || profilePhotoPath.isEmpty()) {
+            System.err.println("Profile photo path is null or empty");
+            loadFallbackImage();
+            return;
+        }
 
-                if (!image.isError()) {
-                    profilePicture.setImage(image);
-                    System.out.println("Profile picture loaded successfully");
-                } else {
-                    System.err.println("Error loading profile image: Image is corrupted or invalid");
-                    loadFallbackImage();
-                }
-            } catch (Exception e) {
-                System.err.println("Error loading profile image: " + e.getMessage());
+        try {
+            // Ensure path starts with '/' for resource loading
+            if (!profilePhotoPath.startsWith("/")) {
+                profilePhotoPath = "/" + profilePhotoPath;
+            }
+
+            // Verify resource exists
+            if (getClass().getResource(profilePhotoPath) == null) {
+                System.err.println("Resource not found: " + profilePhotoPath);
+                loadFallbackImage();
+                return;
+            }
+
+            // Load the image as a resource
+            Image image = new Image(getClass().getResourceAsStream(profilePhotoPath));
+            if (!image.isError()) {
+                profilePicture.setImage(image);
+                System.out.println("Profile picture loaded successfully");
+            } else {
+                System.err.println("Error loading profile image: " + image.getException());
                 loadFallbackImage();
             }
-        } else {
-            System.err.println("Profile photo path is null or empty");
+        } catch (Exception e) {
+            System.err.println("Exception loading profile image: " + e.getMessage());
             loadFallbackImage();
         }
     }
@@ -107,11 +107,11 @@ public class ProfileController {
                 profilePicture.setImage(fallbackImage);
                 System.out.println("Fallback image loaded successfully");
             } else {
-                System.err.println("Fallback image is corrupted or invalid");
+                System.err.println("Fallback image error: " + fallbackImage.getException());
                 applyCssFallback();
             }
         } catch (Exception e) {
-            System.err.println("Error loading fallback image: " + e.getMessage());
+            System.err.println("Exception loading fallback image: " + e.getMessage());
             applyCssFallback();
         }
     }
@@ -137,7 +137,16 @@ public class ProfileController {
 
         Parent root = loader.load();
         Scene scene = new Scene(root);
-        scene.getStylesheets().add(getClass().getResource("/com/example/auth/styles.css").toExternalForm());
+        // Load stylesheet safely
+        String cssPath = getClass().getClassLoader().getResource("com/example/auth/styles.css") != null
+                ? getClass().getClassLoader().getResource("com/example/auth/styles.css").toExternalForm()
+                : null;
+        if (cssPath != null) {
+            scene.getStylesheets().add(cssPath);
+        } else {
+            System.err.println("Stylesheet not found: com/example/auth/styles.css");
+        }
+
         stage.setScene(scene);
         stage.setTitle("Dashboard");
         stage.setFullScreen(isFullScreen);
@@ -155,13 +164,13 @@ public class ProfileController {
             return;
         }
 
-        currentUser.setEmail(newEmail);
         boolean emailUpdated = authService.updateUserEmail(currentUser.getEmail(), newEmail);
         if (!emailUpdated) {
             messageLabel.setText("Failed to update email");
             return;
         }
 
+        currentUser.setEmail(newEmail); // Update local user object
         if (!newPassword.isEmpty()) {
             boolean passwordUpdated = authService.updateUserPassword(currentUser.getEmail(), newPassword);
             if (!passwordUpdated) {
