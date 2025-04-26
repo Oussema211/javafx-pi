@@ -244,4 +244,13 @@ public class InscriptionDAO {
             }
         }
     }
+
+    public void createSimple(String userId, int evenementId) throws SQLException {
+        String sql = "INSERT INTO inscription (user_id, evenement_id, date_inscription) VALUES (?, ?, NOW())";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, userId);
+            stmt.setInt(2, evenementId);
+            stmt.executeUpdate();
+        }
+    }
 }

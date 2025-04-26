@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+<?import javafx.geometry.Insets?>
+
+<AnchorPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.example.Evenement.Controller.EventInscriptionController"
+            style="-fx-background-color: #f5f5f5;">
+
+    <VBox spacing="20" style="-fx-padding: 20;" AnchorPane.topAnchor="0" AnchorPane.bottomAnchor="0" 
+          AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0">
+        
+        <!-- En-tête -->
+        <HBox>
+            <Button fx:id="backButton" onAction="#handleBack" 
+                    style="-fx-background-color: transparent; -fx-text-fill: #2196F3;"
+                    text="← Retour"/>
+        </HBox>
+
+        <!-- Titre de l'événement -->
+        <Label fx:id="eventTitle" style="-fx-font-size: 24; -fx-font-weight: bold;"/>
+
+        <!-- Formulaire d'inscription -->
+        <VBox spacing="15" style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 10;">
+            
+            <Label text="Inscription à l'événement" style="-fx-font-size: 18; -fx-font-weight: bold;"/>
+            
+            <!-- Options d'inscription -->
+            <VBox spacing="10">
+                <RadioButton fx:id="sessionActuelle" text="Utiliser ma session actuelle"/>
+                <RadioButton fx:id="nouveauParticipant" text="Nouveau participant"/>
+            </VBox>
+
+            <!-- Formulaire manuel (initialement caché) -->
+            <VBox fx:id="formulaireManuel" spacing="10" visible="false">
+                <TextField fx:id="nomField" promptText="Nom"/>
+                <TextField fx:id="prenomField" promptText="Prénom"/>
+                <TextField fx:id="emailField" promptText="Email"/>
+                <TextField fx:id="telephoneField" promptText="Téléphone"/>
+            </VBox>
+
+            <!-- Boutons du formulaire -->
+            <HBox spacing="10" alignment="CENTER_RIGHT">
+                <Button onAction="#handleCancelInscription" 
+                        style="-fx-background-color: #e0e0e0;" 
+                        text="Annuler"/>
+                <Button onAction="#handleConfirmInscription"
+                        style="-fx-background-color: #2196F3; -fx-text-fill: white;"
+                        text="Confirmer"/>
+            </HBox>
+        </VBox>
+    </VBox>
+</AnchorPane> 

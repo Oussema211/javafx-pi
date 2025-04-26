@@ -6,82 +6,79 @@
 <?import javafx.scene.text.*?>
 <?import javafx.geometry.Insets?>
 
-<AnchorPane xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1"
+<AnchorPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.example.Evenement.Controller.EventDetailsController"
-            style="-fx-background-color: #f8f8f0;">
+            style="-fx-background-color: #f5f5f5;">
 
-    <ScrollPane fitToWidth="true" AnchorPane.topAnchor="0.0" AnchorPane.bottomAnchor="0.0"
-                AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" style="-fx-background: transparent;">
-        <VBox spacing="20" style="-fx-background-color: transparent;">
-            <padding>
-                <Insets top="30" right="30" bottom="30" left="30"/>
-            </padding>
-
-            <!-- En-tête avec bouton retour -->
-            <HBox alignment="CENTER_LEFT" spacing="20">
-                <Button fx:id="backButton" text="← Retour" onAction="#handleBack"
-                        style="-fx-background-color: #689f38; -fx-text-fill: white; -fx-font-size: 14;"/>
+    <ScrollPane fitToWidth="true" AnchorPane.topAnchor="0" AnchorPane.bottomAnchor="0" 
+                AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0">
+        <VBox spacing="12" style="-fx-padding: 10;" alignment="CENTER">
+            
+            <!-- Bouton Retour -->
+            <HBox alignment="CENTER_LEFT" style="-fx-padding: 0 0 5 0;">
+                <Button fx:id="backButton" onAction="#handleBack" 
+                        style="-fx-background-color: transparent; -fx-text-fill: #2196F3;"
+                        text="← Retour"/>
             </HBox>
 
             <!-- Carte principale de l'événement -->
-            <VBox style="-fx-background-color: white; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 0); -fx-background-radius: 15;">
-                <padding>
-                    <Insets top="25" right="25" bottom="25" left="25"/>
-                </padding>
-
+            <VBox style="-fx-background-color: white; -fx-padding: 14; -fx-background-radius: 10; 
+                        -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0, 0, 2); -fx-max-width: 520;" 
+                  alignment="TOP_CENTER" spacing="10">
+                
                 <!-- Image de l'événement -->
-                <ImageView fx:id="eventImage" fitWidth="800" fitHeight="300" preserveRatio="true"
-                          style="-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 0); -fx-background-radius: 10;"/>
+                <ImageView fx:id="eventImage" fitWidth="420" fitHeight="210" preserveRatio="true"/>
 
-                <!-- Titre et Type -->
-                <VBox spacing="10" style="-fx-padding: 20 0;">
-                    <Label fx:id="eventTitle" style="-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
-                    <HBox spacing="10" alignment="CENTER_LEFT">
-                        <Label fx:id="eventType" style="-fx-background-color: #689f38; -fx-text-fill: white; -fx-padding: 5 15; -fx-background-radius: 20;"/>
-                        <Label fx:id="eventStatus" style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-padding: 5 15; -fx-background-radius: 20;"/>
+                <!-- Titre et badges -->
+                <VBox spacing="6" style="-fx-padding: 10 0;">
+                    <Label fx:id="eventTitle" style="-fx-font-size: 20; -fx-font-weight: bold;"/>
+                    <HBox spacing="8">
+                        <Label fx:id="eventType" style="-fx-background-color: #E3F2FD; -fx-padding: 3 10; 
+                               -fx-background-radius: 15; -fx-text-fill: #1976D2; -fx-font-size: 12;"/>
+                        <Label fx:id="eventStatus" style="-fx-background-color: #E8F5E9; -fx-padding: 3 10; 
+                               -fx-background-radius: 15; -fx-text-fill: #388E3C; -fx-font-size: 12;"/>
                     </HBox>
                 </VBox>
 
                 <!-- Informations temporelles -->
-                <HBox spacing="50" style="-fx-padding: 20 0;">
-                    <VBox spacing="5">
-                        <Label text="Date de début" style="-fx-font-weight: bold; -fx-text-fill: #666;"/>
-                        <Label fx:id="startDate" style="-fx-font-size: 16; -fx-text-fill: #2c3e50;"/>
+                <HBox spacing="18" style="-fx-padding: 4 0;">
+                    <VBox spacing="2">
+                        <Label text="Début" style="-fx-text-fill: #757575; -fx-font-size: 11;"/>
+                        <Label fx:id="startDate" style="-fx-font-weight: bold; -fx-font-size: 12;"/>
                     </VBox>
-                    <VBox spacing="5">
-                        <Label text="Date de fin" style="-fx-font-weight: bold; -fx-text-fill: #666;"/>
-                        <Label fx:id="endDate" style="-fx-font-size: 16; -fx-text-fill: #2c3e50;"/>
+                    <VBox spacing="2">
+                        <Label text="Fin" style="-fx-text-fill: #757575; -fx-font-size: 11;"/>
+                        <Label fx:id="endDate" style="-fx-font-weight: bold; -fx-font-size: 12;"/>
                     </VBox>
-                    <VBox spacing="5">
-                        <Label text="Durée" style="-fx-font-weight: bold; -fx-text-fill: #666;"/>
-                        <Label fx:id="duration" style="-fx-font-size: 16; -fx-text-fill: #2c3e50;"/>
+                    <VBox spacing="2">
+                        <Label text="Durée" style="-fx-text-fill: #757575; -fx-font-size: 11;"/>
+                        <Label fx:id="duration" style="-fx-font-weight: bold; -fx-font-size: 12;"/>
                     </VBox>
                 </HBox>
 
                 <!-- Description -->
-                <VBox spacing="10" style="-fx-padding: 20 0;">
-                    <Label text="Description" style="-fx-font-weight: bold; -fx-text-fill: #666;"/>
-                    <TextFlow fx:id="descriptionFlow" style="-fx-padding: 10; -fx-background-color: #f8f9fa; -fx-background-radius: 5;">
-                        <Text fx:id="descriptionText" style="-fx-font-size: 14; -fx-fill: #2c3e50;"/>
+                <VBox spacing="6" style="-fx-padding: 10 0;">
+                    <Label text="Description" style="-fx-font-weight: bold; -fx-font-size: 13;"/>
+                    <TextFlow>
+                        <Text fx:id="descriptionText" style="-fx-font-size: 13;"/>
                     </TextFlow>
                 </VBox>
 
                 <!-- Régions -->
-                <VBox spacing="10" style="-fx-padding: 20 0;">
-                    <Label text="Régions" style="-fx-font-weight: bold; -fx-text-fill: #666;"/>
-                    <FlowPane fx:id="regionsFlow" hgap="10" vgap="10"/>
+                <VBox spacing="6">
+                    <Label text="Régions concernées" style="-fx-font-weight: bold; -fx-font-size: 13;"/>
+                    <FlowPane fx:id="regionsFlow" hgap="8" vgap="8"/>
                 </VBox>
-            </VBox>
 
-            <!-- Actions -->
-            <HBox spacing="15" alignment="CENTER">
-                <Button text="Modifier" onAction="#handleEdit"
-                        style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-size: 14; -fx-padding: 10 20;"/>
-                <Button text="Supprimer" onAction="#handleDelete"
-                        style="-fx-background-color: #f44336; -fx-text-fill: white; -fx-font-size: 14; -fx-padding: 10 20;"/>
-                <Button text="Ajouter au calendrier Google" onAction="#handleAddToGoogleCalendar"
-                        style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-size: 14; -fx-padding: 10 20;"/>
-            </HBox>
+                <!-- Bouton S'inscrire -->
+                <HBox alignment="CENTER" style="-fx-padding: 12 0 0 0;">
+                    <Button onAction="#handleInscription" 
+                            style="-fx-background-color: #2196F3; -fx-text-fill: white; 
+                                   -fx-padding: 8 18; -fx-font-size: 14; -fx-background-radius: 5;"
+                            text="S'inscrire"/>
+                </HBox>
+            </VBox>
         </VBox>
     </ScrollPane>
 </AnchorPane> 

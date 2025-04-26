@@ -3,16 +3,21 @@ package com.example.Evenement.Controller;
 import com.example.Evenement.Model.Evenement;
 import com.example.Evenement.Model.Region;
 import com.example.Evenement.Service.GoogleCalendarService;
+import com.example.auth.utils.SessionManager;
+import com.example.auth.model.User;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
 import javafx.scene.image.*;
 import javafx.scene.layout.*;
 import javafx.scene.text.*;
 import javafx.stage.Stage;
-import javafx.scene.Node;
+import javafx.scene.Parent;
 import java.io.File;
 import java.time.Duration;
 import java.time.format.DateTimeFormatter;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 
 public class EventDetailsController {
 
@@ -31,6 +36,7 @@ public class EventDetailsController {
     private Stage stage;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd MMMM yyyy HH:mm");
     private GoogleCalendarService googleCalendarService;
+    private SessionManager sessionManager = SessionManager.getInstance();
 
     public void setEvent(Evenement event) {
         this.currentEvent = event;
@@ -39,6 +45,11 @@ public class EventDetailsController {
 
     public void setStage(Stage stage) {
         this.stage = stage;
+    }
+
+    @FXML
+    public void initialize() {
+        // Suppression de l'initialisation du ToggleGroup et des listeners liés à l'inscription
     }
 
     private void populateEventDetails() {
@@ -148,6 +159,30 @@ public class EventDetailsController {
             error.setTitle("Erreur");
             error.setHeaderText(null);
             error.setContentText("Erreur lors de l'ajout à Google Calendar : " + e.getMessage());
+            error.showAndWait();
+        }
+    }
+
+    @FXML
+    private void handleInscription() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/Evenement/event-inscription.fxml"));
+            Stage inscriptionStage = new Stage();
+            inscriptionStage.setTitle("Inscription à l'événement");
+            
+            Parent root = loader.load();
+            EventInscriptionController controller = loader.getController();
+            controller.setEvent(currentEvent);
+            controller.setStage(inscriptionStage);
+            
+            inscriptionStage.setScene(new javafx.scene.Scene(root));
+            inscriptionStage.show();
+            
+        } catch (Exception e) {
+            Alert error = new Alert(Alert.AlertType.ERROR);
+            error.setTitle("Erreur");
+            error.setHeaderText(null);
+            error.setContentText("Impossible d'ouvrir la page d'inscription : " + e.getMessage());
             error.showAndWait();
         }
     }
