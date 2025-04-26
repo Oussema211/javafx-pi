@@ -1,0 +1,66 @@
+/* 🌟 Style général de la page checkout */
+.main-content {
+    -fx-background-color: #f9f9f9;
+    -fx-padding: 40;
+    -fx-spacing: 20;
+    -fx-alignment: center;
+    -fx-background-radius: 15;
+}
+
+/* 🌟 Titre principal */
+.content-title {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #388e3c;
+}
+
+/* 🌟 Champs texte */
+.text-field {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #cfd8dc;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 12;
+    -fx-font-size: 14px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 5, 0, 0, 1);
+}
+
+.text-field:focused {
+    -fx-border-color: #66bb6a;
+    -fx-background-color: #ffffff;
+}
+
+/* 🌟 Champ erreur */
+#errorLabel {
+    -fx-text-fill: #d32f2f;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+/* 🌟 Bouton de paiement */
+.primary-button {
+    -fx-background-color: linear-gradient(to right, #66bb6a, #43a047);
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 10;
+    -fx-padding: 12 24;
+    -fx-cursor: hand;
+    -fx-font-size: 15px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 5, 0, 0, 2);
+}
+
+.primary-button:hover {
+    -fx-background-color: linear-gradient(to right, #43a047, #388e3c);
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+}
+
+/* 🌟 HBox des champs MM/YY et CVV */
+.hbox {
+    -fx-spacing: 12;
+}
+
+/* 🌟 ScrollPane (si nécessaire) */
+.scroll-pane {
+    -fx-background-color: transparent;
+}

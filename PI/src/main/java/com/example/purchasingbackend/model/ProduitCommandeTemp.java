@@ -10,7 +10,7 @@ public class ProduitCommandeTemp {
 
     public ProduitCommandeTemp(Produit produit) {
         this.produit = produit;
-        this.quantite = new SimpleIntegerProperty(1); // quantité par défaut
+        this.quantite = new SimpleIntegerProperty(1);
     }
 
     public ProduitCommandeTemp(Produit produit, int quantite) {

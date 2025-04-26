@@ -1,16 +1,35 @@
 package com.example.cart.model;
 
-public class OrderSummary {
-    private String id;         // UUID de la commande
-    private String userId;     // UUID de l'utilisateur
-    private String dateAchat;  // Date d'achat au format String
-    private double prixTotal;  // Prix total de la commande
+import java.util.ArrayList;
+import java.util.List;
 
+/**
+ * Représente un résumé de commande incluant les produits achetés, la date,
+ * l'utilisateur et le total payé.
+ */
+public class OrderSummary {
+
+    private String id;                       // UUID unique de la commande
+    private String userId;                   // UUID de l'utilisateur ayant passé la commande
+    private String dateAchat;                // Date d'achat (format ISO ou string simple)
+    private double prixTotal;                // Total payé pour la commande
+    private List<ProduitCommande> produitsCommandes = new ArrayList<>(); // Liste des produits commandés
+
+    // Constructeur
     public OrderSummary(String id, String userId, String dateAchat, double prixTotal) {
         this.id = id;
         this.userId = userId;
         this.dateAchat = dateAchat;
         this.prixTotal = prixTotal;
+    }
+
+    // Getter & Setter pour la liste des produits commandés
+    public List<ProduitCommande> getProduitsCommandes() {
+        return produitsCommandes;
+    }
+
+    public void setProduitsCommandes(List<ProduitCommande> produitsCommandes) {
+        this.produitsCommandes = produitsCommandes;
     }
 
     // Getters

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.cart.controller.CheckoutController"
+      spacing="15" alignment="CENTER" styleClass="main-content"
+      stylesheets="@/com/example/css/checkout.css"
+      style="-fx-padding: 20;">
+
+    <Label text="💳 Finaliser votre commande" styleClass="content-title"/>
+
+    <TextField fx:id="nameField" promptText="Nom du propriétaire de la carte" maxWidth="300"/>
+    <TextField fx:id="cardNumberField" promptText="Numéro de carte bancaire" maxWidth="300"/>
+
+    <HBox spacing="10" alignment="CENTER">
+        <TextField fx:id="expiryDateField" promptText="MM/YY" maxWidth="140"/>
+        <TextField fx:id="cvvField" promptText="CVV" maxWidth="140"/>
+    </HBox>
+
+    <Label fx:id="errorLabel" text="" style="-fx-text-fill: red;" visible="false"/>
+
+    <Button text="✅ Payer" onAction="#handlePayment" styleClass="primary-button" maxWidth="150"/>
+
+</VBox>

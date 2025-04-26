@@ -9,15 +9,52 @@
             style="-fx-background-color: #f4f4f4;">
 
     <top>
-        <Label text="📜 Historique des Commandes"
-               style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #333333; -fx-padding: 20;"
-               BorderPane.alignment="CENTER"/>
+        <VBox spacing="20" alignment="CENTER"
+              style="-fx-background-color: linear-gradient(to right, #6a11cb, #2575fc); -fx-padding: 30;">
+            <Label text="📈 Statistiques des Commandes"
+                   style="-fx-font-size: 30px; -fx-text-fill: white; -fx-font-weight: bold;"/>
+
+            <HBox spacing="25" alignment="CENTER">
+                <!-- Carte 1 : Total commandes -->
+                <VBox spacing="8" alignment="CENTER"
+                      onMouseEntered="#handleCardHover" onMouseExited="#handleCardExit"
+                      style="-fx-background-color: white; -fx-background-radius: 15; -fx-padding: 15;
+                             -fx-effect: dropshadow(gaussian, #00c6ff, 20, 0.5, 0, 0); -fx-pref-width: 180;">
+                    <Label text="Total Commandes" style="-fx-font-size: 16px; -fx-text-fill: #333333;"/>
+                    <Label fx:id="totalOrdersLabel" text="0"
+                           style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #4CAF50;"/>
+                </VBox>
+
+                <!-- Carte 2 : Total dépensé -->
+                <VBox spacing="8" alignment="CENTER"
+                      onMouseEntered="#handleCardHover" onMouseExited="#handleCardExit"
+                      style="-fx-background-color: white; -fx-background-radius: 15; -fx-padding: 15;
+                             -fx-effect: dropshadow(gaussian, #00c6ff, 20, 0.5, 0, 0); -fx-pref-width: 180;">
+                    <Label text="Total Dépensé" style="-fx-font-size: 16px; -fx-text-fill: #333333;"/>
+                    <Label fx:id="totalSpentLabel" text="0.00 DT"
+                           style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #2196F3;"/>
+                </VBox>
+
+                <!-- Carte 3 : Prix moyen -->
+                <VBox spacing="8" alignment="CENTER"
+                      onMouseEntered="#handleCardHover" onMouseExited="#handleCardExit"
+                      style="-fx-background-color: white; -fx-background-radius: 15; -fx-padding: 15;
+                             -fx-effect: dropshadow(gaussian, #00c6ff, 20, 0.5, 0, 0); -fx-pref-width: 180;">
+                    <Label text="Prix Moyen" style="-fx-font-size: 16px; -fx-text-fill: #333333;"/>
+                    <Label fx:id="averagePriceLabel" text="0.00 DT"
+                           style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #FF5722;"/>
+                </VBox>
+            </HBox>
+        </VBox>
     </top>
 
     <center>
-        <ScrollPane fx:id="orderScrollPane" fitToWidth="true" style="-fx-background-color:transparent;">
-            <VBox fx:id="orderContainer" spacing="15" style="-fx-padding: 20;">
-                <!-- Les cartes seront ajoutées ici dynamiquement -->
+        <ScrollPane fx:id="orderScrollPane" fitToWidth="true" style="-fx-background-color: transparent;">
+            <VBox fx:id="orderContainer" spacing="15">
+                <padding>
+                    <Insets top="20" right="20" bottom="20" left="20"/>
+                </padding>
+                <!-- Les cartes de commandes s'ajouteront ici dynamiquement -->
             </VBox>
         </ScrollPane>
     </center>

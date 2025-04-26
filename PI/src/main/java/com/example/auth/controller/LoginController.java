@@ -114,7 +114,6 @@ public class LoginController {
         }
 
         sessionManager.setLoggedInUser(user);
-        OrderHistoryManager.reloadHistoryFromDatabase();
 
         // Redirect based on user role
         String fxmlFile = user.hasRole("ROLE_ADMIN") ? "/com/example/auth/dashboard.fxml" : "/com/example/frontPages/dashboard.fxml";
