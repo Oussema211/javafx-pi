@@ -1,7 +1,7 @@
 package com.example.cart.controller;
 
-import com.example.cart.model.OrderSummary;
 import com.example.cart.OrderHistoryManager;
+import com.example.cart.model.OrderSummary;
 import javafx.animation.FadeTransition;
 import javafx.animation.TranslateTransition;
 import javafx.collections.FXCollections;
@@ -12,6 +12,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
+
 import java.util.List;
 
 public class OrderHistoryController {
@@ -47,7 +48,7 @@ public class OrderHistoryController {
             card.getChildren().addAll(titleLabel, dateLabel, priceLabel);
             card.setPrefWidth(500);
 
-            // 🔥 Effet de clic pour afficher les détails
+            // 🔥 Affichage des détails au clic
             card.setOnMouseClicked(e -> {
                 new com.example.cart.view.OrderDetailsDialog(order).showAndWait();
             });
@@ -55,11 +56,10 @@ public class OrderHistoryController {
             orderContainer.getChildren().add(card);
         }
 
-
         updateStats();
-
         animateStatisticsCards();
 
+        // 🔗 Appliquer le CSS
         orderScrollPane.getStylesheets().add(getClass().getResource("/com/example/css/orderhistory.css").toExternalForm());
     }
 
@@ -74,9 +74,10 @@ public class OrderHistoryController {
         animateNumber(totalSpentLabel, 0, totalSpent, " DT");
         animateNumber(averagePriceLabel, 0, averagePrice, " DT");
     }
+
     private void animateNumber(Label label, double start, double end, String suffix) {
-        final int durationMillis = 1000; // Durée totale de l'animation (en ms)
-        final long frameRate = 60; // 60 updates par seconde
+        final int durationMillis = 1000;
+        final long frameRate = 60;
         final double increment = (end - start) / (durationMillis / (1000.0 / frameRate));
 
         new Thread(() -> {
@@ -102,7 +103,6 @@ public class OrderHistoryController {
                 }
             }
 
-            // Corrige exactement la valeur finale pour éviter dépassement
             javafx.application.Platform.runLater(() -> {
                 if (suffix.contains("DT")) {
                     label.setText(String.format("%.2f%s", end, suffix));
@@ -112,6 +112,7 @@ public class OrderHistoryController {
             });
         }).start();
     }
+
     @FXML
     private void handleCardHover(javafx.scene.input.MouseEvent event) {
         VBox card = (VBox) event.getSource();

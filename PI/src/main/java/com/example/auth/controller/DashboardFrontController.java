@@ -161,5 +161,5 @@ public class DashboardFrontController {
     @FXML
     private void handleProfileClick() {
         loadContent("/com/example/auth/profile.fxml");
-}
+    }
 }

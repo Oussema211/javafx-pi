@@ -73,11 +73,8 @@ public class PurchasingController {
         });
 
         colPrix.setCellValueFactory(new PropertyValueFactory<>("prixTotal"));
-
-        // 👇 Ajoute les boutons "Modifier" et "Supprimer"
         addActionButtonsToTable();
 
-        // 👇 Charge les commandes dans la table
         loadCommandes();
     }
     private void addActionButtonsToTable() {
@@ -269,26 +266,25 @@ public class PurchasingController {
 
         Button validateButton = (Button) dialog.getDialogPane().lookupButton(validateButtonType);
 
-// 👇 Ajoute cette action personnalisée pour empêcher la fermeture automatique
         validateButton.addEventFilter(ActionEvent.ACTION, event -> {
             User user = userComboBox.getValue();
             LocalDate date = datePicker.getValue();
 
             if (user == null) {
                 showAlert(Alert.AlertType.WARNING, "Utilisateur manquant", "Veuillez sélectionner un utilisateur.");
-                event.consume(); // ⛔ empêche la fermeture
+                event.consume(); 
                 return;
             }
 
             if (selectedProduits.isEmpty()) {
                 showAlert(Alert.AlertType.WARNING, "Produits manquants", "Veuillez ajouter au moins un produit.");
-                event.consume(); // ⛔ empêche la fermeture
+                event.consume(); 
                 return;
             }
 
             if (date == null) {
                 showAlert(Alert.AlertType.WARNING, "Date manquante", "Veuillez choisir une date.");
-                event.consume(); // ⛔ empêche la fermeture
+                event.consume(); 
                 return;
             }
         });
@@ -318,7 +314,6 @@ public class PurchasingController {
             return;
         }
 
-        // 👉 On réutilise quasiment le même code que handleAddCommande, mais avec des valeurs pré-remplies
         Dialog<CommandeFinalisee> dialog = new Dialog<>();
         dialog.setTitle("Modifier la commande");
 
@@ -393,7 +388,7 @@ public class PurchasingController {
 
                 if (existing.isPresent()) {
                     existing.get().setQuantite(existing.get().getQuantite() + 1);
-                    produitTableView.refresh(); // important pour voir le changement à l’écran
+                    produitTableView.refresh();
                 } else {
                     selectedProduits.add(new ProduitCommandeTemp(selectedP, 1));
                 }
@@ -413,7 +408,6 @@ public class PurchasingController {
             prixField.setText(String.valueOf(total));
             summaryLabel.setText("🧾 Commande pour " + user + " | Produits : " + produitsText + " | Total : " + total + " DT");
         };
-        // 👇 AJOUTE CETTE LIGNE JUSTE ICI :
         updateSummary[0].run();
 
         userComboBox.setOnAction(e -> updateSummary[0].run());
@@ -447,19 +441,18 @@ public class PurchasingController {
 
             if (user == null) {
                 showAlert(Alert.AlertType.WARNING, "Utilisateur manquant", "Veuillez sélectionner un utilisateur.");
-                event.consume(); // ❌ empêche la fermeture
-                return;
+                event.consume(); 
             }
 
             if (selectedProduits.isEmpty()) {
                 showAlert(Alert.AlertType.WARNING, "Produits manquants", "Veuillez ajouter au moins un produit.");
-                event.consume(); // ❌ empêche la fermeture
+                event.consume(); 
                 return;
             }
 
             if (date == null) {
                 showAlert(Alert.AlertType.WARNING, "Date manquante", "Veuillez choisir une date.");
-                event.consume(); // ❌ empêche la fermeture
+                event.consume(); 
             }
         });
 
@@ -477,7 +470,7 @@ public class PurchasingController {
 
 
         dialog.showAndWait().ifPresent(cmd -> {
-            CommandeFinaliseeDAO.updateCommande(cmd);  // 🔧 tu dois avoir cette méthode
+            CommandeFinaliseeDAO.updateCommande(cmd);
             int index = commandeList.indexOf(selected);
             commandeList.set(index, cmd);
         });
@@ -497,7 +490,7 @@ public class PurchasingController {
 
         alert.showAndWait().ifPresent(button -> {
             if (button == ButtonType.OK) {
-                CommandeFinaliseeDAO.deleteCommande(selected.getId()); // 🔧 tu dois avoir cette méthode aussi
+                CommandeFinaliseeDAO.deleteCommande(selected.getId());
                 commandeList.remove(selected);
             }
         });

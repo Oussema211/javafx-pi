@@ -33,7 +33,7 @@ import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Comparator;
 import java.util.List;
-import java.util.UUID;
+import java.util.Optional;
 
 public class ReclamationMessagesController {
 
@@ -79,6 +79,65 @@ public class ReclamationMessagesController {
                 "-fx-border-color: transparent;");
         root.setCenter(scrollPane);
 
+        // Header card
+        VBox headerCard = createHeaderCard();
+
+        // Messages container
+        VBox messagesContainer = createMessagesContainer();
+
+        // Load and sort messages
+        List<MessageReclamation> messages = messageService.getAllMessages().stream()
+                .filter(m -> m.getReclamationId().equals(selectedReclamation.getId()))
+                .sorted(Comparator.comparing(MessageReclamation::getDateMessage).reversed())
+                .toList();
+
+        // Populate messages
+        populateMessages(messagesContainer, messages);
+
+        // Add header and messages to main container
+        mainContainer.getChildren().addAll(headerCard, messagesContainer);
+
+        // Detect if admin has replied
+        Optional<MessageReclamation> adminReplyOpt = messages.stream()
+                .filter(m -> {
+                    User u = authService.getUserById(m.getUserId());
+                    return u != null && u.hasRole("ROLE_ADMIN");
+                })
+                .findFirst();
+
+        if (adminReplyOpt.isPresent()) {
+            // Display the existing admin reply instead of input
+            MessageReclamation adminReply = adminReplyOpt.get();
+            VBox adminBox = new VBox(10);
+            adminBox.setPadding(new Insets(15));
+            adminBox.setStyle("-fx-background-color: #fffbeb; -fx-border-color: #f59e0b; -fx-border-radius: 8; -fx-background-radius: 8;");
+            Label info = new Label("Administrator response:");
+            info.setStyle("-fx-font-weight: bold; -fx-text-fill: #b45309; -fx-font-size: 14px;");
+            Label content = new Label(adminReply.getContenu());
+            content.setWrapText(true);
+            content.setStyle("-fx-font-size: 13px; -fx-text-fill: #37474f;");
+            adminBox.getChildren().addAll(info, content);
+            mainContainer.getChildren().add(adminBox);
+        } else {
+            // Show reply input
+            VBox replyContainer = createReplyContainer();
+            mainContainer.getChildren().add(replyContainer);
+        }
+
+        // Scroll to bottom after load
+        scrollPane.vvalueProperty().addListener((obs, old, newVal) -> {
+            if (messages.size() > 0) {
+                scrollPane.setVvalue(1.0);
+            }
+        });
+
+        FadeTransition fadeIn = new FadeTransition(Duration.millis(600), mainContainer);
+        fadeIn.setFromValue(0);
+        fadeIn.setToValue(1);
+        fadeIn.play();
+    }
+
+    private VBox createHeaderCard() {
         VBox headerCard = new VBox(10);
         headerCard.setPadding(new Insets(20));
         headerCard.setStyle("-fx-background-color: rgba(255, 255, 255, 0.9); -fx-background-radius: 20; " +
@@ -138,16 +197,18 @@ public class ReclamationMessagesController {
         headerBox.getChildren().addAll(backButton, header);
         headerCard.getChildren().addAll(headerBox, toggleDesc, description);
 
+        return headerCard;
+    }
+
+    private VBox createMessagesContainer() {
         VBox messagesContainer = new VBox(10);
         messagesContainer.setPadding(new Insets(15));
         messagesContainer.setStyle("-fx-background-color: rgba(245, 247, 250, 0.95); -fx-background-radius: 15; " +
                 "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0, 0, 3);");
+        return messagesContainer;
+    }
 
-        List<MessageReclamation> messages = messageService.getAllMessages().stream()
-                .filter(m -> m.getReclamationId().equals(selectedReclamation.getId()))
-                .sorted(Comparator.comparing(MessageReclamation::getDateMessage).reversed())
-                .toList();
-
+    private void populateMessages(VBox messagesContainer, List<MessageReclamation> messages) {
         if (messages.isEmpty()) {
             Label noMessages = new Label("No messages for this reclamation yet.");
             noMessages.setStyle("-fx-font-size: 16px; -fx-text-fill: #78909c; -fx-alignment: center; -fx-padding: 20;");
@@ -163,35 +224,6 @@ public class ReclamationMessagesController {
                 slide.play();
             }
         }
-
-        VBox replyContainer = createReplyContainer();
-        mainContainer.getChildren().addAll(headerCard, messagesContainer, replyContainer);
-
-        scrollPane.vvalueProperty().addListener((obs, old, newVal) -> {
-            if (messages.size() > 0) {
-                scrollPane.setVvalue(1.0);
-            }
-        });
-
-        FadeTransition fadeIn = new FadeTransition(Duration.millis(600), mainContainer);
-        fadeIn.setFromValue(0);
-        fadeIn.setToValue(1);
-        fadeIn.play();
-    }
-
-    private Image loadBackIcon() {
-        try {
-            Image image = new Image(getClass().getResourceAsStream("/icons/back.png"));
-            if (!image.isError()) {
-                return image;
-            } else {
-                System.err.println("Error loading back icon: Image is corrupted or invalid.");
-            }
-        } catch (Exception e) {
-            System.err.println("Error loading back icon: " + e.getMessage());
-        }
-        // Fallback to a blank image
-        return new Image("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/wcAAgAB/5r7xQAAAABJRU5ErkJggg==");
     }
 
     private HBox createMessageBox(MessageReclamation message) {
@@ -202,18 +234,18 @@ public class ReclamationMessagesController {
         messageBox.setOnMouseEntered(e -> messageBox.setStyle(messageBox.getStyle() + "-fx-translate-y: -4; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 10, 0, 0, 4);"));
         messageBox.setOnMouseExited(e -> messageBox.setStyle("-fx-background-color: rgba(255, 255, 255, 0.85); -fx-background-radius: 18; " +
                 "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 6, 0, 0, 3);"));
-    
+
         User user = authService.getUserById(message.getUserId());
         User currentUser = sessionManager.getLoggedInUser();
         boolean isCurrentUser = currentUser != null && message.getUserId().equals(currentUser.getId());
-    
+
         StackPane avatarContainer = new StackPane();
         ImageView avatar = new ImageView();
         avatar.setFitWidth(44);
         avatar.setFitHeight(44);
         avatar.setClip(new Circle(22, 22, 20));
         avatar.setStyle("-fx-border-color: " + (isCurrentUser ? "#6C983B" : "#7AAE49") + "; -fx-border-width: 2;");
-    
+
         String profilePhotoPath = user != null ? user.getPhotoUrl() : null;
         if (profilePhotoPath != null && !profilePhotoPath.isEmpty()) {
             try {
@@ -230,7 +262,7 @@ public class ReclamationMessagesController {
         } else {
             loadFallbackImage(avatar, user);
         }
-    
+
         ScaleTransition avatarHover = new ScaleTransition(Duration.millis(200), avatar);
         avatarContainer.setOnMouseEntered(e -> {
             avatarHover.setToX(1.1);
@@ -242,13 +274,13 @@ public class ReclamationMessagesController {
             avatarHover.setToY(1.0);
             avatarHover.play();
         });
-    
+
         avatarContainer.getChildren().add(avatar);
-    
+
         Tooltip avatarTooltip = new Tooltip(user != null ? user.getNom() + " " + user.getPrenom() : "Unknown User");
         avatarTooltip.setStyle("-fx-font-size: 13px; -fx-background-color: rgba(44, 62, 80, 0.95); -fx-text-fill: white; -fx-background-radius: 8;");
         Tooltip.install(avatarContainer, avatarTooltip);
-    
+
         VBox content = new VBox(6);
         content.setMaxWidth(650);
         HBox header = new HBox(12);
@@ -260,13 +292,13 @@ public class ReclamationMessagesController {
         header.getChildren().addAll(userName, date);
         HBox.setHgrow(date, Priority.ALWAYS);
         date.setAlignment(Pos.CENTER_RIGHT);
-    
+
         Label contentText = new Label(message.getContenu());
         contentText.setStyle("-fx-font-size: 14px; -fx-text-fill: #37474f; -fx-wrap-text: true; " +
                 "-fx-padding: 10; -fx-background-color: " + (isCurrentUser ? "rgba(230, 245, 230, 0.9)" : "rgba(240, 244, 248, 0.9)") + "; " +
                 "-fx-background-radius: 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 4, 0, 0, 2);");
         content.getChildren().addAll(header, contentText);
-    
+
         if (isCurrentUser) {
             messageBox.setAlignment(Pos.CENTER_RIGHT);
             messageBox.getChildren().addAll(content, avatarContainer);
@@ -274,7 +306,7 @@ public class ReclamationMessagesController {
             messageBox.setAlignment(Pos.CENTER_LEFT);
             messageBox.getChildren().addAll(avatarContainer, content);
         }
-    
+
         if (isCurrentUser) {
             Button deleteBtn = new Button();
             Image deleteImage = loadDeleteIcon();
@@ -298,7 +330,7 @@ public class ReclamationMessagesController {
             Tooltip deleteTooltip = new Tooltip("Delete Message");
             deleteTooltip.setStyle("-fx-font-size: 12px; -fx-background-color: rgba(44, 62, 80, 0.95); -fx-text-fill: white;");
             deleteBtn.setTooltip(deleteTooltip);
-    
+
             Button editBtn = new Button();
             Image editImage = loadEditIcon();
             ImageView editIcon = new ImageView(editImage);
@@ -312,146 +344,108 @@ public class ReclamationMessagesController {
             Tooltip editTooltip = new Tooltip("Edit Message");
             editTooltip.setStyle("-fx-font-size: 12px; -fx-background-color: rgba(44, 62, 80, 0.95); -fx-text-fill: white;");
             editBtn.setTooltip(editTooltip);
-    
-            // Use HBox to align delete and edit buttons horizontally
+
             HBox actionButtons = new HBox(10);
             actionButtons.setAlignment(Pos.CENTER_RIGHT);
             actionButtons.getChildren().addAll(deleteBtn, editBtn);
             content.getChildren().add(actionButtons);
         }
-    
+
         return messageBox;
     }
+
     private void handleEdit(MessageReclamation message) {
-    Dialog<MessageReclamation> dialog = new Dialog<>();
-    dialog.setTitle("Edit Message");
+        Dialog<MessageReclamation> dialog = new Dialog<>();
+        dialog.setTitle("Edit Message");
 
-    DialogPane dialogPane = dialog.getDialogPane();
-    dialogPane.getStylesheets().add(getClass().getResource("/css/modern-dialog.css").toExternalForm());
+        DialogPane dialogPane = dialog.getDialogPane();
+        dialogPane.getStylesheets().add(getClass().getResource("/css/modern-dialog.css").toExternalForm());
 
-    ButtonType saveButtonType = new ButtonType("Save", ButtonData.OK_DONE);
-    dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
+        ButtonType saveButtonType = new ButtonType("Save", ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
 
-    VBox content = new VBox(15);
-    content.setStyle("-fx-padding: 20;");
+        VBox content = new VBox(15);
+        content.setStyle("-fx-padding: 20;");
 
-    // Content field with error label
-    VBox contentGroup = new VBox(8);
-    Label contentLabel = new Label("Message Content:");
-    contentLabel.getStyleClass().add("form-label");
-    TextArea contentField = new TextArea();
-    contentField.setText(message.getContenu());
-    contentField.setPromptText("Enter new message content (min 5 characters)");
-    contentField.getStyleClass().add("form-field");
-    Label contentError = new Label();
-    contentError.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
-    contentGroup.getChildren().addAll(contentLabel, contentField, contentError);
+        VBox contentGroup = new VBox(8);
+        Label contentLabel = new Label("Message Content:");
+        contentLabel.getStyleClass().add("form-label");
+        TextArea contentField = new TextArea();
+        contentField.setText(message.getContenu());
+        contentField.setPromptText("Enter new message content (min 5 characters)");
+        contentField.getStyleClass().add("form-field");
+        Label contentError = new Label();
+        contentError.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
+        contentGroup.getChildren().addAll(contentLabel, contentField, contentError);
 
-    // Message label for database errors
-    Label messageLabel = new Label();
-    messageLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
+        Label messageLabel = new Label();
+        messageLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
 
-    content.getChildren().addAll(contentGroup, messageLabel);
-    dialog.getDialogPane().setContent(content);
+        content.getChildren().addAll(contentGroup, messageLabel);
+        dialog.getDialogPane().setContent(content);
 
-    Button saveButton = (Button) dialog.getDialogPane().lookupButton(saveButtonType);
-    saveButton.getStyleClass().add("primary-button");
+        Button saveButton = (Button) dialog.getDialogPane().lookupButton(saveButtonType);
+        saveButton.getStyleClass().add("primary-button");
 
-    // Button press animation
-    saveButton.setOnMousePressed(e -> {
-        ScaleTransition st = new ScaleTransition(Duration.millis(200), saveButton);
-        st.setFromX(1.0);
-        st.setFromY(1.0);
-        st.setToX(1.05);
-        st.setToY(1.05);
-        st.setCycleCount(2);
-        st.setAutoReverse(true);
-        st.play();
-    });
+        saveButton.setOnMousePressed(e -> {
+            ScaleTransition st = new ScaleTransition(Duration.millis(200), saveButton);
+            st.setFromX(1.0);
+            st.setFromY(1.0);
+            st.setToX(1.05);
+            st.setToY(1.05);
+            st.setCycleCount(2);
+            st.setAutoReverse(true);
+            st.play();
+        });
 
-    // Add an event filter to validate before allowing the dialog to proceed
-    saveButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
-        String newContent = contentField.getText().trim();
-
-        // Reset error messages
-        contentError.setText("");
-        messageLabel.setText("");
-
-        // Validate content length (at least 5 characters)
-        if (newContent.length() < 5) {
-            contentError.setText("Message content must be at least 5 characters long.");
-            event.consume();
-            return;
-        }
-
-        // Update the message
-        MessageReclamation updatedMessage = new MessageReclamation(
-            message.getId(),
-            message.getUserId(),
-            message.getReclamationId(),
-            newContent,
-            new java.util.Date()
-        );
-        if (!messageService.updateMessage(updatedMessage)) {
-            messageLabel.setText("Failed to update message. Please try again.");
-            event.consume();
-        }
-    });
-
-    // Set result converter to handle the save action
-    dialog.setResultConverter(buttonType -> {
-        if (buttonType == saveButtonType) {
+        saveButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
             String newContent = contentField.getText().trim();
-            if (newContent.length() >= 5) {
-                MessageReclamation updatedMessage = new MessageReclamation(
-                    message.getId(),
-                    message.getUserId(),
-                    message.getReclamationId(),
-                    newContent,
-                    new java.util.Date()
-                );
-                if (messageService.updateMessage(updatedMessage)) {
-                    return updatedMessage;
+            contentError.setText("");
+            messageLabel.setText("");
+
+            if (newContent.length() < 5) {
+                contentError.setText("Message content must be at least 5 characters long.");
+                event.consume();
+                return;
+            }
+
+            MessageReclamation updatedMessage = new MessageReclamation(
+                message.getId(),
+                message.getUserId(),
+                message.getReclamationId(),
+                newContent,
+                new java.util.Date()
+            );
+            if (!messageService.updateMessage(updatedMessage)) {
+                messageLabel.setText("Failed to update message. Please try again.");
+                event.consume();
+            }
+        });
+
+        dialog.setResultConverter(buttonType -> {
+            if (buttonType == saveButtonType) {
+                String newContent = contentField.getText().trim();
+                if (newContent.length() >= 5) {
+                    MessageReclamation updatedMessage = new MessageReclamation(
+                        message.getId(),
+                        message.getUserId(),
+                        message.getReclamationId(),
+                        newContent,
+                        new java.util.Date()
+                    );
+                    if (messageService.updateMessage(updatedMessage)) {
+                        return updatedMessage;
+                    }
                 }
             }
-        }
-        return null;
-    });
+            return null;
+        });
 
-    // Show dialog and refresh UI on successful edit
-    dialog.showAndWait().ifPresent(updatedMessage -> {
-        if (updatedMessage != null) {
-            initializeUI(); // Refresh the UI with the updated message
-        }
-    });
-}
-    private Image loadEditIcon() {
-        try {
-            Image image = new Image(getClass().getResourceAsStream("/icons/edit.png"));
-            if (!image.isError()) {
-                return image;
-            } else {
-                System.err.println("Error loading edit icon: Image is corrupted or invalid.");
+        dialog.showAndWait().ifPresent(updatedMessage -> {
+            if (updatedMessage != null) {
+                initializeUI();
             }
-        } catch (Exception e) {
-            System.err.println("Error loading edit icon: " + e.getMessage());
-        }
-        // Fallback to a blank image
-        return new Image("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/wcAAgAB/5r7xQAAAABJRU5ErkJggg==");
-    }
-
-    private Image loadDeleteIcon() {
-        try {
-            Image image = new Image(getClass().getResourceAsStream("/icons/delete.png"));
-            if (!image.isError()) {
-                return image;
-            } else {
-                System.err.println("Error loading delete icon: Image is corrupted or invalid.");
-            }
-        } catch (Exception e) {
-            System.err.println("Error loading delete icon: " + e.getMessage());
-        }
-        return new Image("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/wcAAgAB/5r7xQAAAABJRU5ErkJggg==");
+        });
     }
 
     private VBox createReplyContainer() {
@@ -611,9 +605,50 @@ public class ReclamationMessagesController {
         }
     }
 
+    private Image loadBackIcon() {
+        try {
+            Image image = new Image(getClass().getResourceAsStream("/icons/back.png"));
+            if (!image.isError()) {
+                return image;
+            } else {
+                System.err.println("Error loading back icon: Image is corrupted or invalid.");
+            }
+        } catch (Exception e) {
+            System.err.println("Error loading back icon: " + e.getMessage());
+        }
+        return new Image("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/wcAAgAB/5r7xQAAAABJRU5ErkJggg==");
+    }
+
+    private Image loadEditIcon() {
+        try {
+            Image image = new Image(getClass().getResourceAsStream("/icons/edit.png"));
+            if (!image.isError()) {
+                return image;
+            } else {
+                System.err.println("Error loading edit icon: Image is corrupted or invalid.");
+            }
+        } catch (Exception e) {
+            System.err.println("Error loading edit icon: " + e.getMessage());
+        }
+        return new Image("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/wcAAgAB/5r7xQAAAABJRU5ErkJggg==");
+    }
+
+    private Image loadDeleteIcon() {
+        try {
+            Image image = new Image(getClass().getResourceAsStream("/icons/delete.png"));
+            if (!image.isError()) {
+                return image;
+            } else {
+                System.err.println("Error loading delete icon: Image is corrupted or invalid.");
+            }
+        } catch (Exception e) {
+            System.err.println("Error loading delete icon: " + e.getMessage());
+        }
+        return new Image("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/wcAAgAB/5r7xQAAAABJRU5ErkJggg==");
+    }
+
     private void handleBackToReclamations() {
         try {
-            // Get the current stage from the root node
             Stage currentStage = (Stage) root.getScene().getWindow();
             if (currentStage == null) {
                 System.err.println("Error: Current stage is null, cannot navigate back.");
@@ -623,7 +658,7 @@ public class ReclamationMessagesController {
                 alert.showAndWait();
                 return;
             }
-    
+
             URL dashboardUrl = getClass().getResource("/com/example/frontPages/dashboard.fxml");
             if (dashboardUrl == null) {
                 System.err.println("Error: /com/example/auth/DashboardFront.fxml not found in resources");
@@ -633,13 +668,12 @@ public class ReclamationMessagesController {
                 alert.showAndWait();
                 return;
             }
-            System.out.println("Loading dashboard from: " + dashboardUrl);
-    
+
             FXMLLoader dashboardLoader = new FXMLLoader(dashboardUrl);
             Parent dashboardRoot = dashboardLoader.load();
             com.example.auth.controller.DashboardFrontController dashboardController = dashboardLoader.getController();
             dashboardController.setPrimaryStage(currentStage);
-    
+
             URL reclamationUrl = getClass().getResource("/com/example/reclamation/Reclamation.fxml");
             if (reclamationUrl == null) {
                 System.err.println("Error: /com/example/reclamation/Reclamation.fxml not found in resources");
@@ -649,30 +683,23 @@ public class ReclamationMessagesController {
                 alert.showAndWait();
                 return;
             }
-            System.out.println("Loading reclamation from: " + reclamationUrl);
-    
+
             FXMLLoader reclamationLoader = new FXMLLoader(reclamationUrl);
             Parent reclamationRoot = reclamationLoader.load();
             ReclamationController reclamationController = reclamationLoader.getController();
             reclamationController.setPrimaryStage(currentStage);
-    
+
             dashboardController.getBorderPane().setCenter(reclamationRoot);
-    
-            // Create the new dashboard scene with current stage dimensions
+
             Scene dashboardScene = new Scene(dashboardRoot, currentStage.getWidth(), currentStage.getHeight());
             currentStage.setScene(dashboardScene);
             currentStage.setTitle("Dashboard - Reclamation Discussions");
-            currentStage.show(); // Ensure the stage is visible (though it should already be)
-    
-            // Optionally add a fade transition to smooth the switch
+            currentStage.show();
+
             FadeTransition fadeOut = new FadeTransition(Duration.millis(300), root);
             fadeOut.setFromValue(1.0);
             fadeOut.setToValue(0.0);
-            fadeOut.setOnFinished(e -> {
-                // No need to close the stage, just replace the scene
-            });
             fadeOut.play();
-    
         } catch (IOException e) {
             e.printStackTrace();
             Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to load reclamation discussions: " + e.getMessage());
@@ -681,7 +708,8 @@ public class ReclamationMessagesController {
             alert.showAndWait();
         }
     }
-        private void loadFallbackImage(ImageView avatar, User user) {
+
+    private void loadFallbackImage(ImageView avatar, User user) {
         String initials = user != null && user.getNom() != null && user.getPrenom() != null
                 ? (user.getPrenom().charAt(0) + "" + user.getNom().charAt(0)).toUpperCase()
                 : "UU";

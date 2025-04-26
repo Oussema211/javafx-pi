@@ -7,6 +7,9 @@ import javafx.collections.ObservableList;
 
 import java.util.List;
 
+/**
+ * Gère l'historique des commandes (en mémoire + en base de données).
+ */
 public class OrderHistoryManager {
 
     private static final ObservableList<OrderSummary> orderHistory = FXCollections.observableArrayList();
@@ -23,19 +26,19 @@ public class OrderHistoryManager {
         orderHistory.add(order);                     // Ajouter en mémoire observable
     }
 
-    // Récupérer la liste observable
+    // Récupérer la liste observable de l'historique
     public static ObservableList<OrderSummary> getOrderHistory() {
         return orderHistory;
     }
 
-    // Recharger l'historique depuis la base (utilisé après login par exemple)
+    // Recharger depuis la base (ex : après authentification)
     public static void reloadHistoryFromDatabase() {
         orderHistory.clear();
         List<OrderSummary> dbOrders = CommandesHistoriquesDAO.getAllCommandes();
         orderHistory.addAll(dbOrders);
     }
 
-    // Réinitialiser tout l'historique (mémoire + base) - pas forcément utilisé
+    // Supprimer tout l'historique (utilisé rarement)
     public static void clearHistory() {
         CommandesHistoriquesDAO.clearAllCommandes();
         orderHistory.clear();

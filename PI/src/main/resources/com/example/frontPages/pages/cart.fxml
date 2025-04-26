@@ -35,13 +35,14 @@
     <!-- 🎯 Boutons -->
     <HBox spacing="20" alignment="CENTER">
         <Button text="🗑 Vider Panier"
+                onAction="#handleClearCart"
                 style="-fx-background-color: #f44336; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10;"/>
         <Button fx:id="checkoutButton" text="✅ Commander"
-                style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10;"
-                onAction="#handleCheckout"/>
+                onAction="#handleCheckout"
+                style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10;"/>
         <Button fx:id="orderHistoryButton" text="🧾 Voir Mes Commandes"
-                style="-fx-background-color: #03A9F4; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10;"
-                onAction="#handleOrderHistory"/>
+                onAction="#handleOrderHistory"
+                style="-fx-background-color: #03A9F4; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10;"/>
     </HBox>
 
 </VBox>

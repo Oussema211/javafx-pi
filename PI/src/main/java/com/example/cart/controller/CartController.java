@@ -1,25 +1,23 @@
 package com.example.cart.controller;
 
 import com.example.cart.model.CartItem;
+import com.example.cart.CartManager;
 import javafx.animation.FadeTransition;
 import javafx.animation.TranslateTransition;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.control.*;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.beans.property.SimpleStringProperty;
-import com.example.cart.CartManager;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
-import javafx.scene.Parent;
 import javafx.util.Duration;
 
-import java.io.IOException;
-
 import java.io.File;
+import java.io.IOException;
 
 public class CartController {
 
@@ -43,16 +41,13 @@ public class CartController {
     @FXML
     private TableColumn<CartItem, Void> colImage;
 
-
     @FXML
     private Label totalLabel;
 
     @FXML
     public void initialize() {
-        // Gestion activation/désactivation du bouton "Commander"
         checkoutButton.setDisable(CartManager.getCartItems().isEmpty());
 
-// Écoute en live si le panier change
         CartManager.getCartItems().addListener((javafx.collections.ListChangeListener<CartItem>) change -> {
             checkoutButton.setDisable(CartManager.getCartItems().isEmpty());
         });
@@ -60,6 +55,7 @@ public class CartController {
         colProduit.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getProduit().getNom()));
         colQuantite.setCellValueFactory(data -> data.getValue().quantiteProperty().asObject());
         colPrix.setCellValueFactory(data -> data.getValue().totalPriceProperty().asObject());
+
         colImage.setCellFactory(param -> new TableCell<>() {
             private final ImageView imageView = new ImageView();
 
@@ -79,10 +75,9 @@ public class CartController {
                     if (cartItem != null && cartItem.getProduit().getImageName() != null) {
                         try {
                             String path = new File(cartItem.getProduit().getImageName()).toURI().toString();
-                            imageView.setImage(new javafx.scene.image.Image(path));
+                            imageView.setImage(new Image(path));
                         } catch (Exception e) {
-                            // image par défaut si problème
-                            imageView.setImage(new javafx.scene.image.Image("file:src/main/resources/images/default.png"));
+                            imageView.setImage(new Image("file:src/main/resources/images/default.png"));
                         }
                     }
                     setGraphic(imageView);
@@ -91,10 +86,10 @@ public class CartController {
         });
 
         addActionButtonsToTable();
-
         cartTable.setItems(CartManager.getCartItems());
         updateTotal();
         animateCartTable();
+
         FadeTransition fadeBtn1 = new FadeTransition(Duration.millis(800), checkoutButton);
         fadeBtn1.setFromValue(0);
         fadeBtn1.setToValue(1);
@@ -104,8 +99,6 @@ public class CartController {
         fadeBtn2.setFromValue(0);
         fadeBtn2.setToValue(1);
         fadeBtn2.play();
-
-
     }
 
     private void addActionButtonsToTable() {
@@ -148,12 +141,10 @@ public class CartController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/frontPages/pages/checkout.fxml"));
             Parent checkoutPage = loader.load();
 
-            // Cherche le BorderPane principal pour garder la navbar
             BorderPane root = (BorderPane) cartTable.getScene().lookup("#borderPane");
             if (root != null) {
                 root.setCenter(checkoutPage);
             } else {
-                // Si pas trouvé (théoriquement rare) : ouverture brute
                 Stage stage = (Stage) cartTable.getScene().getWindow();
                 stage.getScene().setRoot(checkoutPage);
             }
@@ -161,6 +152,7 @@ public class CartController {
             e.printStackTrace();
         }
     }
+
     @FXML
     private void handleOrderHistory() {
         try {
@@ -178,6 +170,7 @@ public class CartController {
             e.printStackTrace();
         }
     }
+
     private void animateCartTable() {
         javafx.application.Platform.runLater(() -> {
             cartTable.lookupAll(".table-row-cell").forEach(row -> {
@@ -186,15 +179,12 @@ public class CartController {
                 fade.setToValue(1);
 
                 TranslateTransition slide = new TranslateTransition(Duration.millis(600), row);
-                slide.setFromX(-50); // démarre légèrement décalé à gauche
-                slide.setToX(0); // revient à la position normale
+                slide.setFromX(-50);
+                slide.setToX(0);
 
                 fade.play();
                 slide.play();
             });
         });
     }
-
-
-
 }

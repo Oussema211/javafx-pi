@@ -7,15 +7,42 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * DAO pour la gestion des commandes historiques : lecture, sauvegarde, suppression.
+ */
 public class CommandesHistoriquesDAO {
 
-    // ✅ Charger toutes les commandes enregistrées
+    // Crée la table commandes_historiques si elle n'existe pas
+    private static void createTableIfNotExists(Connection conn) throws SQLException {
+        DatabaseMetaData metaData = conn.getMetaData();
+        ResultSet tables = metaData.getTables(null, null, "commandes_historiques", new String[]{"TABLE"});
+
+        if (!tables.next()) {
+            String createTableSQL = """
+                CREATE TABLE commandes_historiques (
+                    id VARCHAR(255) PRIMARY KEY,
+                    utilisateur VARCHAR(255) NOT NULL,
+                    date_achat VARCHAR(255) NOT NULL,
+                    prix_total DOUBLE NOT NULL
+                )
+            """;
+
+            try (Statement stmt = conn.createStatement()) {
+                stmt.executeUpdate(createTableSQL);
+                System.out.println("✅ Table 'commandes_historiques' créée avec succès.");
+            }
+        }
+    }
+
+    // ✅ Lire toutes les commandes historiques
     public static List<OrderSummary> getAllCommandes() {
         List<OrderSummary> commandes = new ArrayList<>();
 
         try {
             DatabaseConnection databaseConnection = new DatabaseConnection();
             Connection conn = databaseConnection.getConnection();
+
+            createTableIfNotExists(conn);
 
             Statement stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery("SELECT * FROM commandes_historiques");
@@ -30,7 +57,7 @@ public class CommandesHistoriquesDAO {
                 commandes.add(order);
             }
 
-            conn.close(); // Très important de fermer après usage
+            conn.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -38,13 +65,15 @@ public class CommandesHistoriquesDAO {
         return commandes;
     }
 
-    // ✅ Sauvegarder une commande après paiement
+    // ✅ Sauvegarder une commande dans la base
     public static void saveCommande(OrderSummary order) {
         String sql = "INSERT INTO commandes_historiques (id, utilisateur, date_achat, prix_total) VALUES (?, ?, ?, ?)";
 
         try {
             DatabaseConnection databaseConnection = new DatabaseConnection();
             Connection conn = databaseConnection.getConnection();
+
+            createTableIfNotExists(conn);
 
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, order.getId());
@@ -59,13 +88,15 @@ public class CommandesHistoriquesDAO {
         }
     }
 
-    // ✅ Supprimer toutes les commandes de la BDD
+    // ✅ Supprimer toutes les commandes de la base
     public static void clearAllCommandes() {
         String sql = "DELETE FROM commandes_historiques";
 
         try {
             DatabaseConnection databaseConnection = new DatabaseConnection();
             Connection conn = databaseConnection.getConnection();
+
+            createTableIfNotExists(conn);
 
             Statement stmt = conn.createStatement();
             stmt.executeUpdate(sql);
@@ -75,5 +106,4 @@ public class CommandesHistoriquesDAO {
             e.printStackTrace();
         }
     }
-
 }

@@ -15,7 +15,7 @@
                    style="-fx-font-size: 30px; -fx-text-fill: white; -fx-font-weight: bold;"/>
 
             <HBox spacing="25" alignment="CENTER">
-                <!-- Carte 1 -->
+                <!-- Carte 1 : Total commandes -->
                 <VBox spacing="8" alignment="CENTER"
                       onMouseEntered="#handleCardHover" onMouseExited="#handleCardExit"
                       style="-fx-background-color: white; -fx-background-radius: 15; -fx-padding: 15;
@@ -25,7 +25,7 @@
                            style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #4CAF50;"/>
                 </VBox>
 
-                <!-- Carte 2 -->
+                <!-- Carte 2 : Total dépensé -->
                 <VBox spacing="8" alignment="CENTER"
                       onMouseEntered="#handleCardHover" onMouseExited="#handleCardExit"
                       style="-fx-background-color: white; -fx-background-radius: 15; -fx-padding: 15;
@@ -35,7 +35,7 @@
                            style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #2196F3;"/>
                 </VBox>
 
-                <!-- Carte 3 -->
+                <!-- Carte 3 : Prix moyen -->
                 <VBox spacing="8" alignment="CENTER"
                       onMouseEntered="#handleCardHover" onMouseExited="#handleCardExit"
                       style="-fx-background-color: white; -fx-background-radius: 15; -fx-padding: 15;
@@ -54,7 +54,7 @@
                 <padding>
                     <Insets top="20" right="20" bottom="20" left="20"/>
                 </padding>
-                <!-- Les cartes de commandes s'ajouteront ici -->
+                <!-- Les cartes de commandes s'ajouteront ici dynamiquement -->
             </VBox>
         </ScrollPane>
     </center>

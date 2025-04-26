@@ -1,14 +1,16 @@
 package com.example.produit.controller;
 
+import com.example.auth.utils.SessionManager;
 import com.example.cart.CartManager;
+import com.example.produit.model.Commentaire;
 import com.example.produit.model.Produit;
+import com.example.produit.service.CommentaireDAO;
 import com.example.produit.service.ProduitDAO;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
+import javafx.geometry.Pos;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
@@ -17,52 +19,54 @@ import javafx.scene.text.Text;
 
 import java.io.File;
 import java.net.URL;
-import java.util.List;
-import java.util.ResourceBundle;
+import java.util.*;
 
 public class ProductCardController implements Initializable {
 
+    @FXML private ScrollPane scrollPane;
     @FXML private VBox productContainer;
     @FXML private Button prevButton;
     @FXML private Button nextButton;
     @FXML private Label pageLabel;
+    private final SessionManager sessionManager = SessionManager.getInstance();
 
     private List<Produit> allProducts;
     private int currentPage = 1;
-    private final int PRODUCTS_PER_PAGE = 12; // 3x4 grid
-    private final int CARDS_PER_ROW = 4;
+    private final int PRODUCTS_PER_PAGE = 6;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        // Load all products once
-        allProducts = ProduitDAO.getAllProducts();
-        updatePage();
+        try {
+            allProducts = ProduitDAO.getAllProducts();
+            for (Produit product : allProducts) {
+                List<Commentaire> comments = CommentaireDAO.getCommentairesByProduit(product);
+                product.setCommentaires(comments != null ? comments : new ArrayList<>());
+            }
+            updatePage();
+        } catch (Exception e) {
+            showErrorAlert("Initialization Error", "Failed to load products: " + e.getMessage());
+        }
     }
 
     private void updatePage() {
         productContainer.getChildren().clear();
-
-        // Calculate start and end indices for the current page
         int startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
         int endIndex = Math.min(startIndex + PRODUCTS_PER_PAGE, allProducts.size());
+        HBox row = new HBox(20);
+        row.setPadding(new Insets(10));
+        row.setAlignment(Pos.CENTER);
 
-        // Create rows of cards
-        HBox currentRow = null;
         for (int i = startIndex; i < endIndex; i++) {
-            if (i % CARDS_PER_ROW == 0) {
-                if (currentRow != null) {
-                    productContainer.getChildren().add(currentRow);
-                }
-                currentRow = new HBox(20);
-                currentRow.setPadding(new Insets(0, 10, 0, 10));
+            VBox productCard = createProductCard(allProducts.get(i));
+            row.getChildren().add(productCard);
+            if ((i - startIndex + 1) % 4 == 0 || i == endIndex - 1) {
+                productContainer.getChildren().add(row);
+                row = new HBox(20);
+                row.setPadding(new Insets(10));
+                row.setAlignment(Pos.CENTER);
             }
-            currentRow.getChildren().add(createProductCard(allProducts.get(i)));
-        }
-        if (currentRow != null && !currentRow.getChildren().isEmpty()) {
-            productContainer.getChildren().add(currentRow);
         }
 
-        // Update pagination controls
         pageLabel.setText("Page " + currentPage);
         prevButton.setDisable(currentPage == 1);
         nextButton.setDisable(endIndex >= allProducts.size());
@@ -85,50 +89,44 @@ public class ProductCardController implements Initializable {
     }
 
     private VBox createProductCard(Produit product) {
-        VBox card = new VBox(10);
-        card.setPadding(new Insets(15));
+        VBox card = new VBox(20);
+        card.setPadding(new Insets(20));
         card.getStyleClass().add("product-card");
 
-        // Image Container
-        VBox imageContainer = new VBox();
-        imageContainer.getStyleClass().add("image-container");
-        imageContainer.setAlignment(javafx.geometry.Pos.CENTER);
+        Label discountBadge = new Label("10% OFF");
+        discountBadge.getStyleClass().add("discount-badge");
+        discountBadge.setVisible(false);
+        VBox.setMargin(discountBadge, new Insets(-5, 0, 0, 0));
 
-        // Image
         ImageView imageView = new ImageView();
         imageView.getStyleClass().add("image-view");
         try {
             String imagePath = product.getImageName() != null && !product.getImageName().isEmpty()
                     ? new File(product.getImageName()).toURI().toString()
                     : "file:src/main/resources/images/default.png";
-            Image image = new Image(imagePath, 150, 150, true, true);
+            Image image = new Image(imagePath, 180, 180, true, true);
             imageView.setImage(image);
         } catch (Exception e) {
-            Image defaultImage = new Image("file:src/main/resources/images/default.png", 150, 150, true, true);
-            imageView.setImage(defaultImage);
+            imageView.setImage(new Image("file:src/main/resources/images/default.png", 180, 180, true, true));
         }
-        imageView.setFitWidth(150);
-        imageView.setFitHeight(150);
 
-        // Product Details
         Label nameLabel = new Label(product.getNom() != null ? product.getNom() : "Unknown");
         nameLabel.getStyleClass().add("product-name");
 
-        Text descriptionText = new Text(product.getDescription() != null ? product.getDescription() : "No description");
-        descriptionText.getStyleClass().add("product-description");
-        descriptionText.setWrappingWidth(230);
+        HBox ratingBox = createStarRating(getAverageRating(product.getCommentaires()));
+        ratingBox.getStyleClass().add("rating-box");
 
-        Label priceLabel = new Label(String.format("Price: $%.2f", product.getPrixUnitaire()));
+        HBox priceBox = new HBox(10);
+        priceBox.setAlignment(Pos.CENTER_LEFT);
+        Label priceLabel = new Label(String.format("$%.2f", product.getPrixUnitaire()));
         priceLabel.getStyleClass().add("product-price");
-
-        Label quantityLabel = new Label("Quantity: " + product.getQuantite());
+        Label quantityLabel = new Label("Qty: " + product.getQuantite());
         quantityLabel.getStyleClass().add("product-quantity");
+        priceBox.getChildren().addAll(priceLabel, quantityLabel);
 
-        Label categoryLabel = new Label("Category: " +
-                (product.getCategory() != null && product.getCategory().getNom() != null ? product.getCategory().getNom() : "None"));
+        Label categoryLabel = new Label(product.getCategory() != null && product.getCategory().getNom() != null ? product.getCategory().getNom() : "None");
         categoryLabel.getStyleClass().add("product-category");
 
-        // Add to Cart Button
         Button addToCartButton = new Button("Add to Cart");
         addToCartButton.getStyleClass().add("add-to-cart-button");
         addToCartButton.setOnAction(event -> {
@@ -136,11 +134,55 @@ public class ProductCardController implements Initializable {
             showAddedNotification(product.getNom());
         });
 
+        // Supprimer l'appel : ne rien faire au clic, ou afficher une simple notification
+        card.setOnMouseClicked(event -> {
+            // Exemple : afficher un petit message
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Produit Sélectionné");
+            alert.setHeaderText(null);
+            alert.setContentText("Produit: " + product.getNom());
+            alert.showAndWait();
+        });
 
-
-        card.getChildren().addAll(imageView, nameLabel, descriptionText, priceLabel, quantityLabel, categoryLabel, addToCartButton);
+        card.getChildren().addAll(discountBadge, imageView, nameLabel, ratingBox, priceBox, categoryLabel, addToCartButton);
         return card;
     }
+
+    private HBox createStarRating(double rating) {
+        HBox starBox = new HBox(3);
+        starBox.setAlignment(Pos.CENTER_LEFT);
+        int fullStars = (int) rating;
+        boolean halfStar = rating - fullStars >= 0.5;
+        for (int i = 0; i < 5; i++) {
+            Label star = new Label();
+            if (i < fullStars) {
+                star.setText("★");
+                star.getStyleClass().add("star-filled");
+            } else if (i == fullStars && halfStar) {
+                star.setText("★");
+                star.getStyleClass().add("star-half");
+            } else {
+                star.setText("☆");
+                star.getStyleClass().add("star-empty");
+            }
+            starBox.getChildren().add(star);
+        }
+        return starBox;
+    }
+
+    private double getAverageRating(List<Commentaire> commentaires) {
+        if (commentaires == null || commentaires.isEmpty()) return 0;
+        double total = 0;
+        int count = 0;
+        for (Commentaire c : commentaires) {
+            if (c.getNote() != null) {
+                total += c.getNote();
+                count++;
+            }
+        }
+        return count > 0 ? total / count : 0;
+    }
+
     private void showAddedNotification(String productName) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Produit ajouté");
@@ -149,4 +191,12 @@ public class ProductCardController implements Initializable {
         alert.showAndWait();
     }
 
+    private void showErrorAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.getDialogPane().getStyleClass().add("error-dialog");
+        alert.showAndWait();
+    }
 }

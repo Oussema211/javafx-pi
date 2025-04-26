@@ -3,7 +3,6 @@ package com.example.auth.controller;
 import com.example.auth.model.User;
 import com.example.auth.service.AuthService;
 import com.example.auth.utils.SessionManager;
-import com.example.cart.OrderHistoryManager;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -88,7 +87,6 @@ public class LoginController {
 
     @FXML
     private void onLoginClicked() throws IOException {
-
         String email = usernameField.getText().trim();
         String password = passwordField.getText().trim();
 
@@ -104,8 +102,6 @@ public class LoginController {
         }
 
         sessionManager.setLoggedInUser(user);
-        // 🆕 ➔ Recharge l'historique des commandes dès que l'utilisateur est connecté !
-        OrderHistoryManager.reloadHistoryFromDatabase();
 
         // Redirect based on user role
         String fxmlFile = user.hasRole("ROLE_ADMIN") ? "/com/example/auth/dashboard.fxml" : "/com/example/frontPages/dashboard.fxml";

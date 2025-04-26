@@ -101,7 +101,7 @@ public class CommandeFinaliseeDAO {
         return lignes;
     }
 
-    // ✅ MODIFIER commande
+ 
     public static void updateCommande(CommandeFinalisee commande) {
         String updateSQL = "UPDATE commande_finalisee SET user_id = ?, date_achat = ?, prix_total = ? WHERE id = ?";
         String deleteLignesSQL = "DELETE FROM commande_produit WHERE commande_id = ?";
@@ -114,18 +114,17 @@ public class CommandeFinaliseeDAO {
 
             conn.setAutoCommit(false);
 
-            // Modifier la commande
             updateStmt.setString(1, commande.getUtilisateur().getId().toString());
             updateStmt.setTimestamp(2, Timestamp.valueOf(commande.getDate()));
             updateStmt.setDouble(3, commande.getPrixTotal());
             updateStmt.setString(4, commande.getId().toString());
             updateStmt.executeUpdate();
 
-            // Supprimer anciennes lignes
+
             deleteLignesStmt.setString(1, commande.getId().toString());
             deleteLignesStmt.executeUpdate();
 
-            // Réinsérer nouvelles lignes
+
             for (ProduitCommandeTemp ligne : commande.getProduitsAvecQuantites()) {
                 insertLigneStmt.setString(1, commande.getId().toString());
                 insertLigneStmt.setString(2, ligne.getProduit().getId().toString());
@@ -141,7 +140,7 @@ public class CommandeFinaliseeDAO {
         }
     }
 
-    // ✅ SUPPRIMER commande
+
     public static void deleteCommande(UUID id) {
         String deleteLignesSQL = "DELETE FROM commande_produit WHERE commande_id = ?";
         String deleteCommandeSQL = "DELETE FROM commande_finalisee WHERE id = ?";

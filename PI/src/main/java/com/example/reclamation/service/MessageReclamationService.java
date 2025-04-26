@@ -1,32 +1,184 @@
 package com.example.reclamation.service;
 
+import com.example.auth.model.User;
+import com.example.auth.service.AuthService;
+import com.example.reclamation.model.MessageReclamation;
+import com.example.reclamation.model.Reclamation;
+
+import com.example.auth.utils.MyDatabase;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.URI;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
-
-import com.example.auth.utils.MyDatabase;
-import com.example.reclamation.model.MessageReclamation;
 
 public class MessageReclamationService {
     private final Connection conn;
-
+    private final ObjectMapper objectMapper;
+    private final HttpClient httpClient;
+    private final AuthService authService;
+    private final ReclamationService reclamationService;
     public MessageReclamationService() {
-        conn = MyDatabase.getInstance().getCnx();
+        this.conn = MyDatabase.getInstance().getCnx();
+        this.objectMapper = new ObjectMapper();
+        this.httpClient = HttpClient.newHttpClient();
+        this.authService = new AuthService();
+        this.reclamationService = new ReclamationService();
+        initializeTable();
+    }
+
+    private void initializeTable() {
         try (Statement stmt = conn.createStatement()) {
             String sql = "CREATE TABLE IF NOT EXISTS message_reclamation (" +
-                    "id VARCHAR(36) PRIMARY KEY, " +
-                    "user_id VARCHAR(36) NOT NULL, " +
-                    "reclamation_id VARCHAR(36) DEFAULT NULL, " +
-                    "contenu VARCHAR(255) NOT NULL, " +
-                    "date_message DATETIME NOT NULL, " +
-                    "FOREIGN KEY (user_id) REFERENCES user(id), " +
-                    "FOREIGN KEY (reclamation_id) REFERENCES reclamations(id))";
+                         "id VARCHAR(255) PRIMARY KEY, " +
+                         "user_id VARCHAR(255) NOT NULL, " +
+                         "reclamation_id VARCHAR(255) DEFAULT NULL, " +
+                         "contenu VARCHAR(255) NOT NULL, " +
+                         "date_message DATETIME NOT NULL, " +
+                         "FOREIGN KEY (user_id) REFERENCES user(id), " +
+                         "FOREIGN KEY (reclamation_id) REFERENCES reclamations(id))";
             stmt.execute(sql);
         } catch (SQLException e) {
-            System.err.println("Error initializing message_reclamation table: " + e.getMessage());
-            e.printStackTrace(); // For debugging
+            throw new RuntimeException("Error initializing message_reclamation table", e);
+        }
+    }
+
+    public String generateAutoReply(UUID userId, UUID reclamationId) throws Exception {
+        String selectSql = "SELECT title, description FROM reclamations WHERE id = ?";
+        String reclamationText;
+        try (PreparedStatement ps = conn.prepareStatement(selectSql)) {
+            ps.setString(1, reclamationId.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    throw new IllegalArgumentException("Reclamation not found: " + reclamationId);
+                }
+                String title = rs.getString("title");
+                String desc  = rs.getString("description");
+                reclamationText = (title + " " + desc).trim();
+                if (reclamationText.isEmpty()) {
+                    throw new IllegalStateException("Reclamation text is empty");
+                }
+            }
+        }
+
+        // 2) Call the Flask API
+        String requestJson = objectMapper.writeValueAsString(
+            Map.of("reclamation", reclamationText)
+        );
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(new URI("http://localhost:5000/predict"))
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(requestJson))
+            .build();
+
+        HttpResponse<String> response = httpClient.send(request,
+            HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("Flask API error: HTTP " + response.statusCode());
+        }
+
+        JsonNode root = objectMapper.readTree(response.body());
+        String autoReply = root.path("response").asText(null);
+        if (autoReply == null || autoReply.isBlank()) {
+            throw new RuntimeException("No 'response' field in API reply");
+        }
+
+        // 3) Persist the new message
+        boolean saved = addMessage(userId, reclamationId, autoReply);
+        if (!saved) {
+            throw new SQLException("Failed to save auto‐reply message");
+        }
+
+        // 4) Update reclamation status to RESOLUE
+        String updateSql = "UPDATE reclamations SET statut = ? WHERE id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(updateSql)) {
+            ps.setString(1, "resolved");  // or use an enum constant if you have one
+            ps.setString(2, reclamationId.toString());
+            if (ps.executeUpdate() != 1) {
+                throw new SQLException("Failed to update reclamation status");
+            }
+        }
+
+        return autoReply;
+    }
+    public String retrainModel() throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(new URI("http://localhost:5000/retrain"))
+            .POST(HttpRequest.BodyPublishers.noBody())
+            .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        JsonNode root = objectMapper.readTree(response.body());
+
+        if (response.statusCode() == 200) {
+            return root.path("message").asText("Model retrained successfully");
+        } else {
+            String error = root.path("error").asText("Retraining failed");
+            String details = root.path("details").asText("");
+            throw new RuntimeException(error + (details.isEmpty() ? "" : ": " + details));
+        }
+    }
+     public String addReclamationToCsv(UUID reclamationId) throws Exception {
+        // 1) Load the reclamation
+        Reclamation rec = reclamationService.getReclamationById(reclamationId);
+        if (rec == null) {
+            throw new IllegalArgumentException("Reclamation not found: " + reclamationId);
+        }
+
+        // 2) Find the first admin reply
+        List<MessageReclamation> messages = getMessagesForReclamation(reclamationId);
+        MessageReclamation adminMsg = null;
+        for (MessageReclamation msg : messages) {
+            User u = authService.getUserById(msg.getUserId());
+            if (u != null && u.hasRole("ROLE_ADMIN")) {
+                adminMsg = msg;
+                break;
+            }
+        }
+        if (adminMsg == null) {
+            throw new IllegalStateException("No admin response found for reclamation: " + reclamationId);
+        }
+
+        // 3) Build JSON payload
+        String reclamationText = (rec.getTitle() + " " + rec.getDescription()).trim();
+        String responseText = adminMsg.getContenu();
+        Map<String, String> payload = Map.of(
+            "reclamation", reclamationText,
+            "response", responseText
+        );
+        String requestJson = objectMapper.writeValueAsString(payload);
+
+        // 4) Call Flask API
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(new URI("http://localhost:5000/add_reclamations"))
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(requestJson))
+            .build();
+        HttpResponse<String> resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        JsonNode root = objectMapper.readTree(resp.body());
+
+        // 5) Handle response
+        if (resp.statusCode() == 200) {
+            if (root.has("added") && root.get("added").asBoolean()) {
+                return "Reclamation added to CSV successfully";
+            } else if (root.has("skipped")) {
+                return "Reclamation skipped: " + root.get("skipped").toString();
+            } else {
+                throw new RuntimeException("Unexpected API response: " + resp.body());
+            }
+        } else {
+            String error = root.path("error").asText("Retraining failed");
+            String details = root.path("details").asText("");
+            throw new RuntimeException(error + (details.isEmpty() ? "" : ": " + details));
         }
     }
 
@@ -49,6 +201,7 @@ public class MessageReclamationService {
             return false;
         }
     }
+    
     // Read: Get message by ID
     public MessageReclamation getMessageById(UUID id) {
         String sql = "SELECT HEX(id) AS id, HEX(user_id) AS user_id, HEX(reclamation_id) AS reclamation_id, " +
