@@ -93,8 +93,33 @@
                         </padding>
                         <Label text="Calendrier des événements" style="-fx-font-weight: bold; -fx-font-size: 18; -fx-text-fill: #2e7d32;" alignment="CENTER" />
                         <Separator style="-fx-stroke: #a5d6a7;" />
-                        <TextArea editable="false" prefHeight="300" style="-fx-background-color: #e8f5e9; -fx-border-color: #a5d6a7; -fx-font-size: 14; -fx-text-fill: #1b5e20;"
-                                  text="Calendar would be displayed here\nwith all events marked" />
+                        
+                        <!-- Calendar Controls -->
+                        <HBox spacing="10" alignment="CENTER">
+                            <Button fx:id="prevMonthBtn" text="◀" style="-fx-background-color: #e8f5e9; -fx-text-fill: #2e7d32; -fx-font-size: 14; -fx-background-radius: 4;" onAction="#previousMonth" />
+                            <Label fx:id="currentMonthLabel" text="Avril 2024" style="-fx-font-size: 16; -fx-text-fill: #2e7d32;" />
+                            <Button fx:id="nextMonthBtn" text="▶" style="-fx-background-color: #e8f5e9; -fx-text-fill: #2e7d32; -fx-font-size: 14; -fx-background-radius: 4;" onAction="#nextMonth" />
+                        </HBox>
+                        
+                        <!-- Calendar Grid -->
+                        <GridPane fx:id="calendarGrid" hgap="5" vgap="5" alignment="CENTER">
+                            <!-- Week day headers -->
+                            <Label text="Dim" style="-fx-font-weight: bold; -fx-text-fill: #2e7d32;" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                            <Label text="Lun" style="-fx-font-weight: bold; -fx-text-fill: #2e7d32;" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                            <Label text="Mar" style="-fx-font-weight: bold; -fx-text-fill: #2e7d32;" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+                            <Label text="Mer" style="-fx-font-weight: bold; -fx-text-fill: #2e7d32;" GridPane.columnIndex="3" GridPane.rowIndex="0" />
+                            <Label text="Jeu" style="-fx-font-weight: bold; -fx-text-fill: #2e7d32;" GridPane.columnIndex="4" GridPane.rowIndex="0" />
+                            <Label text="Ven" style="-fx-font-weight: bold; -fx-text-fill: #2e7d32;" GridPane.columnIndex="5" GridPane.rowIndex="0" />
+                            <Label text="Sam" style="-fx-font-weight: bold; -fx-text-fill: #2e7d32;" GridPane.columnIndex="6" GridPane.rowIndex="0" />
+                        </GridPane>
+                        
+                        <!-- Event Details Panel -->
+                        <VBox fx:id="eventDetailsPanel" spacing="10" style="-fx-background-color: #e8f5e9; -fx-padding: 10; -fx-background-radius: 4;">
+                            <Label text="Détails de l'événement" style="-fx-font-weight: bold; -fx-text-fill: #2e7d32;" />
+                            <Label fx:id="eventTitleLabel" text="" style="-fx-text-fill: #1b5e20;" />
+                            <Label fx:id="eventDateLabel" text="" style="-fx-text-fill: #1b5e20;" />
+                            <Label fx:id="eventDescriptionLabel" text="" style="-fx-text-fill: #1b5e20;" wrapText="true" />
+                        </VBox>
                     </VBox>
                 </VBox>
             </GridPane>

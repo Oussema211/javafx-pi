@@ -3,6 +3,8 @@ package com.example.Evenement.Controller;
 import com.example.Evenement.Dao.EvenementDAO;
 import com.example.Evenement.Model.Evenement;
 import com.example.Evenement.Model.TypeEvenement;
+import com.example.Evenement.Service.GoogleCalendarService;
+import com.google.api.services.calendar.model.Event;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -14,9 +16,14 @@ import javafx.geometry.Insets;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import java.io.File;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
 
 public class EventsController {
 
@@ -27,19 +34,44 @@ public class EventsController {
     @FXML private Button previousPageBtn;
     @FXML private Button nextPageBtn;
 
+    // Nouveaux composants FXML pour le calendrier
+    @FXML private Button prevMonthBtn;
+    @FXML private Button nextMonthBtn;
+    @FXML private Label currentMonthLabel;
+    @FXML private GridPane calendarGrid;
+    @FXML private VBox eventDetailsPanel;
+    @FXML private Label eventTitleLabel;
+    @FXML private Label eventDateLabel;
+    @FXML private Label eventDescriptionLabel;
+
     // Data and State
     private final ObservableList<Evenement> eventList = FXCollections.observableArrayList();
     private final FilteredList<Evenement> filteredEvents = new FilteredList<>(eventList);
     private int currentPage = 1;
     private final int itemsPerPage = 6;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+    
+    // État du calendrier
+    private YearMonth currentYearMonth = YearMonth.now();
+    private Map<LocalDate, Evenement> eventMap = new HashMap<>();
+
+    private GoogleCalendarService googleCalendarService;
+    private Map<String, String> eventIdMap = new HashMap<>(); // Maps local event IDs to Google Calendar event IDs
 
     @FXML
     public void initialize() {
+        try {
+            googleCalendarService = new GoogleCalendarService();
+        } catch (Exception e) {
+            showAlert("Erreur", "Erreur lors de l'initialisation de Google Calendar: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
         setupSortComboBox();
         setupSearchFilter();
         loadEvents();
         updatePaginationButtons();
+        setupCalendar();
     }
 
     private void setupSortComboBox() {
@@ -71,10 +103,100 @@ public class EventsController {
 
     private void loadEvents() {
         try {
+            // Charger les événements locaux
             eventList.setAll(new EvenementDAO().getAll());
+            
+            // Synchroniser avec Google Calendar
+            syncWithGoogleCalendar();
+            
             displayEvents();
+            loadEventsIntoCalendar();
         } catch (Exception e) {
             showAlert("Erreur", "Erreur lors du chargement des événements: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void syncWithGoogleCalendar() {
+        try {
+            // Obtenir les événements du mois en cours
+            LocalDateTime startOfMonth = currentYearMonth.atDay(1).atStartOfDay();
+            LocalDateTime endOfMonth = currentYearMonth.atEndOfMonth().atTime(23, 59, 59);
+            
+            List<Event> googleEvents = googleCalendarService.getEvents(startOfMonth, endOfMonth);
+            
+            // Synchroniser chaque événement local avec Google Calendar
+            for (Evenement localEvent : eventList) {
+                String googleEventId = eventIdMap.get(localEvent.getId().toString());
+                
+                if (googleEventId == null) {
+                    // Créer un nouvel événement dans Google Calendar
+                    Event newGoogleEvent = googleCalendarService.createEvent(
+                        localEvent.getTitre(),
+                        localEvent.getDescription(),
+                        localEvent.getDateDebut(),
+                        localEvent.getDateFin()
+                    );
+                    eventIdMap.put(localEvent.getId().toString(), newGoogleEvent.getId());
+                } else {
+                    // Mettre à jour l'événement existant dans Google Calendar
+                    googleCalendarService.updateEvent(
+                        googleEventId,
+                        localEvent.getTitre(),
+                        localEvent.getDescription(),
+                        localEvent.getDateDebut(),
+                        localEvent.getDateFin()
+                    );
+                }
+            }
+        } catch (Exception e) {
+            showAlert("Erreur", "Erreur lors de la synchronisation avec Google Calendar: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void createEventInGoogleCalendar(Evenement event) {
+        try {
+            Event googleEvent = googleCalendarService.createEvent(
+                event.getTitre(),
+                event.getDescription(),
+                event.getDateDebut(),
+                event.getDateFin()
+            );
+            eventIdMap.put(event.getId().toString(), googleEvent.getId());
+        } catch (Exception e) {
+            showAlert("Erreur", "Erreur lors de la création de l'événement dans Google Calendar: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void updateEventInGoogleCalendar(Evenement event) {
+        try {
+            String googleEventId = eventIdMap.get(event.getId().toString());
+            if (googleEventId != null) {
+                googleCalendarService.updateEvent(
+                    googleEventId,
+                    event.getTitre(),
+                    event.getDescription(),
+                    event.getDateDebut(),
+                    event.getDateFin()
+                );
+            }
+        } catch (Exception e) {
+            showAlert("Erreur", "Erreur lors de la mise à jour de l'événement dans Google Calendar: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void deleteEventFromGoogleCalendar(Evenement event) {
+        try {
+            String googleEventId = eventIdMap.get(event.getId().toString());
+            if (googleEventId != null) {
+                googleCalendarService.deleteEvent(googleEventId);
+                eventIdMap.remove(event.getId().toString());
+            }
+        } catch (Exception e) {
+            showAlert("Erreur", "Erreur lors de la suppression de l'événement dans Google Calendar: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -243,5 +365,158 @@ public class EventsController {
     private void updatePaginationButtons() {
         previousPageBtn.setDisable(currentPage <= 1);
         nextPageBtn.setDisable(currentPage * itemsPerPage >= filteredEvents.size());
+    }
+
+    private void setupCalendar() {
+        updateCalendar();
+        loadEventsIntoCalendar();
+    }
+
+    private void updateCalendar() {
+        // Mettre à jour le label du mois
+        currentMonthLabel.setText(currentYearMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")));
+        
+        // Nettoyer la grille existante
+        calendarGrid.getChildren().clear();
+        
+        // Ajouter les en-têtes des jours de la semaine (déjà dans le FXML)
+        
+        // Obtenir le premier jour du mois
+        LocalDate firstOfMonth = currentYearMonth.atDay(1);
+        int dayOfWeek = firstOfMonth.getDayOfWeek().getValue() % 7; // Ajuster pour commencer le dimanche
+        
+        // Ajouter les jours du mois
+        for (int i = 0; i < currentYearMonth.lengthOfMonth(); i++) {
+            LocalDate date = firstOfMonth.plusDays(i);
+            VBox dayCell = createDayCell(date);
+            calendarGrid.add(dayCell, (dayOfWeek + i) % 7, (dayOfWeek + i) / 7 + 1);
+        }
+    }
+
+    private VBox createDayCell(LocalDate date) {
+        VBox cell = new VBox(2);
+        cell.setStyle("-fx-background-color: #ffffff; -fx-padding: 5; -fx-background-radius: 4; -fx-border-radius: 4;");
+        cell.setPrefWidth(80);
+        cell.setPrefHeight(80);
+        
+        // Label du jour
+        Label dayLabel = new Label(String.valueOf(date.getDayOfMonth()));
+        dayLabel.setStyle("-fx-font-size: 14; -fx-text-fill: #2e7d32;");
+        
+        // Vérifier s'il y a des événements pour cette date
+        Evenement event = eventMap.get(date);
+        if (event != null) {
+            // Créer un conteneur pour l'événement avec une couleur de fond basée sur le type
+            VBox eventBox = new VBox(2);
+            String backgroundColor = getEventTypeColor(event.getType().getLabel());
+            eventBox.setStyle(String.format("-fx-background-color: %s; -fx-padding: 3; -fx-background-radius: 3; " +
+                    "-fx-border-radius: 3; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 3, 0, 0, 0);", backgroundColor));
+            
+            // Titre de l'événement
+            Label eventLabel = new Label(event.getTitre());
+            eventLabel.setStyle("-fx-font-size: 10; -fx-text-fill: #ffffff; -fx-font-weight: bold;");
+            eventLabel.setWrapText(true);
+            
+            // Heures de l'événement
+            Label timeLabel = new Label(formatEventTime(event));
+            timeLabel.setStyle("-fx-font-size: 8; -fx-text-fill: #ffffff;");
+            
+            // Indicateur si c'est le premier ou dernier jour
+            if (date.isEqual(event.getDateDebut().toLocalDate())) {
+                Label startLabel = new Label("▼ Début");
+                startLabel.setStyle("-fx-font-size: 8; -fx-text-fill: #ffffff;");
+                eventBox.getChildren().add(startLabel);
+            }
+            if (date.isEqual(event.getDateFin().toLocalDate())) {
+                Label endLabel = new Label("▲ Fin");
+                endLabel.setStyle("-fx-font-size: 8; -fx-text-fill: #ffffff;");
+                eventBox.getChildren().add(endLabel);
+            }
+            
+            eventBox.getChildren().addAll(eventLabel, timeLabel);
+            
+            // Ajouter un effet de survol
+            eventBox.setOnMouseEntered(e -> {
+                eventBox.setStyle(String.format("-fx-background-color: derive(%s, 10%%); -fx-padding: 3; " +
+                        "-fx-background-radius: 3; -fx-border-radius: 3; " +
+                        "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 5, 0, 0, 0);", backgroundColor));
+            });
+            eventBox.setOnMouseExited(e -> {
+                eventBox.setStyle(String.format("-fx-background-color: %s; -fx-padding: 3; -fx-background-radius: 3; " +
+                        "-fx-border-radius: 3; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 3, 0, 0, 0);", backgroundColor));
+            });
+            
+            // Gestionnaire de clic
+            eventBox.setOnMouseClicked(e -> showEventDetailsInPanel(event));
+            
+            cell.getChildren().addAll(dayLabel, eventBox);
+            
+            // Marquer visuellement si c'est dans l'intervalle
+            if (isDateInEventInterval(date, event)) {
+                cell.setStyle(cell.getStyle() + String.format("; -fx-border-color: %s; -fx-border-width: 1;", backgroundColor));
+            }
+        } else {
+            cell.getChildren().add(dayLabel);
+        }
+        
+        return cell;
+    }
+
+    private String formatEventTime(Evenement event) {
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+        return event.getDateDebut().format(timeFormatter) + " - " + event.getDateFin().format(timeFormatter);
+    }
+
+    private boolean isDateInEventInterval(LocalDate date, Evenement event) {
+        LocalDate startDate = event.getDateDebut().toLocalDate();
+        LocalDate endDate = event.getDateFin().toLocalDate();
+        return !date.isBefore(startDate) && !date.isAfter(endDate);
+    }
+
+    private String getEventTypeColor(String type) {
+        switch (type.toLowerCase()) {
+            case "foire":
+                return "#2196F3"; // Bleu
+            case "formation":
+                return "#4CAF50"; // Vert
+            case "conférence":
+                return "#9C27B0"; // Violet
+            default:
+                return "#FF9800"; // Orange par défaut
+        }
+    }
+
+    private void loadEventsIntoCalendar() {
+        eventMap.clear();
+        for (Evenement event : eventList) {
+            LocalDate startDate = event.getDateDebut().toLocalDate();
+            LocalDate endDate = event.getDateFin().toLocalDate();
+            
+            // Ajouter l'événement pour chaque jour de sa durée
+            for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+                eventMap.put(date, event);
+            }
+        }
+        updateCalendar();
+    }
+
+    private void showEventDetailsInPanel(Evenement event) {
+        eventTitleLabel.setText(event.getTitre());
+        eventDateLabel.setText("Du " + event.getDateDebut().format(DATE_FORMATTER) + 
+                             " au " + event.getDateFin().format(DATE_FORMATTER));
+        eventDescriptionLabel.setText(event.getDescription());
+        eventDetailsPanel.setVisible(true);
+    }
+
+    @FXML
+    private void previousMonth() {
+        currentYearMonth = currentYearMonth.minusMonths(1);
+        updateCalendar();
+    }
+
+    @FXML
+    private void nextMonth() {
+        currentYearMonth = currentYearMonth.plusMonths(1);
+        updateCalendar();
     }
 }
