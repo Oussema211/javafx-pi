@@ -9,6 +9,9 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.geometry.Pos;
@@ -16,6 +19,7 @@ import javafx.geometry.Insets;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import java.io.File;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -24,6 +28,8 @@ import java.util.stream.Collectors;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 
 public class EventsController {
 
@@ -278,29 +284,34 @@ public class EventsController {
     }
 
     private void showEventDetails(Evenement event) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Détails de l'événement");
-        alert.setHeaderText(event.getTitre());
+        try {
+            // Charger le FXML
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/Evenement/event-details.fxml"));
+            Parent root = loader.load();
 
-        String content = String.format(
-                "Description: %s\n" +
-                        "Type: %s\n" +
-                        "Statut: %s\n" +
-                        "Date de début: %s\n" +
-                        "Date de fin: %s\n" +
-                        "Régions: %s\n" +
-                        "Photo: %s",
-                event.getDescription(),
-                event.getType().getLabel(),
-                event.getStatut().getLabel(),
-                event.getDateDebut().format(DATE_FORMATTER),
-                event.getDateFin().format(DATE_FORMATTER),
-                event.getRegions().stream().map(r -> r.getNom()).collect(Collectors.joining(", ")),
-                event.getPhotoPath() != null ? event.getPhotoPath() : "Aucune photo"
-        );
+            // Configurer le contrôleur
+            EventDetailsController controller = loader.getController();
+            controller.setEvent(event);
 
-        alert.setContentText(content);
-        alert.showAndWait();
+            // Créer et configurer la nouvelle fenêtre
+            Stage detailsStage = new Stage();
+            detailsStage.setTitle("Détails de l'événement");
+            detailsStage.initModality(Modality.APPLICATION_MODAL);
+            controller.setStage(detailsStage);
+
+            // Configurer la scène
+            Scene scene = new Scene(root);
+            detailsStage.setScene(scene);
+            detailsStage.setMinWidth(900);
+            detailsStage.setMinHeight(700);
+
+            // Afficher la fenêtre
+            detailsStage.showAndWait();
+
+        } catch (IOException e) {
+            showAlert("Erreur", "Erreur lors de l'affichage des détails: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     private void showAlert(String title, String message) {
