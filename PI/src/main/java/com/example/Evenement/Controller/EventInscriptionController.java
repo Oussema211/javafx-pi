@@ -15,7 +15,6 @@ public class EventInscriptionController {
     @FXML private Button backButton;
     @FXML private Label eventTitle;
     @FXML private RadioButton sessionActuelle;
-    @FXML private RadioButton nouveauParticipant;
     @FXML private VBox formulaireManuel;
     @FXML private TextField nomField;
     @FXML private TextField prenomField;
@@ -25,12 +24,10 @@ public class EventInscriptionController {
     private Evenement currentEvent;
     private Stage stage;
     private SessionManager sessionManager = SessionManager.getInstance();
-    private ToggleGroup inscriptionToggle;
 
     public void setEvent(Evenement event) {
         this.currentEvent = event;
         eventTitle.setText(event.getTitre());
-        initializeInscriptionOptions();
     }
 
     public void setStage(Stage stage) {
@@ -39,33 +36,12 @@ public class EventInscriptionController {
 
     @FXML
     public void initialize() {
-        // Initialiser le ToggleGroup pour les RadioButtons
-        inscriptionToggle = new ToggleGroup();
-        sessionActuelle.setToggleGroup(inscriptionToggle);
-        nouveauParticipant.setToggleGroup(inscriptionToggle);
-
-        // Écouter les changements de sélection
-        inscriptionToggle.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
-            formulaireManuel.setVisible(newValue == nouveauParticipant);
-        });
-    }
-
-    private void initializeInscriptionOptions() {
-        if (sessionManager.isLoggedIn()) {
-            sessionActuelle.setSelected(true);
+        // Ne garder que la sélection de la session actuelle
+        sessionActuelle.setSelected(true);
+        sessionActuelle.setDisable(true);
+        // Cacher tout formulaire manuel s'il existe
+        if (formulaireManuel != null) {
             formulaireManuel.setVisible(false);
-            
-            // Pré-remplir les champs avec les informations de l'utilisateur connecté
-            User user = sessionManager.getLoggedInUser();
-            if (user != null) {
-                nomField.setText(user.getNom());
-                prenomField.setText(user.getPrenom());
-                emailField.setText(user.getEmail());
-                telephoneField.setText(user.getNumTel() != null ? user.getNumTel() : "");
-            }
-        } else {
-            nouveauParticipant.setSelected(true);
-            formulaireManuel.setVisible(true);
         }
     }
 
@@ -81,13 +57,7 @@ public class EventInscriptionController {
 
     @FXML
     private void handleConfirmInscription() {
-        if (sessionActuelle.isSelected()) {
-            inscrireUtilisateurConnecte();
-        } else {
-            if (validateFormulaire()) {
-                inscrireNouveauParticipant();
-            }
-        }
+        inscrireUtilisateurConnecte();
     }
 
     private void inscrireUtilisateurConnecte() {
@@ -107,33 +77,6 @@ public class EventInscriptionController {
             showErrorMessage("Erreur d'inscription", 
                 "Une erreur est survenue lors de l'inscription : " + e.getMessage());
         }
-    }
-
-    private void inscrireNouveauParticipant() {
-        showErrorMessage("Inscription impossible", "Vous devez avoir un compte utilisateur pour vous inscrire à un événement.");
-    }
-
-    private boolean validateFormulaire() {
-        StringBuilder errors = new StringBuilder();
-
-        if (nomField.getText().trim().isEmpty()) {
-            errors.append("Le nom est requis.\n");
-        }
-        if (prenomField.getText().trim().isEmpty()) {
-            errors.append("Le prénom est requis.\n");
-        }
-        if (emailField.getText().trim().isEmpty() || !emailField.getText().contains("@")) {
-            errors.append("Une adresse email valide est requise.\n");
-        }
-        if (telephoneField.getText().trim().isEmpty()) {
-            errors.append("Le numéro de téléphone est requis.\n");
-        }
-
-        if (errors.length() > 0) {
-            showErrorMessage("Formulaire incomplet", errors.toString());
-            return false;
-        }
-        return true;
     }
 
     private void showSuccessMessage(String title, String content) {

@@ -28,18 +28,9 @@
             
             <Label text="Inscription à l'événement" style="-fx-font-size: 18; -fx-font-weight: bold;"/>
             
-            <!-- Options d'inscription -->
+            <!-- Option d'inscription unique -->
             <VBox spacing="10">
-                <RadioButton fx:id="sessionActuelle" text="Utiliser ma session actuelle"/>
-                <RadioButton fx:id="nouveauParticipant" text="Nouveau participant"/>
-            </VBox>
-
-            <!-- Formulaire manuel (initialement caché) -->
-            <VBox fx:id="formulaireManuel" spacing="10" visible="false">
-                <TextField fx:id="nomField" promptText="Nom"/>
-                <TextField fx:id="prenomField" promptText="Prénom"/>
-                <TextField fx:id="emailField" promptText="Email"/>
-                <TextField fx:id="telephoneField" promptText="Téléphone"/>
+                <RadioButton fx:id="sessionActuelle" text="Utiliser ma session actuelle" selected="true" disable="true"/>
             </VBox>
 
             <!-- Boutons du formulaire -->
