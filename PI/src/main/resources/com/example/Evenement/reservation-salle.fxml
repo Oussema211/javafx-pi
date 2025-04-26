@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.shape.Rectangle?>
+<?import javafx.scene.text.Text?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.example.Evenement.Controller.ReservationSalleController"
+            style="-fx-background-color: linear-gradient(to bottom, #F1F8E9, #DCEDC8);"
+            prefWidth="800" prefHeight="600">
+    <VBox alignment="CENTER" spacing="20" 
+          AnchorPane.topAnchor="10.0" 
+          AnchorPane.bottomAnchor="10.0"
+          AnchorPane.leftAnchor="10.0" 
+          AnchorPane.rightAnchor="10.0">
+        <Label text="Choisissez votre place" 
+               style="-fx-font-size: 24; -fx-font-weight: bold; -fx-text-fill: #33691E;"/>
+        <StackPane>
+            <Rectangle width="500" height="15" arcWidth="20" arcHeight="20"
+                      style="-fx-fill: linear-gradient(to bottom, #C5E1A5, #AED581); -fx-stroke: #7CB342; -fx-stroke-width: 2;"/>
+            <Text text="ÉCRAN" 
+                  style="-fx-font-size: 14; -fx-fill: #33691E; -fx-font-weight: bold;"/>
+        </StackPane>
+        <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS"
+                   style="-fx-background: transparent; -fx-background-color: transparent;">
+            <VBox alignment="CENTER" spacing="10">
+                <padding>
+                    <Insets top="10" right="10" bottom="10" left="10"/>
+                </padding>
+                <GridPane fx:id="gridSalle" 
+                         hgap="5" vgap="5" 
+                         alignment="CENTER"
+                         style="-fx-padding: 10;">
+                </GridPane>
+            </VBox>
+        </ScrollPane>
+        <VBox spacing="15" alignment="CENTER">
+            <HBox spacing="20" alignment="CENTER" 
+                  style="-fx-padding: 10; -fx-background-color: #FFFFFF; -fx-background-radius: 5;">
+                <Label text="Légende :" style="-fx-font-weight: bold; -fx-text-fill: #33691E;"/>
+                <HBox spacing="5" alignment="CENTER_LEFT">
+                    <Rectangle width="20" height="20" fill="#F1F8E9" stroke="#7CB342"/>
+                    <Label text="Libre" style="-fx-text-fill: #33691E;"/>
+                </HBox>
+                <HBox spacing="5" alignment="CENTER_LEFT">
+                    <Rectangle width="20" height="20" fill="#E0E0E0" stroke="#9E9E9E"/>
+                    <Label text="Occupée" style="-fx-text-fill: #757575;"/>
+                </HBox>
+                <HBox spacing="5" alignment="CENTER_LEFT">
+                    <Rectangle width="20" height="20" fill="#EF5350" stroke="#D32F2F"/>
+                    <Label text="Sélectionnée" style="-fx-text-fill: #D32F2F;"/>
+                </HBox>
+            </HBox>
+            <HBox spacing="20" alignment="CENTER">
+                <Button text="Confirmer la réservation" onAction="#handleValider"
+                        style="-fx-background-color: linear-gradient(to bottom, #689F38, #558B2F);
+                               -fx-text-fill: white; 
+                               -fx-font-size: 14;
+                               -fx-padding: 10 20;
+                               -fx-background-radius: 5;
+                               -fx-border-radius: 5;
+                               -fx-border-width: 2;
+                               -fx-border-color: #33691E;
+                               -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 5, 0.0, 0, 2);
+                               -fx-cursor: hand;"/>
+                <Button text="Annuler" onAction="#handleAnnuler"
+                        style="-fx-background-color: linear-gradient(to bottom, #E57373, #EF5350);
+                               -fx-text-fill: white; 
+                               -fx-font-size: 14;
+                               -fx-padding: 10 20;
+                               -fx-background-radius: 5;
+                               -fx-border-radius: 5;
+                               -fx-border-width: 2;
+                               -fx-border-color: #D32F2F;
+                               -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 5, 0.0, 0, 2);
+                               -fx-cursor: hand;"/>
+            </HBox>
+        </VBox>
+    </VBox>
+</AnchorPane> 

@@ -9,6 +9,8 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import com.example.Evenement.Model.Inscription;
 import com.example.Evenement.Dao.InscriptionDAO;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 
 public class EventInscriptionController {
 
@@ -57,10 +59,29 @@ public class EventInscriptionController {
 
     @FXML
     private void handleConfirmInscription() {
-        inscrireUtilisateurConnecte();
+        ouvrirReservationSalle();
     }
 
-    private void inscrireUtilisateurConnecte() {
+    private void ouvrirReservationSalle() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/Evenement/reservation-salle.fxml"));
+            Stage salleStage = new Stage();
+            salleStage.setTitle("Réservation de place");
+            Parent root = loader.load();
+            ReservationSalleController controller = loader.getController();
+            controller.setEvenementId(currentEvent.getId());
+            controller.setStage(salleStage);
+            controller.setOnReservationConfirmee((placeId) -> {
+                inscrireUtilisateurConnecte(placeId);
+            });
+            salleStage.setScene(new javafx.scene.Scene(root));
+            salleStage.showAndWait();
+        } catch (Exception e) {
+            showErrorMessage("Erreur", "Impossible d'ouvrir la réservation de salle : " + e.getMessage());
+        }
+    }
+
+    private void inscrireUtilisateurConnecte(int placeId) {
         try {
             User user = sessionManager.getLoggedInUser();
             if (user == null) {
@@ -69,13 +90,10 @@ public class EventInscriptionController {
             }
             InscriptionDAO dao = new InscriptionDAO();
             dao.createSimple(user.getId().toString(), currentEvent.getId());
-            showSuccessMessage("Inscription réussie", 
-                String.format("Vous (%s %s) êtes maintenant inscrit à l'événement : %s", 
-                    user.getPrenom(), user.getNom(), currentEvent.getTitre()));
+            showSuccessMessage("Inscription réussie", "Vous êtes inscrit et votre place est réservée !");
             stage.close();
         } catch (Exception e) {
-            showErrorMessage("Erreur d'inscription", 
-                "Une erreur est survenue lors de l'inscription : " + e.getMessage());
+            showErrorMessage("Erreur d'inscription", "Une erreur est survenue lors de l'inscription : " + e.getMessage());
         }
     }
 
