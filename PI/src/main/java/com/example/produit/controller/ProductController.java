@@ -16,6 +16,7 @@ import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -31,12 +32,18 @@ import javafx.scene.layout.HBox;
 import javafx.stage.FileChooser;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.json.JSONException;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -81,10 +88,17 @@ public class ProductController {
     private FilteredList<Produit> filteredList;
     private static final String GROQ_API_KEY = "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";
     private static final String GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
+    private static final String FLUX_API_URL = "https://queue.fal.run/fal-ai/flux-pro/v1.1-ultra";
+    private static final String FLUX_AUTHORIZATION_KEY = "Key 6c423262-e2bb-462d-90c5-be909bd8c699:50bae2796d58cc50f2892631c51944ee";
+    private final HttpClient client = HttpClient.newHttpClient();
+    private static final String IMAGE_DIR = "images/"; // Directory to save images
 
     @FXML
     public void initialize() {
         try {
+            // Create images directory if it doesn't exist
+            createImagesDirectory();
+
             productTableView.setEditable(true);
             configureTableColumns();
             initializeComboBoxes();
@@ -99,6 +113,18 @@ public class ProductController {
         } catch (Exception e) {
             System.err.println("Error in initialize: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    private void createImagesDirectory() {
+        File dir = new File(IMAGE_DIR);
+        if (!dir.exists()) {
+            boolean created = dir.mkdirs();
+            if (created) {
+                System.out.println("Created images directory: " + IMAGE_DIR);
+            } else {
+                System.err.println("Failed to create images directory: " + IMAGE_DIR);
+            }
         }
     }
 
@@ -634,7 +660,6 @@ public class ProductController {
 
     private String generateProductDescription(String brand, String category, String name) {
         try {
-            HttpClient client = HttpClient.newHttpClient();
             String prompt = "Génère une description attrayante en français de 200 caractères maximum pour un produit agricole nommé '" + name + "' dans la catégorie '" + category + "' destiné à un marché fermier.";
 
             String jsonBody = """
@@ -659,7 +684,7 @@ public class ProductController {
                     .build();
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            System.out.println("Groq API Response: " + response.body()); // Debug
+            System.out.println("Groq API Response: " + response.body());
             if (response.statusCode() == 200) {
                 JSONObject jsonResponse = new JSONObject(response.body());
                 String description = jsonResponse.getJSONArray("choices")
@@ -686,6 +711,186 @@ public class ProductController {
         return "";
     }
 
+    private void generateProductImage(String productName, TextField imagePathField, ImageView imagePreview, Label statusLabel) {
+        statusLabel.setText("Generating image...");
+        new Thread(() -> {
+            try {
+                // Sanitize product name for filename
+                String sanitizedName = productName.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase();
+                String imagePath = IMAGE_DIR + sanitizedName + ".jpg";
+
+                // Initial POST request to FLUX API
+                String requestBody = """
+                    {
+                        "prompt": "%s, simple style",
+                        "image_size": "square",
+                        "num_inference_steps": 10,
+                        "guidance_scale": 3.5,
+                        "num_images": 1,
+                        "output_format": "jpeg",
+                        "safety_tolerance": 2
+                    }
+                    """.formatted(productName);
+
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(FLUX_API_URL))
+                        .header("Authorization", FLUX_AUTHORIZATION_KEY)
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                        .build();
+
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                if (response.statusCode() != 200) {
+                    updateStatus(statusLabel, "POST Error: " + response.statusCode() + " - " + response.body());
+                    return;
+                }
+
+                JSONObject jsonResponse;
+                try {
+                    jsonResponse = new JSONObject(response.body());
+                } catch (JSONException e) {
+                    updateStatus(statusLabel, "JSON Parsing Error (Initial Response): " + e.getMessage());
+                    return;
+                }
+
+                // Check if result is already available (synchronous)
+                if (jsonResponse.has("images")) {
+                    String imageUrl = jsonResponse.getJSONArray("images").getJSONObject(0).getString("url");
+                    downloadAndSaveImage(imageUrl, imagePath, imagePathField, imagePreview, statusLabel);
+                    return;
+                }
+
+                // Handle queued response
+                String status = jsonResponse.optString("status", "UNKNOWN");
+                String statusUrl = jsonResponse.optString("status_url", "");
+                String responseUrl = jsonResponse.optString("response_url", "");
+
+                if (statusUrl.isEmpty() || responseUrl.isEmpty()) {
+                    updateStatus(statusLabel, "Error: Missing status_url or response_url in initial response.");
+                    return;
+                }
+
+                if (!status.equals("IN_QUEUE") && !status.equals("IN_PROGRESS")) {
+                    updateStatus(statusLabel, "Unexpected status: " + status);
+                    return;
+                }
+
+                // Poll status
+                int maxAttempts = 10; // Max 20 seconds
+                int attempt = 0;
+                do {
+                    Thread.sleep(2000);
+                    HttpRequest statusRequest = HttpRequest.newBuilder()
+                            .uri(URI.create(statusUrl))
+                            .header("Authorization", FLUX_AUTHORIZATION_KEY)
+                            .header("Content-Type", "application/json")
+                            .GET()
+                            .build();
+
+                    HttpResponse<String> statusResponse = client.send(statusRequest, HttpResponse.BodyHandlers.ofString());
+                    JSONObject statusJson;
+                    try {
+                        statusJson = new JSONObject(statusResponse.body());
+                    } catch (JSONException e) {
+                        updateStatus(statusLabel, "JSON Parsing Error (Status Response): " + e.getMessage());
+                        return;
+                    }
+                    status = statusJson.optString("status", "UNKNOWN");
+                    updateStatus(statusLabel, "Status Check [" + attempt + "]: " + status);
+                    attempt++;
+                } while ((status.equals("IN_QUEUE") || status.equals("IN_PROGRESS")) && attempt < maxAttempts);
+
+                if (!status.equals("COMPLETED")) {
+                    updateStatus(statusLabel, "Task failed or timed out. Status: " + status);
+                    return;
+                }
+
+                // Fetch result
+                HttpRequest resultRequest = HttpRequest.newBuilder()
+                        .uri(URI.create(responseUrl))
+                        .header("Authorization", FLUX_AUTHORIZATION_KEY)
+                        .header("Content-Type", "application/json")
+                        .GET()
+                        .build();
+
+                HttpResponse<String> resultResponse = client.send(resultRequest, HttpResponse.BodyHandlers.ofString());
+                if (resultResponse.statusCode() != 200) {
+                    updateStatus(statusLabel, "GET Result Error: " + resultResponse.statusCode() + " - " + resultResponse.body());
+                    return;
+                }
+
+                JSONObject resultJson;
+                try {
+                    resultJson = new JSONObject(resultResponse.body());
+                } catch (JSONException e) {
+                    updateStatus(statusLabel, "JSON Parsing Error (Result Response): " + e.getMessage());
+                    return;
+                }
+
+                if (!resultJson.has("images")) {
+                    updateStatus(statusLabel, "Error: No images in final result.");
+                    return;
+                }
+
+                String imageUrl = resultJson.getJSONArray("images").getJSONObject(0).getString("url");
+                downloadAndSaveImage(imageUrl, imagePath, imagePathField, imagePreview, statusLabel);
+
+            } catch (Exception ex) {
+                String errorMsg = "Exception: " + ex.getMessage();
+                if (ex.getCause() != null) {
+                    errorMsg += "\nCause: " + ex.getCause().getMessage();
+                }
+                updateStatus(statusLabel, errorMsg);
+                ex.printStackTrace();
+            }
+        }).start();
+    }
+
+    private void downloadAndSaveImage(String imageUrl, String imagePath, TextField imagePathField, ImageView imagePreview, Label statusLabel) {
+        try {
+            HttpRequest imageRequest = HttpRequest.newBuilder()
+                    .uri(URI.create(imageUrl))
+                    .GET()
+                    .build();
+
+            HttpResponse<InputStream> imageResponse = client.send(imageRequest, HttpResponse.BodyHandlers.ofInputStream());
+            if (imageResponse.statusCode() != 200) {
+                updateStatus(statusLabel, "Image Download Error: " + imageResponse.statusCode());
+                return;
+            }
+
+            // Save the image to the local file
+            File imageFile = new File(imagePath);
+            try (FileOutputStream fos = new FileOutputStream(imageFile)) {
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+                InputStream inputStream = imageResponse.body();
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    fos.write(buffer, 0, bytesRead);
+                }
+            }
+
+            // Update UI on JavaFX thread
+            Platform.runLater(() -> {
+                imagePathField.setText(imagePath);
+                try {
+                    Image image = new Image(imageFile.toURI().toString());
+                    imagePreview.setImage(image);
+                    updateStatus(statusLabel, "Image generated and saved successfully at: " + imagePath);
+                } catch (Exception e) {
+                    updateStatus(statusLabel, "Error loading image preview: " + e.getMessage());
+                }
+            });
+
+        } catch (Exception e) {
+            updateStatus(statusLabel, "Error downloading image: " + e.getMessage());
+        }
+    }
+
+    private void updateStatus(Label statusLabel, String text) {
+        Platform.runLater(() -> statusLabel.setText(text));
+    }
+
     private void showProductDialog(Produit product) {
         Dialog<Produit> dialog = new Dialog<>();
         dialog.setTitle(product == null ? "New Product" : "Edit Product");
@@ -710,12 +915,16 @@ public class ProductController {
         TextField imagePathField = new TextField();
         imagePathField.setEditable(false);
         Button chooseImageButton = new Button("Choose Image");
+        Button generateImageButton = new Button("Generate Image");
         Button generateDescriptionButton = new Button("Generate Description");
         generateDescriptionButton.getStyleClass().add("secondary-button");
+        generateImageButton.getStyleClass().add("secondary-button");
         ImageView imagePreview = new ImageView();
         imagePreview.setFitWidth(100);
         imagePreview.setFitHeight(100);
         imagePreview.setPreserveRatio(true);
+        Label imageStatusLabel = new Label();
+        imageStatusLabel.setStyle("-fx-font-size: 10px;");
 
         Label nameError = new Label();
         Label descriptionError = new Label();
@@ -745,6 +954,19 @@ public class ProductController {
                     alert.showAndWait();
                 }
             }
+        });
+
+        generateImageButton.setOnAction(e -> {
+            String productName = nameField.getText().trim();
+            if (productName.isEmpty()) {
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("Input Required");
+                alert.setHeaderText(null);
+                alert.setContentText("Please enter a product name before generating an image.");
+                alert.showAndWait();
+                return;
+            }
+            generateProductImage(productName, imagePathField, imagePreview, imageStatusLabel);
         });
 
         generateDescriptionButton.setOnAction(e -> {
@@ -890,8 +1112,13 @@ public class ProductController {
         grid.addRow(9, new Label("Quantity:"), quantityField);
         grid.add(quantityError, 1, 10);
         grid.addRow(11, new Label("Image:"), imagePathField);
-        grid.addRow(12, new Label(""), chooseImageButton);
-        grid.addRow(13, new Label("Preview:"), imagePreview);
+
+        HBox imageButtons = new HBox(10);
+        imageButtons.getChildren().addAll(chooseImageButton, generateImageButton);
+        grid.addRow(12, new Label(""), imageButtons);
+
+        grid.addRow(13, new Label(""), imageStatusLabel);
+        grid.addRow(14, new Label("Preview:"), imagePreview);
 
         dialog.getDialogPane().setContent(grid);
 

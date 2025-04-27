@@ -35,7 +35,7 @@ public class ProductCardController implements Initializable {
     private final SessionManager sessionManager = SessionManager.getInstance();
     private List<Produit> allProducts = new ArrayList<>();
     private int currentPage = 1;
-    private static final int PRODUCTS_PER_PAGE = 6;
+    private static final int PRODUCTS_PER_PAGE = 8;
     private static final int MAX_REVIEWS = 3;
 
     @Override
