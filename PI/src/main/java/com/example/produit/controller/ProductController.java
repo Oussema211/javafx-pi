@@ -29,6 +29,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.FileChooser;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.File;
 import java.net.URI;
@@ -68,6 +69,7 @@ public class ProductController {
     @FXML private ComboBox<String> rateComboBox;
     @FXML private DatePicker datePicker;
     @FXML private Button addProductButton;
+    @FXML private Button addScriptButton;
     @FXML private Button researchButton;
     @FXML private Button deleteSelectedButton;
     @FXML private Button exportSelectedButton;
@@ -604,6 +606,11 @@ public class ProductController {
         showProductDialog(null);
     }
 
+    @FXML
+    private void handleAddScript() {
+        showScriptDialog();
+    }
+
     private void handleEditProduct(Produit product) {
         if (product != null) {
             showProductDialog(product);
@@ -953,6 +960,177 @@ public class ProductController {
                     Alert alert = new Alert(Alert.AlertType.ERROR, "Invalid input format.");
                     alert.showAndWait();
                     return null;
+                }
+            }
+            return null;
+        });
+
+        dialog.showAndWait();
+    }
+
+    private void showScriptDialog() {
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("Add Products via Script");
+
+        DialogPane dialogPane = dialog.getDialogPane();
+        URL cssUrl = getClass().getResource("/com/example/css/produitdialog.css");
+        if (cssUrl != null) {
+            dialogPane.getStylesheets().add(cssUrl.toExternalForm());
+        } else {
+            System.err.println("Warning: CSS file /com/example/css/produitdialog.css not found. Using default styles.");
+            dialogPane.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-padding: 10;");
+        }
+        dialogPane.getStyleClass().add("dialog-pane");
+
+        TextArea scriptField = new TextArea();
+        scriptField.setPromptText("Enter JSON array of products, e.g., [{\"nom\": \"Apple\", \"description\": \"Fresh apples\", \"category\": \"Fruits\", \"prixUnitaire\": 2.99, \"quantite\": 100, \"imageName\": \"path/to/apple.png\"}, ...]");
+        scriptField.setPrefRowCount(10);
+        scriptField.setPrefColumnCount(50);
+
+        Label scriptError = new Label();
+        scriptError.setStyle("-fx-text-fill: red; -fx-font-size: 10px;");
+
+        Button clearButton = new Button("Clear");
+        clearButton.getStyleClass().add("secondary-button");
+        clearButton.setOnAction(e -> scriptField.clear());
+
+        Pattern namePattern = Pattern.compile("^[a-zA-Z0-9\\s-]{3,50}$");
+        Pattern pricePattern = Pattern.compile("^\\d*\\.?\\d+$");
+        Pattern quantityPattern = Pattern.compile("^[0-9]+$");
+
+        scriptField.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal.trim().isEmpty()) {
+                scriptError.setText("Script cannot be empty");
+                scriptField.setStyle("-fx-border-color: red;");
+                return;
+            }
+
+            try {
+                new JSONArray(newVal);
+                scriptError.setText("");
+                scriptField.setStyle("");
+            } catch (Exception e) {
+                scriptError.setText("Invalid JSON format");
+                scriptField.setStyle("-fx-border-color: red;");
+            }
+        });
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(5);
+        grid.addRow(0, new Label("JSON Script:"), scriptField);
+        grid.add(scriptError, 1, 1);
+        grid.addRow(2, new Label(""), clearButton);
+
+        dialog.getDialogPane().setContent(grid);
+
+        ButtonType saveButtonType = new ButtonType("Parse and Save", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
+
+        Button saveButton = (Button) dialog.getDialogPane().lookupButton(saveButtonType);
+        saveButton.setDisable(true);
+        saveButton.getStyleClass().add("primary-button");
+
+        scriptField.textProperty().addListener((obs, old, newVal) -> {
+            boolean isValid = !newVal.trim().isEmpty();
+            try {
+                new JSONArray(newVal);
+                saveButton.setDisable(false);
+            } catch (Exception e) {
+                saveButton.setDisable(true);
+            }
+        });
+
+        dialog.setResultConverter(buttonType -> {
+            if (buttonType == saveButtonType) {
+                try {
+                    JSONArray jsonArray = new JSONArray(scriptField.getText().trim());
+                    if (jsonArray.length() > 100) {
+                        Alert alert = new Alert(Alert.AlertType.ERROR);
+                        alert.setTitle("Too Many Products");
+                        alert.setHeaderText(null);
+                        alert.setContentText("Cannot process more than 100 products at once.");
+                        alert.showAndWait();
+                        return null;
+                    }
+
+                    User currentUser = sessionManager.getLoggedInUser();
+                    int successCount = 0;
+                    StringBuilder errorMessages = new StringBuilder();
+
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        JSONObject json = jsonArray.getJSONObject(i);
+                        String nom = json.optString("nom", "").trim();
+                        String description = json.optString("description", "").trim();
+                        String categoryName = json.optString("category", "").trim();
+                        float prixUnitaire = json.optFloat("prixUnitaire", -1);
+                        int quantite = json.optInt("quantite", -1);
+                        String imageName = json.optString("imageName", "").trim();
+
+                        // Validate fields
+                        if (nom.isEmpty() || !namePattern.matcher(nom).matches()) {
+                            errorMessages.append(String.format("Product %d: Invalid name (3-50 chars, letters, numbers, spaces, hyphens)\n", i + 1));
+                            continue;
+                        }
+                        if (description.isEmpty() || description.length() > 200) {
+                            errorMessages.append(String.format("Product %d: Invalid description (1-200 chars)\n", i + 1));
+                            continue;
+                        }
+                        Categorie category = categoryList.stream()
+                                .filter(c -> c.getNom().equals(categoryName))
+                                .findFirst()
+                                .orElse(null);
+                        if (category == null) {
+                            errorMessages.append(String.format("Product %d: Invalid category '%s'\n", i + 1, categoryName));
+                            continue;
+                        }
+                        if (prixUnitaire <= 0 || prixUnitaire > 1000000 || !pricePattern.matcher(String.valueOf(prixUnitaire)).matches()) {
+                            errorMessages.append(String.format("Product %d: Invalid price (0 < price <= 1,000,000)\n", i + 1));
+                            continue;
+                        }
+                        if (quantite <= 0 || quantite > 10000 || !quantityPattern.matcher(String.valueOf(quantite)).matches()) {
+                            errorMessages.append(String.format("Product %d: Invalid quantity (0 < quantity <= 10,000)\n", i + 1));
+                            continue;
+                        }
+
+                        // Create and save product
+                        Produit newProduct = new Produit();
+                        newProduct.setId(UUID.randomUUID());
+                        newProduct.setNom(nom);
+                        newProduct.setDescription(description);
+                        newProduct.setCategory(category);
+                        newProduct.setPrixUnitaire(prixUnitaire);
+                        newProduct.setQuantite(quantite);
+                        newProduct.setImageName(imageName.isEmpty() ? null : imageName);
+                        newProduct.setDateCreation(LocalDateTime.now());
+                        newProduct.setUserId(currentUser != null ? currentUser.getId() : null);
+
+                        ProduitDAO.saveProduct(newProduct);
+                        productList.add(newProduct);
+                        successCount++;
+                    }
+
+                    handleResearch();
+
+                    if (successCount == jsonArray.length()) {
+                        Alert success = new Alert(Alert.AlertType.INFORMATION);
+                        success.setTitle("Success");
+                        success.setHeaderText(null);
+                        success.setContentText(String.format("Successfully added %d product(s).", successCount));
+                        success.showAndWait();
+                    } else {
+                        Alert partialSuccess = new Alert(Alert.AlertType.WARNING);
+                        partialSuccess.setTitle("Partial Success");
+                        partialSuccess.setHeaderText(null);
+                        partialSuccess.setContentText(String.format("Added %d product(s). Errors:\n%s", successCount, errorMessages.toString()));
+                        partialSuccess.showAndWait();
+                    }
+                } catch (Exception e) {
+                    Alert error = new Alert(Alert.AlertType.ERROR);
+                    error.setTitle("Script Error");
+                    error.setHeaderText(null);
+                    error.setContentText("Failed to parse script: " + e.getMessage());
+                    error.showAndWait();
                 }
             }
             return null;
