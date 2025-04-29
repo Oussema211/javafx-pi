@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -7,6 +8,23 @@
   <artifactId>javafx-auth-system</artifactId>
   <version>1.0-SNAPSHOT</version>
 
+  <repositories>
+    <repository>
+      <id>jcenter</id>
+      <url>https://jcenter.bintray.com</url>
+    </repository>
+    <repository>
+      <id>snapshots-repo</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>17</maven.compiler.source>
@@ -15,11 +33,11 @@
   </properties>
 
   <dependencies>
-    <!-- ✅ JavaFX modules pour Windows 64 bits -->
+    <!-- PDFBox et POI -->
     <dependency>
       <groupId>org.apache.pdfbox</groupId>
       <artifactId>pdfbox</artifactId>
-      <version>2.0.27</version> <!-- ou version plus récente -->
+      <version>2.0.27</version>
     </dependency>
     <dependency>
       <groupId>org.apache.poi</groupId>
@@ -32,63 +50,65 @@
       <version>5.2.3</version>
     </dependency>
 
+    <!-- JavaFX -->
     <dependency>
       <groupId>org.openjfx</groupId>
       <artifactId>javafx-controls</artifactId>
       <version>${javafx.version}</version>
-      <classifier>win</classifier>
     </dependency>
-
     <dependency>
       <groupId>org.openjfx</groupId>
       <artifactId>javafx-fxml</artifactId>
       <version>${javafx.version}</version>
-      <classifier>win</classifier>
     </dependency>
     <dependency>
       <groupId>org.openjfx</groupId>
-      <artifactId>javafx-graphics</artifactId>
+      <artifactId>javafx-media</artifactId>
       <version>${javafx.version}</version>
-      <classifier>win</classifier>
-    </dependency>
-    <dependency>
-      <groupId>org.openjfx</groupId>
-      <artifactId>javafx-base</artifactId>
-      <version>${javafx.version}</version>
-      <classifier>win</classifier>
     </dependency>
 
-    <!-- 🔌 MySQL -->
+    <!-- MySQL -->
     <dependency>
       <groupId>com.mysql</groupId>
       <artifactId>mysql-connector-j</artifactId>
       <version>8.0.33</version>
     </dependency>
 
-    <!-- 🔐 BCrypt -->
+    <!-- BCrypt -->
     <dependency>
       <groupId>org.mindrot</groupId>
       <artifactId>jbcrypt</artifactId>
       <version>0.4</version>
     </dependency>
 
-    <!-- 📧 Mail -->
+    <!-- Mail -->
     <dependency>
       <groupId>com.sun.mail</groupId>
       <artifactId>javax.mail</artifactId>
       <version>1.6.2</version>
     </dependency>
 
-    <!-- 🧠 JSON -->
+    <!-- JSON -->
     <dependency>
       <groupId>org.json</groupId>
       <artifactId>json</artifactId>
       <version>20231013</version>
     </dependency>
 
+    <!-- Jackson -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+      <version>2.15.3</version>
+    </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
+      <version>2.15.3</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
       <version>2.15.3</version>
     </dependency>
 
@@ -100,6 +120,11 @@
     </dependency>
     <dependency>
       <groupId>com.google.oauth-client</groupId>
+      <artifactId>google-oauth-client-java6</artifactId>
+      <version>1.34.1</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.oauth-client</groupId>
       <artifactId>google-oauth-client-jetty</artifactId>
       <version>1.34.1</version>
     </dependency>
@@ -108,27 +133,57 @@
       <artifactId>google-auth-library-oauth2-http</artifactId>
       <version>1.19.0</version>
     </dependency>
+    <dependency>
+      <groupId>com.google.api-client</groupId>
+      <artifactId>google-api-client</artifactId>
+      <version>2.0.0</version>
+    </dependency>
 
+    <!-- Audio Processing -->
+    <dependency>
+      <groupId>com.googlecode.soundlibs</groupId>
+      <artifactId>jlayer</artifactId>
+      <version>1.0.1.4</version>
+    </dependency>
+
+    <!-- Commons Lang -->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>3.12.0</version>
+    </dependency>
+
+    <!-- MaryTTS dependencies -->
+    <dependency>
+      <groupId>net.sf.sociaal</groupId>
+      <artifactId>freetts</artifactId>
+      <version>1.2.2</version>
+    </dependency>
+
+    <!-- Speech Recognition -->
+    <dependency>
+      <groupId>edu.cmu.sphinx</groupId>
+      <artifactId>sphinx4-core</artifactId>
+      <version>5prealpha-SNAPSHOT</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>edu.cmu.sphinx</groupId>
+      <artifactId>sphinx4-data</artifactId>
+      <version>5prealpha-SNAPSHOT</version>
+    </dependency>
   </dependencies>
 
   <build>
-  <resources>
-        <resource>
-            <directory>src/main/resources</directory>
-            <includes>
-                <include>**/*.fxml</include>
-                <include>**/*.css</include>
-                <include>**/*.properties</include>
-            </includes>
-        </resource>
-         <resource>
-            <directory>src/main/resources</directory>
-            <filtering>false</filtering>
-        </resource>
-
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <includes>
+          <include>**/*</include>
+        </includes>
+      </resource>
     </resources>
     <plugins>
-      <!-- Compiler -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -137,8 +192,6 @@
           <release>17</release>
         </configuration>
       </plugin>
-
-      <!-- JavaFX plugin -->
       <plugin>
         <groupId>org.openjfx</groupId>
         <artifactId>javafx-maven-plugin</artifactId>

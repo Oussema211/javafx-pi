@@ -16,14 +16,24 @@ import java.util.Map;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.text.Text;
+import com.example.Evenement.Assistant.AssistantVocal;
+import java.util.Properties;
+import java.io.InputStream;
+import java.io.IOException;
+import javafx.application.Platform;
 
 public class ReservationSalleController {
     @FXML private GridPane gridSalle;
+    @FXML private ToggleButton toggleAssistant;
+    @FXML private TextArea assistantLog;
+    @FXML private Label assistantStatus;
     private int evenementId;
     private Stage stage;
     private Place selectedPlace;
     private Map<Button, Place> buttonPlaceMap = new HashMap<>();
     private ReservationCallback callback;
+    private AssistantVocal assistantVocal;
+    private Properties config;
 
     public interface ReservationCallback {
         void onReservationConfirmee(int placeId);
@@ -41,6 +51,47 @@ public class ReservationSalleController {
 
     public void setStage(Stage stage) {
         this.stage = stage;
+    }
+
+    @FXML
+    public void initialize() {
+        loadConfig();
+        initializeAssistant();
+        initializeSalle();
+        setupAssistantUI();
+    }
+
+    private void loadConfig() {
+        config = new Properties();
+        try (InputStream input = getClass().getClassLoader().getResourceAsStream("config.properties")) {
+            if (input == null) {
+                System.err.println("Impossible de trouver config.properties");
+            } else {
+                config.load(input);
+            }
+        } catch (IOException ex) {
+            System.err.println("Erreur lors du chargement de la configuration: " + ex.getMessage());
+        }
+    }
+
+    private void setupAssistantUI() {
+        // Configuration du bouton toggle
+        toggleAssistant.setSelected(false);
+        assistantStatus.setText("Assistant inactif");
+        assistantStatus.setTextFill(Color.GRAY);
+        
+        // Configuration de la zone de log
+        assistantLog.setEditable(false);
+        assistantLog.setWrapText(true);
+        assistantLog.setStyle("-fx-font-family: 'Segoe UI'; -fx-font-size: 14;");
+    }
+
+    private void initializeAssistant() {
+        assistantVocal = new AssistantVocal(assistantLog);
+    }
+
+    private void initializeSalle() {
+        afficherPlaces();
     }
 
     private void afficherPlaces() {
@@ -73,7 +124,6 @@ public class ReservationSalleController {
 
             for (Place place : places) {
                 Button btn = createSiegeButton(place);
-                // Ajuster les indices pour correspondre à la grille
                 gridSalle.add(btn, place.getNumeroColonne(), place.getNumeroLigne());
                 buttonPlaceMap.put(btn, place);
             }
@@ -87,118 +137,10 @@ public class ReservationSalleController {
     }
 
     private Button createSiegeButton(Place place) {
-        try {
-            Button btn = new Button(String.format("%c-%d", (char)('A' + place.getNumeroLigne() - 1), place.getNumeroColonne()));
-            btn.setPrefSize(60, 60);
-            btn.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-            
-            // Style de base commun
-            String baseStyle = "-fx-background-radius: 10;" +
-                             "-fx-border-radius: 10;" +
-                             "-fx-border-width: 2;" +
-                             "-fx-font-size: 13;" +
-                             "-fx-font-weight: bold;" +
-                             "-fx-background-insets: 0,1,2,3;" +
-                             "-fx-padding: 10;" +
-                             "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 5, 0.0, 0, 2);" +
-                             "-fx-border-style: solid inside;";
-
-            // Appliquer le style selon le statut
-            switch (place.getStatut()) {
-                case "occupee":
-                    btn.setStyle(baseStyle + 
-                        "-fx-background-color: linear-gradient(to bottom right, #EEEEEE, #E0E0E0, #BDBDBD);" +
-                        "-fx-border-color: #9E9E9E;" +
-                        "-fx-text-fill: #757575;" +
-                        "-fx-opacity: 0.7;");
-                    btn.setDisable(true);
-                    break;
-                case "reservee":
-                    btn.setStyle(baseStyle + 
-                        "-fx-background-color: linear-gradient(to bottom right, #FFEBEE, #FFCDD2, #EF9A9A);" +
-                        "-fx-border-color: #E57373;" +
-                        "-fx-text-fill: #D32F2F;");
-                    btn.setDisable(true);
-                    break;
-                default:
-                    btn.setStyle(baseStyle + 
-                        "-fx-background-color: linear-gradient(to bottom right, #F9FBE7, #F1F8E9, #DCEDC8);" +
-                        "-fx-border-color: #7CB342;" +
-                        "-fx-text-fill: #33691E;");
-                    btn.setCursor(Cursor.HAND);
-
-                    // Effet de survol uniquement si pas sélectionné
-                    btn.setOnMouseEntered(e -> {
-                        if (selectedPlace == null || selectedPlace.getId() != place.getId()) {
-                            btn.setStyle(baseStyle + 
-                                "-fx-background-color: linear-gradient(to bottom right, #F1F8E9, #DCEDC8, #C5E1A5);" +
-                                "-fx-border-color: #558B2F;" +
-                                "-fx-text-fill: #33691E;" +
-                                "-fx-effect: dropshadow(three-pass-box, rgba(67,160,71,0.6), 8, 0.0, 0, 3);");
-                        }
-                    });
-
-                    btn.setOnMouseExited(e -> {
-                        if (selectedPlace == null || selectedPlace.getId() != place.getId()) {
-                            btn.setStyle(baseStyle + 
-                                "-fx-background-color: linear-gradient(to bottom right, #F9FBE7, #F1F8E9, #DCEDC8);" +
-                                "-fx-border-color: #7CB342;" +
-                                "-fx-text-fill: #33691E;");
-                        }
-                    });
-
-                    // Effet de pression
-                    btn.setOnMousePressed(e -> {
-                        if (selectedPlace == null || selectedPlace.getId() != place.getId()) {
-                            btn.setStyle(baseStyle + 
-                                "-fx-background-color: linear-gradient(to bottom right, #DCEDC8, #C5E1A5, #AED581);" +
-                                "-fx-border-color: #558B2F;" +
-                                "-fx-effect: dropshadow(three-pass-box, rgba(67,160,71,0.4), 2, 0.0, 0, 1);" +
-                                "-fx-translate-y: 1;");
-                        }
-                    });
-
-                    btn.setOnMouseReleased(e -> {
-                        if (selectedPlace == null || selectedPlace.getId() != place.getId()) {
-                            btn.setStyle(baseStyle + 
-                                "-fx-background-color: linear-gradient(to bottom right, #F9FBE7, #F1F8E9, #DCEDC8);" +
-                                "-fx-border-color: #7CB342;" +
-                                "-fx-text-fill: #33691E;" +
-                                "-fx-translate-y: 0;");
-                        }
-                    });
-
-                    // Action de sélection
-                    btn.setOnAction(e -> {
-                        if (selectedPlace != null && selectedPlace.getId() == place.getId()) {
-                            // Désélection
-                            selectedPlace = null;
-                            btn.setStyle(baseStyle + 
-                                "-fx-background-color: linear-gradient(to bottom right, #F9FBE7, #F1F8E9, #DCEDC8);" +
-                                "-fx-border-color: #7CB342;" +
-                                "-fx-text-fill: #33691E;");
-                        } else {
-                            // Nouvelle sélection
-                            deselectAll();
-                            selectedPlace = place;
-                            btn.setStyle(baseStyle + 
-                                "-fx-background-color: linear-gradient(to bottom right, #FFEBEE, #FFCDD2, #EF5350);" +
-                                "-fx-border-color: #D32F2F;" +
-                                "-fx-text-fill: white;" +
-                                "-fx-effect: dropshadow(three-pass-box, rgba(211,47,47,0.6), 8, 0.0, 0, 3);");
-                        }
-                    });
-            }
-            
-            return btn;
-        } catch (Exception e) {
-            System.err.println("Erreur dans createSiegeButton: " + e.getMessage());
-            e.printStackTrace();
-            throw e;
-        }
-    }
-
-    private void deselectAll() {
+        Button btn = new Button(String.format("%c-%d", (char)('A' + place.getNumeroLigne() - 1), place.getNumeroColonne()));
+        btn.setPrefSize(60, 60);
+        btn.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        
         String baseStyle = "-fx-background-radius: 10;" +
                          "-fx-border-radius: 10;" +
                          "-fx-border-width: 2;" +
@@ -209,39 +151,158 @@ public class ReservationSalleController {
                          "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 5, 0.0, 0, 2);" +
                          "-fx-border-style: solid inside;";
 
-        for (Map.Entry<Button, Place> entry : buttonPlaceMap.entrySet()) {
-            Button btn = entry.getKey();
-            Place place = entry.getValue();
-            
-            if ("libre".equals(place.getStatut())) {
+        switch (place.getStatut()) {
+            case "occupee":
+                btn.setStyle(baseStyle + 
+                    "-fx-background-color: linear-gradient(to bottom right, #EEEEEE, #E0E0E0, #BDBDBD);" +
+                    "-fx-border-color: #9E9E9E;" +
+                    "-fx-text-fill: #757575;" +
+                    "-fx-opacity: 0.7;");
+                btn.setDisable(true);
+                break;
+            case "reservee":
+                btn.setStyle(baseStyle + 
+                    "-fx-background-color: linear-gradient(to bottom right, #FFEBEE, #FFCDD2, #EF9A9A);" +
+                    "-fx-border-color: #E57373;" +
+                    "-fx-text-fill: #D32F2F;");
+                btn.setDisable(true);
+                break;
+            default:
                 btn.setStyle(baseStyle + 
                     "-fx-background-color: linear-gradient(to bottom right, #F9FBE7, #F1F8E9, #DCEDC8);" +
                     "-fx-border-color: #7CB342;" +
                     "-fx-text-fill: #33691E;");
+                btn.setCursor(Cursor.HAND);
+
+                btn.setOnMouseEntered(e -> {
+                    if (selectedPlace == null || selectedPlace.getId() != place.getId()) {
+                        btn.setStyle(baseStyle + 
+                            "-fx-background-color: linear-gradient(to bottom right, #F1F8E9, #DCEDC8, #C5E1A5);" +
+                            "-fx-border-color: #558B2F;" +
+                            "-fx-text-fill: #33691E;" +
+                            "-fx-effect: dropshadow(three-pass-box, rgba(67,160,71,0.6), 8, 0.0, 0, 3);");
+                    }
+                });
+
+                btn.setOnMouseExited(e -> {
+                    if (selectedPlace == null || selectedPlace.getId() != place.getId()) {
+                        btn.setStyle(baseStyle + 
+                            "-fx-background-color: linear-gradient(to bottom right, #F9FBE7, #F1F8E9, #DCEDC8);" +
+                            "-fx-border-color: #7CB342;" +
+                            "-fx-text-fill: #33691E;");
+                    }
+                });
+
+                btn.setOnMousePressed(e -> {
+                    if (selectedPlace == null || selectedPlace.getId() != place.getId()) {
+                        btn.setStyle(baseStyle + 
+                            "-fx-background-color: linear-gradient(to bottom right, #DCEDC8, #C5E1A5, #AED581);" +
+                            "-fx-border-color: #558B2F;" +
+                            "-fx-effect: dropshadow(three-pass-box, rgba(67,160,71,0.4), 2, 0.0, 0, 1);" +
+                            "-fx-translate-y: 1;");
+                    }
+                });
+
+                btn.setOnMouseReleased(e -> {
+                    if (selectedPlace == null || selectedPlace.getId() != place.getId()) {
+                        btn.setStyle(baseStyle + 
+                            "-fx-background-color: linear-gradient(to bottom right, #F9FBE7, #F1F8E9, #DCEDC8);" +
+                            "-fx-border-color: #7CB342;" +
+                            "-fx-text-fill: #33691E;");
+                    }
+                });
+
+                btn.setOnAction(e -> handlePlaceSelection(place, btn));
+        }
+
+        return btn;
+    }
+
+    private void handlePlaceSelection(Place place, Button btn) {
+        if (selectedPlace != null) {
+            // Désélectionner l'ancienne place
+            Button oldBtn = buttonPlaceMap.entrySet().stream()
+                .filter(entry -> entry.getValue().getId() == selectedPlace.getId())
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElse(null);
+            
+            if (oldBtn != null) {
+                oldBtn.setStyle("-fx-background-color: linear-gradient(to bottom right, #F9FBE7, #F1F8E9, #DCEDC8);" +
+                              "-fx-border-color: #7CB342;" +
+                              "-fx-text-fill: #33691E;");
             }
         }
+
+        selectedPlace = place;
+        btn.setStyle("-fx-background-color: linear-gradient(to bottom right, #E8F5E9, #C8E6C9, #A5D6A7);" +
+                    "-fx-border-color: #43A047;" +
+                    "-fx-text-fill: #1B5E20;" +
+                    "-fx-effect: dropshadow(three-pass-box, rgba(67,160,71,0.6), 8, 0.0, 0, 3);");
+
+        if (assistantVocal != null && toggleAssistant.isSelected()) {
+            String message = String.format("Vous avez sélectionné la place %c%d. C'est une excellente place !", 
+                (char)('A' + place.getNumeroLigne() - 1), place.getNumeroColonne());
+            assistantVocal.processUserInput("selection");
+        }
+    }
+
+    private void deselectAll() {
         selectedPlace = null;
+        buttonPlaceMap.forEach((btn, place) -> {
+            if (!place.getStatut().equals("occupee") && !place.getStatut().equals("reservee")) {
+                btn.setStyle("-fx-background-color: linear-gradient(to bottom right, #F9FBE7, #F1F8E9, #DCEDC8);" +
+                            "-fx-border-color: #7CB342;" +
+                            "-fx-text-fill: #33691E;");
+            }
+        });
+    }
+
+    @FXML
+    private void toggleAssistant() {
+        if (toggleAssistant.isSelected()) {
+            assistantStatus.setText("Assistant actif");
+            assistantStatus.setTextFill(Color.GREEN);
+            assistantVocal.start();
+        } else {
+            assistantStatus.setText("Assistant inactif");
+            assistantStatus.setTextFill(Color.GRAY);
+            assistantVocal.stop();
+        }
     }
 
     @FXML
     private void handleValider() {
         if (selectedPlace == null) {
-            showError("Veuillez sélectionner une place.");
+            showError("Veuillez sélectionner une place");
+            if (assistantVocal != null && toggleAssistant.isSelected()) {
+                assistantVocal.processUserInput("aide");
+            }
             return;
         }
+
         try {
-            User user = SessionManager.getInstance().getLoggedInUser();
-            if (user == null) {
-                showError("Vous devez être connecté.");
+            PlaceDAO dao = new PlaceDAO();
+            User currentUser = SessionManager.getInstance().getLoggedInUser();
+            
+            if (currentUser == null) {
+                showError("Vous devez être connecté pour réserver une place");
                 return;
             }
-            PlaceDAO dao = new PlaceDAO();
-            dao.reserverPlace(selectedPlace.getId(), user.getId().toString());
+
+            dao.reserverPlace(selectedPlace.getId(), currentUser.getId().toString());
+            
             if (callback != null) {
                 callback.onReservationConfirmee(selectedPlace.getId());
             }
-            showInfo("Votre place a été réservée avec succès !");
+
+            if (assistantVocal != null && toggleAssistant.isSelected()) {
+                assistantVocal.processUserInput("merci");
+            }
+
+            showInfo("Place réservée avec succès !");
             stage.close();
+            
         } catch (Exception e) {
             showError("Erreur lors de la réservation : " + e.getMessage());
         }
@@ -249,6 +310,9 @@ public class ReservationSalleController {
 
     @FXML
     private void handleAnnuler() {
+        if (assistantVocal != null && toggleAssistant.isSelected()) {
+            assistantVocal.processUserInput("au_revoir");
+        }
         stage.close();
     }
 
@@ -266,5 +330,11 @@ public class ReservationSalleController {
         alert.setHeaderText(null);
         alert.setContentText(msg);
         alert.showAndWait();
+    }
+
+    public void shutdown() {
+        if (assistantVocal != null) {
+            assistantVocal.stop();
+        }
     }
 } 
