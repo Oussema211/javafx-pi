@@ -1,0 +1,14 @@
+{
+  "dev": {
+    "debug": true,
+    "texture_quality": "high",
+    "cache_enabled": false,
+    "timeout": 30
+  },
+  "prod": {
+    "debug": false,
+    "texture_quality": "medium",
+    "cache_enabled": true,
+    "timeout": 15
+  }
+}

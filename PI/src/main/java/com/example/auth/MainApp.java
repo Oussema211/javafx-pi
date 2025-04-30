@@ -73,7 +73,15 @@ public class MainApp extends Application {
         primaryStage.show();
         System.out.println("DEBUG: MainApp started successfully");
     }
-
+    @Override
+    public void init() {
+        // Solution radicale pour le conflit WebView
+        String tempWebViewDir = System.getProperty("java.io.tmpdir") +
+                "/webview_" +
+                System.currentTimeMillis();
+        System.setProperty("javafx.webview.userDataDir", tempWebViewDir);
+        System.out.println("WebView userDataDir set to: " + tempWebViewDir);
+    }
     public static void main(String[] args) {
         launch(args);
     }

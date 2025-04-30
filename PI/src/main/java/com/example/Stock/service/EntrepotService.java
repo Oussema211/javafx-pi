@@ -86,6 +86,7 @@ public class EntrepotService {
         return null;
     }
 
+
     public boolean updateEntrepot(Entrepot entrepot) {
         String query = "UPDATE entrepot SET nom = ?, adresse = ?, ville = ?, espace = ?, " +
                 "latitude = ?, longitude = ? WHERE id = ?";
