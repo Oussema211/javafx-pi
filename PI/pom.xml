@@ -68,7 +68,7 @@
             <version>0.4</version>
         </dependency>
 
-        <!-- JSON and Jackson (for GeminiChatService) -->
+        <!-- JSON and Jackson -->
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
@@ -80,7 +80,7 @@
             <version>${jackson.version}</version>
         </dependency>
 
-        <!-- Dotenv for GeminiChatService -->
+        <!-- Dotenv -->
         <dependency>
             <groupId>io.github.cdimascio</groupId>
             <artifactId>dotenv-java</artifactId>
@@ -116,6 +116,28 @@
             <artifactId>poi-ooxml</artifactId>
             <version>5.2.3</version>
         </dependency>
+
+       <!-- Google API Client Library -->
+<dependency>
+    <groupId>com.google.api-client</groupId>
+    <artifactId>google-api-client</artifactId>
+    <version>1.35.2</version>
+</dependency>
+<dependency>
+    <groupId>com.google.oauth-client</groupId>
+    <artifactId>google-oauth-client-jetty</artifactId>
+    <version>1.34.1</version>
+</dependency>
+<dependency>
+    <groupId>com.google.apis</groupId>
+    <artifactId>google-api-services-people</artifactId>
+    <version>v1-rev537-1.25.0</version>
+</dependency>
+<dependency>
+    <groupId>com.google.http-client</groupId>
+    <artifactId>google-http-client-jackson2</artifactId>
+    <version>1.43.3</version>
+</dependency>
     </dependencies>
 
     <build>
@@ -129,8 +151,8 @@
                     <include>**/*.jpg</include>
                     <include>**/*.png</include>
                     <include>**/*.xml</include>
-                    <include>**/*.env</include> <!-- Added to include .env file -->
-
+                    <include>**/*.env</include>
+                    <include>**/*.json</include>
                 </includes>
                 <filtering>false</filtering>
             </resource>

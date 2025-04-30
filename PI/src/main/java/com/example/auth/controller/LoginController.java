@@ -20,7 +20,6 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.Videoio;
-import com.example.cart.OrderHistoryManager;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -83,22 +82,19 @@ public class LoginController {
                 messageLabel.setText("Cannot load face detection");
             }
 
-            // Initialize GeminiChatService
             chatService = new GeminiChatService();
-
-            // Debug: Confirm chatCard is injected
             System.out.println("chatCard: " + chatCard);
         } catch (UnsatisfiedLinkError e) {
             System.err.println("ERROR: Failed to load OpenCV native library: " + e.getMessage());
             messageLabel.setText("Cannot load OpenCV library");
         } catch (Exception e) {
-            System.err.println("ERROR: " + e.getMessage());
+            System.err.println("ERROR: Initialization error: " + e.getMessage());
             messageLabel.setText("Initialization error");
         }
     }
 
     @FXML
-    private void onLoginClicked() throws IOException {
+    private void onLoginClicked() {
         String email = usernameField.getText().trim();
         String password = passwordField.getText().trim();
 
@@ -114,59 +110,67 @@ public class LoginController {
         }
 
         sessionManager.setLoggedInUser(user);
-
-        // Redirect based on user role
         String fxmlFile = user.hasRole("ROLE_ADMIN") ? "/com/example/auth/dashboard.fxml" : "/com/example/frontPages/dashboard.fxml";
-        Stage stage = (Stage) usernameField.getScene().getWindow();
-        boolean isFullScreen = stage.isFullScreen();
-        Parent root = FXMLLoader.load(getClass().getResource(fxmlFile));
-        Scene scene = new Scene(root, 700, 700);
-
-        // Load stylesheet
-        java.net.URL stylesheetUrl = getClass().getClassLoader().getResource("com/example/auth/styles.css");
-        if (stylesheetUrl != null) {
-            scene.getStylesheets().add(stylesheetUrl.toExternalForm());
+        try {
+            loadScene(fxmlFile);
+        } catch (IOException e) {
+            System.err.println("Error loading dashboard: " + e.getMessage());
+            messageLabel.setText("Error loading dashboard: " + e.getMessage());
         }
-        stylesheetUrl = getClass().getClassLoader().getResource("com/example/auth/chat.css");
-        if (stylesheetUrl != null) {
-            scene.getStylesheets().add(stylesheetUrl.toExternalForm());
-        } else {
-            System.out.println("DEBUG: Could not find chat.css");
-        }
+    }
 
-        stage.setScene(scene);
-        stage.setFullScreen(isFullScreen);
-        stage.show();
+    @FXML
+    private void handleGmailLogin() {
+        new Thread(() -> {
+            try {
+                System.out.println("Starting Google authentication...");
+                User user = authService.loginWithGmail();
+                if (user == null) {
+                    System.err.println("Gmail login failed: User is null");
+                    Platform.runLater(() -> messageLabel.setText("Gmail login failed: Unable to authenticate"));
+                    return;
+                }
+
+                System.out.println("Google authentication successful for user: " + user.getEmail());
+                sessionManager.setLoggedInUser(user);
+                String fxmlFile = user.hasRole("ROLE_ADMIN") ? "/com/example/auth/dashboard.fxml" : "/com/example/frontPages/dashboard.fxml";
+                System.out.println("Attempting to load dashboard: " + fxmlFile);
+
+                Platform.runLater(() -> {
+                    try {
+                        loadScene(fxmlFile);
+                        System.out.println("Successfully loaded dashboard: " + fxmlFile);
+                    } catch (IOException e) {
+                        System.err.println("Error loading dashboard: " + e.getMessage());
+                        e.printStackTrace();
+                        messageLabel.setText("Error loading dashboard: " + e.getMessage());
+                    }
+                });
+            } catch (Exception e) {
+                System.err.println("Error during Gmail login: " + e.getMessage());
+                e.printStackTrace();
+                Platform.runLater(() -> messageLabel.setText("Error during Gmail login: " + e.getMessage()));
+            }
+        }).start();
     }
 
     @FXML
     private void onForgotPasswordClicked() {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/auth/resetPassword.fxml"));
-            Parent root = loader.load();
-            Stage stage = new Stage();
-            stage.setTitle("Reset Password");
-            stage.setScene(new Scene(root, 700, 700));
-            stage.show();
+            loadScene("/com/example/auth/resetPassword.fxml");
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Error loading reset password page: " + e.getMessage());
+            messageLabel.setText("Error loading reset password page");
         }
     }
 
     @FXML
     private void onRegisterClicked() {
         try {
-            java.net.URL fxmlUrl = getClass().getResource("/com/example/auth/signup.fxml");
-            if (fxmlUrl == null) {
-                messageLabel.setText("Error: Signup page not found");
-                System.out.println("DEBUG: signup.fxml not found at /com/example/auth/signup.fxml");
-                return;
-            }
             loadScene("/com/example/auth/signup.fxml");
         } catch (IOException e) {
+            System.err.println("Error loading signup page: " + e.getMessage());
             messageLabel.setText("Error loading signup page");
-            System.out.println("DEBUG: sentChatMessageError switching to signup screen: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 
@@ -186,28 +190,21 @@ public class LoginController {
             return;
         }
 
-        // Append user message to chat history
         chatHistory.appendText("You: " + message + "\n");
         chatInput.clear();
 
-        // Send message to GeminiChatService in a separate thread
         new Thread(() -> {
             try {
                 String response = chatService.sendMessage(message);
-                Platform.runLater(() -> {
-                    chatHistory.appendText("AgriChat: " + response + "\n");
-                });
+                Platform.runLater(() -> chatHistory.appendText("AgriChat: " + response + "\n"));
             } catch (Exception e) {
-                Platform.runLater(() -> {
-                    chatHistory.appendText("AgriChat: Error: " + e.getMessage() + "\n");
-                });
-                System.err.println("DEBUG: Error sending chat message: " + e.getMessage());
+                System.err.println("Error sending chat message: " + e.getMessage());
+                Platform.runLater(() -> chatHistory.appendText("AgriChat: Error: " + e.getMessage() + "\n"));
             }
         }).start();
     }
 
     private void startFaceCapture() {
-        // Try different camera indices and backends
         boolean opened = false;
         for (int i = 0; i < 3; i++) {
             System.out.println("Trying camera index " + i + " with default backend");
@@ -220,7 +217,6 @@ public class LoginController {
         }
 
         if (!opened) {
-            // Try DirectShow backend
             for (int i = 0; i < 3; i++) {
                 System.out.println("Trying camera index " + i + " with DirectShow backend");
                 capture = new VideoCapture(i, Videoio.CAP_DSHOW);
@@ -355,12 +351,11 @@ public class LoginController {
                         String fxmlFile = user.hasRole("ROLE_ADMIN") ? "/com/example/auth/dashboard.fxml" : "/com/example/frontPages/dashboard.fxml";
                         Platform.runLater(() -> {
                             try {
-                                // Close the webcam window before loading the new scene
                                 stopFaceCapture();
                                 loadScene(fxmlFile);
                             } catch (IOException e) {
                                 messageLabel.setText("Error loading dashboard");
-                                e.printStackTrace();
+                                System.err.println("Error loading dashboard: " + e.getMessage());
                             }
                         });
                     } else {
@@ -400,24 +395,30 @@ public class LoginController {
     }
 
     private void loadScene(String fxmlFile) throws IOException {
+        System.out.println("Loading FXML: " + fxmlFile);
+        java.net.URL fxmlUrl = getClass().getResource(fxmlFile);
+        if (fxmlUrl == null) {
+            throw new IOException("Cannot find FXML file: " + fxmlFile);
+        }
+
         Stage stage = (Stage) usernameField.getScene().getWindow();
         boolean isFullScreen = stage.isFullScreen();
-        Parent root = FXMLLoader.load(getClass().getResource(fxmlFile));
-        if (root == null) {
-            System.out.println("DEBUG: Failed to load " + fxmlFile + " - root is null");
-            return;
-        }
-        Scene scene = new Scene(root, 400, 500);
-        java.net.URL stylesheetUrl = getClass().getClassLoader().getResource("com/example/auth/styles.css");
-        if (stylesheetUrl != null) {
-            scene.getStylesheets().add(stylesheetUrl.toExternalForm());
-        }
-        stylesheetUrl = getClass().getClassLoader().getResource("com/example/auth/chat.css");
+        Parent root = FXMLLoader.load(fxmlUrl);
+        Scene scene = new Scene(root, 800, 600);
+
+        java.net.URL stylesheetUrl = getClass().getResource("/com/example/auth/styles.css");
         if (stylesheetUrl != null) {
             scene.getStylesheets().add(stylesheetUrl.toExternalForm());
         } else {
-            System.out.println("DEBUG: Could not find chat.css");
+            System.out.println("Warning: styles.css not found");
         }
+        stylesheetUrl = getClass().getResource("/com/example/auth/chat.css");
+        if (stylesheetUrl != null) {
+            scene.getStylesheets().add(stylesheetUrl.toExternalForm());
+        } else {
+            System.out.println("Warning: chat.css not found");
+        }
+
         stage.setScene(scene);
         stage.setFullScreen(isFullScreen);
         stage.show();

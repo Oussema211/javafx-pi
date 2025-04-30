@@ -4,10 +4,14 @@ import com.example.auth.model.User;
 import com.example.auth.utils.EmailUtil;
 import com.example.auth.utils.MyDatabase;
 import com.example.auth.utils.ResetLinkServer;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.mindrot.jbcrypt.BCrypt;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
@@ -19,12 +23,16 @@ public class AuthService {
 
     public AuthService() {
         conn = MyDatabase.getInstance().getCnx();
+        if (conn == null) {
+            System.err.println("Database connection is null. Cannot initialize tables.");
+            return;
+        }
         try (Statement stmt = conn.createStatement()) {
             String sql = "CREATE TABLE IF NOT EXISTS user (" +
                     "id VARCHAR(36) PRIMARY KEY, " +
                     "email VARCHAR(100) NOT NULL UNIQUE, " +
                     "roles TEXT NOT NULL, " +
-                    "password VARCHAR(255) NOT NULL, " +
+                    "password VARCHAR(255), " +
                     "travail VARCHAR(100), " +
                     "date_inscri DATE NOT NULL, " +
                     "photo_url TEXT, " +
@@ -49,13 +57,77 @@ public class AuthService {
                 stmt.execute(sql);
                 System.out.println("Added verification_token column to user table");
             }
+
+            sql = "ALTER TABLE user MODIFY COLUMN password VARCHAR(255)";
+            stmt.execute(sql);
+            System.out.println("Ensured password column allows NULL");
         } catch (SQLException e) {
-            System.err.println("Error initializing database: " + e.getMessage());
+            System.err.println("Error initializing database tables: " + e.getMessage());
+        }
+    }
+
+    public User loginWithGmail() throws IOException, GeneralSecurityException {
+        System.out.println("Attempting to authenticate with Google...");
+        String email = GoogleAuthHelper.authenticate();
+        if (email == null || email.isEmpty()) {
+            System.err.println("Google authentication failed: No email returned");
+            return null;
+        }
+        System.out.println("Google authentication returned email: " + email);
+        
+        User user = authenticate(email, null);
+        if (user != null) {
+            System.out.println("Existing user found: " + email);
+            return user;
+        }
+
+        if (conn == null) {
+            System.err.println("Cannot create user: Database connection is null");
+            return null;
+        }
+
+        UUID id = UUID.randomUUID();
+        List<String> roles = Arrays.asList("ROLE_USER");
+        String rolesJson;
+        try {
+            rolesJson = new ObjectMapper().writeValueAsString(roles);
+        } catch (Exception e) {
+            System.err.println("Error serializing roles: " + e.getMessage());
+            return null;
+        }
+        Date dateInscri = new Date();
+        
+        String sql = "INSERT INTO user (id, email, roles, password, travail, date_inscri, photo_url, " +
+                     "is_verified, verification_token, nom, prenom, num_tel) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, id.toString());
+            pstmt.setString(2, email);
+            pstmt.setString(3, rolesJson);
+            pstmt.setNull(4, Types.VARCHAR);
+            pstmt.setNull(5, Types.VARCHAR);
+            pstmt.setDate(6, new java.sql.Date(dateInscri.getTime()));
+            pstmt.setNull(7, Types.VARCHAR);
+            pstmt.setBoolean(8, true);
+            pstmt.setNull(9, Types.VARCHAR);
+            pstmt.setString(10, "Unknown");
+            pstmt.setString(11, "Unknown");
+            pstmt.setNull(12, Types.VARCHAR);
+            int rowsAffected = pstmt.executeUpdate();
+            System.out.println("New user created: " + email + ", rows affected: " + rowsAffected);
+            return new User(id, email, rolesJson, null, null, dateInscri, null, true, null, "Unknown", "Unknown", null);
+        } catch (SQLException e) {
+            System.err.println("Error creating Gmail user: " + e.getMessage());
+            return null;
         }
     }
 
     public boolean signup(String email, String password, String travail, String photoUrl,
                          String nom, String prenom, String numTel, List<String> roles, String verificationCode) {
+        if (conn == null) {
+            System.err.println("Cannot signup: Database connection is null");
+            return false;
+        }
+
         String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
         UUID id = UUID.randomUUID();
         User tempUser = new User(id, email, "[]", password, travail, new Date(), photoUrl, false, verificationCode, nom, prenom, numTel);
@@ -91,6 +163,11 @@ public class AuthService {
     }
 
     public boolean verifyUser(String verificationCode, String email) {
+        if (conn == null) {
+            System.err.println("Cannot verify user: Database connection is null");
+            return false;
+        }
+
         String sql = "SELECT id FROM user WHERE verification_token = ? AND email = ? AND is_verified = false";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, verificationCode);
@@ -119,13 +196,17 @@ public class AuthService {
     }
 
     public User authenticate(String email, String password) {
+        if (conn == null) {
+            System.err.println("Cannot authenticate: Database connection is null");
+            return null;
+        }
+
         String sql = "SELECT * FROM user WHERE email = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, email);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
                 String storedPassword = rs.getString("password");
-                // Support both password-based and face recognition login (password may be null)
                 if (password == null || (password != null && BCrypt.checkpw(password, storedPassword))) {
                     Date dateInscri = rs.getDate("date_inscri");
                     if (dateInscri == null) {
@@ -141,7 +222,7 @@ public class AuthService {
                             dateInscri,
                             rs.getString("photo_url"),
                             rs.getBoolean("is_verified"),
-                            rs.getString("verification_token"), // Added to match User constructor
+                            rs.getString("verification_token"),
                             rs.getString("nom"),
                             rs.getString("prenom"),
                             rs.getString("num_tel")
@@ -159,6 +240,11 @@ public class AuthService {
     }
 
     public User getUserById(UUID id) {
+        if (conn == null) {
+            System.err.println("Cannot fetch user: Database connection is null");
+            return null;
+        }
+
         String sql = "SELECT * FROM user WHERE id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, id.toString());
@@ -190,6 +276,11 @@ public class AuthService {
     }
 
     public List<User> getAllUsers() {
+        if (conn == null) {
+            System.err.println("Cannot fetch users: Database connection is null");
+            return new ArrayList<>();
+        }
+
         List<User> users = new ArrayList<>();
         String sql = "SELECT * FROM user";
         try (Statement stmt = conn.createStatement();
@@ -221,6 +312,11 @@ public class AuthService {
     }
 
     public boolean updateUser(User user) {
+        if (conn == null) {
+            System.err.println("Cannot update user: Database connection is null");
+            return false;
+        }
+
         String sql = "UPDATE user SET email = ?, roles = ?, password = ?, travail = ?, " +
                 "photo_url = ?, is_verified = ?, verification_token = ?, nom = ?, prenom = ?, num_tel = ? WHERE id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -244,6 +340,11 @@ public class AuthService {
     }
 
     public boolean updateUserEmail(String oldEmail, String newEmail) {
+        if (conn == null) {
+            System.err.println("Cannot update email: Database connection is null");
+            return false;
+        }
+
         String checkSql = "SELECT COUNT(*) FROM user WHERE email = ?";
         try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
             checkStmt.setString(1, newEmail);
@@ -270,13 +371,18 @@ public class AuthService {
     }
 
     public boolean updateUserPassword(String email, String newPassword) {
+        if (conn == null) {
+            System.err.println("Cannot update password: Database connection is null");
+            return false;
+        }
+
         String hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
         String sql = "UPDATE user SET password = ? WHERE email = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, hashedPassword);
             pstmt.setString(2, email);
-            int rowsAffected = pstmt.executeUpdate();
-            return rowsAffected > 0;
+            int rowsUpdated = pstmt.executeUpdate();
+            return rowsUpdated > 0;
         } catch (SQLException e) {
             System.err.println("Error updating password: " + e.getMessage());
             return false;
@@ -284,6 +390,11 @@ public class AuthService {
     }
 
     public boolean deleteUser(UUID id) {
+        if (conn == null) {
+            System.err.println("Cannot delete user: Database connection is null");
+            return false;
+        }
+
         String sql = "DELETE FROM reset_token WHERE user_id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, id.toString());
@@ -305,6 +416,11 @@ public class AuthService {
     }
 
     public boolean requestPasswordReset(String email, String numTel) {
+        if (conn == null) {
+            System.err.println("Cannot request password reset: Database connection is null");
+            return false;
+        }
+
         String sql = "SELECT * FROM user WHERE email = ? AND num_tel = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, email);
@@ -343,6 +459,11 @@ public class AuthService {
     }
 
     public boolean resetPasswordWithToken(String token, String newPassword) {
+        if (conn == null) {
+            System.err.println("Cannot reset password: Database connection is null");
+            return false;
+        }
+
         String sql = "SELECT * FROM reset_token WHERE token = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, token);
@@ -375,6 +496,11 @@ public class AuthService {
     }
 
     private void deleteToken(String token) {
+        if (conn == null) {
+            System.err.println("Cannot delete token: Database connection is null");
+            return;
+        }
+
         String sql = "DELETE FROM reset_token WHERE token = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, token);
