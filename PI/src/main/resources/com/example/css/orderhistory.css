@@ -1,0 +1,83 @@
+/* 📜 ScrollPane historique */
+#orderScrollPane {
+    -fx-background-color: transparent;
+}
+
+/* 📦 Cartes de commandes */
+.order-card {
+    -fx-background-color: white;
+    -fx-padding: 20;
+    -fx-spacing: 10;
+    -fx-border-radius: 15;
+    -fx-background-radius: 15;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0.5, 0, 2);
+    -fx-border-color: #e0e0e0;
+    -fx-border-width: 1;
+    -fx-cursor: hand;
+    -fx-transition: all 0.3s ease;
+}
+
+.order-card:hover {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 12, 0.6, 0, 4);
+    -fx-scale-x: 1.02;
+    -fx-scale-y: 1.02;
+}
+
+/* 🏷️ Titre */
+.order-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2e2e2e;
+}
+
+/* 📅 Date */
+.order-date {
+    -fx-font-size: 14px;
+    -fx-text-fill: #6e6e6e;
+}
+
+/* 💰 Prix */
+.order-price {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #4caf50;
+}
+
+/* 📊 Section Statistiques */
+.stats-section {
+    -fx-background-color: linear-gradient(to right, #6a11cb, #2575fc);
+    -fx-padding: 30px;
+    -fx-alignment: center;
+    -fx-spacing: 20px;
+    -fx-background-radius: 15px;
+}
+
+/* 🧮 Carte de statistique */
+.stat-card {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 15px;
+    -fx-padding: 20px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.15), 10, 0.3, 0, 5);
+    -fx-min-width: 150px;
+    -fx-alignment: center;
+    -fx-transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+}
+
+/* 🖌️ Titre de statistique */
+.stat-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333333;
+}
+
+/* 🧮 Valeur */
+.stat-value {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #4caf50;
+}

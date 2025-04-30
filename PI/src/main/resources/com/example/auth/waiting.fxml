@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Hyperlink?>
+<?import javafx.scene.text.Font?>
+
+<VBox alignment="CENTER" spacing="20" styleClass="card" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.auth.controller.WaitingController">
+    <Label text="Please check your email for a verification code." wrapText="true">
+        <font>
+            <Font name="System Bold" size="16"/>
+        </font>
+    </Label>
+    <Hyperlink fx:id="verifyLink" text="Enter Verification Code" onAction="#onVerifyClicked"/>
+    <Hyperlink fx:id="loginLink" text="Back to Login" onAction="#onLoginClicked"/>
+</VBox>

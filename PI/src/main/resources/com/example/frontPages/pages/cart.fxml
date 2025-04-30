@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.cart.controller.CartController"
+      spacing="30" alignment="CENTER"
+      style="-fx-background-color: linear-gradient(to right, #6a11cb, #2575fc); -fx-padding: 40;"
+      stylesheets="@cart.css">
+
+    <!-- 🔥 Titre stylé -->
+    <Label text="🛒 Mon Panier"
+           style="-fx-font-size: 36px; -fx-text-fill: white; -fx-font-weight: bold;"/>
+
+    <!-- 💎 Table stylée -->
+    <TableView fx:id="cartTable"
+               prefWidth="900"
+               style="-fx-background-radius: 10; -fx-background-color: white; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 12, 0.5, 0, 0);">
+        <columns>
+            <TableColumn fx:id="colImage" text="Image" prefWidth="150"/>
+            <TableColumn fx:id="colProduit" text="Produit" prefWidth="250"/>
+            <TableColumn fx:id="colQuantite" text="Quantité" prefWidth="150"/>
+            <TableColumn fx:id="colPrix" text="Prix Total" prefWidth="150"/>
+            <TableColumn fx:id="colActions" text="Actions" prefWidth="150"/>
+        </columns>
+    </TableView>
+
+    <!-- 🧾 Total -->
+    <Label fx:id="totalLabel"
+           text="Total : 0.00 DT"
+           style="-fx-font-size: 20px; -fx-text-fill: white; -fx-font-weight: bold;"/>
+
+    <!-- 🎯 Boutons -->
+    <HBox spacing="20" alignment="CENTER">
+        <Button text="🗑 Vider Panier"
+                onAction="#handleClearCart"
+                style="-fx-background-color: #f44336; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10;"/>
+        <Button fx:id="checkoutButton" text="✅ Commander"
+                onAction="#handleCheckout"
+                style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10;"/>
+        <Button fx:id="orderHistoryButton" text="🧾 Voir Mes Commandes"
+                onAction="#handleOrderHistory"
+                style="-fx-background-color: #03A9F4; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10;"/>
+    </HBox>
+
+</VBox>

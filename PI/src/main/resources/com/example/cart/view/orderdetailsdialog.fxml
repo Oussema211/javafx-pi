@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<DialogPane xmlns="http://javafx.com/javafx/17"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.example.cart.view.OrderDetailsDialog"
+            prefWidth="400">
+    <content>
+        <VBox spacing="10" alignment="CENTER">
+            <Label text="Détails de la commande"/>
+            <!-- Placeholder ici -->
+        </VBox>
+    </content>
+</DialogPane>

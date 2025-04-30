@@ -1,12 +1,14 @@
 package com.example.auth.controller;
 
 import com.example.auth.service.AuthService;
+import com.example.auth.utils.EmailUtil;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
+import javax.mail.MessagingException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -71,11 +73,23 @@ public class AddUserController {
         }
 
         List<String> roles = Arrays.asList(rolesInput.split("\\s*,\\s*"));
-        if (authService.signup(email, password, travail, photoUrl, nom, prenom, numTel, roles)) {
-            messageLabel.setText("Utilisateur ajouté avec succès !");
-            clearFields();
-            Stage stage = (Stage) nomField.getScene().getWindow();
-            stage.close();
+        String verificationCode = authService.generateVerificationCode();
+        boolean success = authService.signup(email, password, travail, photoUrl, nom, prenom, numTel, roles, verificationCode);
+        if (success) {
+            try {
+                String emailBody = "<h2>Vérification de l'Email</h2>" +
+                        "<p>Votre code de vérification est : <b>" + verificationCode + "</b></p>" +
+                        "<p>Entrez ce code dans l'application pour vérifier votre compte.</p>" +
+                        "<p>Ce code expirera dans 24 heures.</p>";
+                EmailUtil.sendEmail(email, "Vérifiez Votre Email", emailBody);
+                messageLabel.setText("Utilisateur ajouté avec succès ! Email de vérification envoyé.");
+                clearFields();
+                Stage stage = (Stage) nomField.getScene().getWindow();
+                stage.close();
+            } catch (MessagingException e) {
+                messageLabel.setText("Utilisateur ajouté, mais échec de l'envoi de l'email de vérification.");
+                System.err.println("Erreur lors de l'envoi de l'email de vérification : " + e.getMessage());
+            }
         } else {
             messageLabel.setText("Email déjà utilisé !");
         }

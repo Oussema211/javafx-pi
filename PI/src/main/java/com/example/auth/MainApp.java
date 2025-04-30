@@ -1,7 +1,5 @@
 package com.example.auth;
 
-import java.net.URL;
-
 import com.example.auth.model.User;
 import com.example.auth.service.AuthService;
 import com.example.reclamation.service.MessageReclamationService;
@@ -14,9 +12,12 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
+import java.io.IOException;
+import java.net.URL;
+
 public class MainApp extends Application {
-    private SessionManager sessionManager = SessionManager.getInstance();
-    private static final boolean FULL_SCREEN = false; // Set to true for always full-screen, false for windowed
+    private final SessionManager sessionManager = SessionManager.getInstance();
+    private static final boolean FULL_SCREEN = false;
     private final AuthService authService = new AuthService();
     private final TagService tagService = new TagService();
     private final ReclamationService reclamationService = new ReclamationService();
@@ -26,37 +27,45 @@ public class MainApp extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
         System.out.println("DEBUG: Starting MainApp");
+
+        // Determine FXML file based on user session
         String fxmlFile;
         User user = sessionManager.getLoggedInUser();
         if (user == null) {
             fxmlFile = "/com/example/auth/login.fxml";
         } else {
-            fxmlFile = user.hasRole("ROLE_ADMIN") ? "/com/example/auth/dashboard.fxml" : "/com/example/frontPages/dashboard.fxml";
+            fxmlFile = user.hasRole("ROLE_ADMIN")
+                    ? "/com/example/auth/dashboard.fxml"
+                    : "/com/example/frontPages/dashboard.fxml";
         }
+
         System.out.println("DEBUG: Loading FXML: " + fxmlFile);
-        
-        // Debug the resource path
-        URL resourceUrl = getClass().getResource(fxmlFile);
-        if (resourceUrl == null) {
-            System.out.println("ERROR: Resource not found for FXML: " + fxmlFile);
-            throw new IllegalStateException("Cannot find FXML file: " + fxmlFile);
+        URL fxmlUrl = getClass().getResource(fxmlFile);
+        if (fxmlUrl == null) {
+            System.err.println("ERROR: Resource not found for FXML: " + fxmlFile);
+            throw new IOException("Cannot find FXML file: " + fxmlFile);
         }
-        
-        Parent root = FXMLLoader.load(resourceUrl); // Use URL directly
+
+        // Load FXML
+        FXMLLoader loader = new FXMLLoader(fxmlUrl);
+        Parent root = loader.load();
         if (root == null) {
-            System.out.println("DEBUG: Failed to load " + fxmlFile + " - root is null");
-            return;
+            System.err.println("DEBUG: Failed to load " + fxmlFile + " - root is null");
+            throw new IOException("Failed to load FXML file: " + fxmlFile);
         }
-        Scene scene = new Scene(root, 800, 600);
-    
+
+        // Create scene
+        Scene scene = new Scene(root, 1400, 740);
+
         // Load stylesheet
-        java.net.URL stylesheetUrl = getClass().getClassLoader().getResource("com/example/auth/styles.css");
+        URL stylesheetUrl = getClass().getResource("/com/example/auth/styles.css");
         if (stylesheetUrl != null) {
             scene.getStylesheets().add(stylesheetUrl.toExternalForm());
         } else {
-            System.out.println("DEBUG: Could not find styles.css in MainApp");
+            System.out.println("WARNING: Could not find styles.css in MainApp");
         }
-    
+
+        // Configure and show stage
         primaryStage.setTitle("Authentication System");
         primaryStage.setScene(scene);
         primaryStage.setResizable(true);
@@ -64,6 +73,7 @@ public class MainApp extends Application {
         primaryStage.show();
         System.out.println("DEBUG: MainApp started successfully");
     }
+
     public static void main(String[] args) {
         launch(args);
     }

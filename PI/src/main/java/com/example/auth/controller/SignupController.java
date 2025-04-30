@@ -1,6 +1,8 @@
 package com.example.auth.controller;
 
 import com.example.auth.service.AuthService;
+import com.example.auth.service.GeminiChatService;
+import com.example.auth.utils.EmailUtil;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -8,243 +10,380 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.application.Platform;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import org.opencv.core.*;
+import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.imgproc.Imgproc;
+import org.opencv.objdetect.CascadeClassifier;
+import org.opencv.videoio.VideoCapture;
+import javafx.scene.layout.VBox;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.Collections;
+import javax.mail.MessagingException;
+import java.io.*;
+import java.util.Arrays;
 
 public class SignupController {
-    @FXML private TextField prenomField;
-    @FXML private TextField nomField;
     @FXML private TextField emailField;
     @FXML private TextField usernameField;
     @FXML private PasswordField passwordField;
     @FXML private PasswordField confirmPasswordField;
     @FXML private TextField travailField;
+    @FXML private TextField nomField;
+    @FXML private TextField prenomField;
     @FXML private TextField numTelField;
+    @FXML private Label messageLabel;
+    @FXML private ImageView profilePhotoPreview;
+    @FXML private Button chooseProfilePhotoButton;
+    @FXML private ImageView facePhotoPreview;
+    @FXML private Button chooseFacePhotoButton;
+    @FXML private Button captureFaceButton;
+    @FXML private Label photoErrorLabel;
     @FXML private Button signupButton;
     @FXML private Hyperlink loginLink;
-    @FXML private Label messageLabel;
-    @FXML private Button choosePhotoButton;
-    @FXML private ImageView photoPreview;
-    @FXML private Label photoErrorLabel;
+    @FXML private VBox chatCard;
+    @FXML private TextArea chatHistory;
+    @FXML private TextField chatInput;
+    @FXML private Button sendChatButton;
 
     private AuthService authService = new AuthService();
-    private File selectedPhoto;
-    private static final long MAX_FILE_SIZE = 5 * 1024 * 1024;
-    private static final String[] ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg"};
+    private GeminiChatService chatService;
+    private VideoCapture capture;
+    private CascadeClassifier faceDetector;
+    private boolean isCapturing = false;
+    private File selectedProfilePhoto;
+    private File selectedFacePhoto;
+    private Mat capturedFace;
 
     @FXML
-    private void onChoosePhotoClicked() {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Choisir une photo de profil");
-        fileChooser.getExtensionFilters().add(
-            new FileChooser.ExtensionFilter("Fichiers image", "*.png", "*.jpg", "*.jpeg")
-        );
-        Stage stage = (Stage) choosePhotoButton.getScene().getWindow();
-        selectedPhoto = fileChooser.showOpenDialog(stage);
-
-        if (selectedPhoto != null) {
-            if (!validatePhoto(selectedPhoto)) {
-                selectedPhoto = null;
-                photoPreview.setImage(null);
+    public void initialize() {
+        try {
+            System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+            InputStream xmlStream = getClass().getResourceAsStream("/haarcascade_frontalface_default.xml");
+            if (xmlStream == null) {
+                System.err.println("ERROR: haarcascade_frontalface_default.xml not found");
+                messageLabel.setText("Face detection file not found");
                 return;
             }
-
-            try {
-                Image image = new Image(selectedPhoto.toURI().toString(), 50, 50, true, true);
-                photoPreview.setImage(image);
-                photoErrorLabel.setVisible(false);
-            } catch (Exception e) {
-                photoErrorLabel.setText("Erreur lors du chargement de l’image : " + e.getMessage());
-                photoErrorLabel.setVisible(true);
-                selectedPhoto = null;
+            File tempFile = File.createTempFile("haarcascade_frontalface_default", ".xml");
+            tempFile.deleteOnExit();
+            try (FileOutputStream out = new FileOutputStream(tempFile)) {
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+                while ((bytesRead = xmlStream.read(buffer)) != -1) {
+                    out.write(buffer, 0, bytesRead);
+                }
             }
-        }
-    }
-
-    private boolean validatePhoto(File file) {
-        String fileName = file.getName().toLowerCase();
-        boolean isValidExtension = false;
-        for (String ext : ALLOWED_EXTENSIONS) {
-            if (fileName.endsWith(ext)) {
-                isValidExtension = true;
-                break;
+            faceDetector = new CascadeClassifier(tempFile.getAbsolutePath());
+            if (faceDetector.empty()) {
+                System.err.println("ERROR: Failed to load haarcascade_frontalface_default.xml");
+                messageLabel.setText("Face detection unavailable");
             }
-        }
-        if (!isValidExtension) {
-            photoErrorLabel.setText("Seuls les fichiers PNG, JPG et JPEG sont autorisés");
-            photoErrorLabel.setVisible(true);
-            return false;
-        }
+            File facesDir = new File("faces");
+            System.out.println("Creating faces directory at: " + facesDir.getAbsolutePath());
+            if (facesDir.mkdirs()) {
+                System.out.println("Faces directory created successfully");
+            } else {
+                System.out.println("Faces directory already exists or failed to create");
+            }
+            File profileDir = new File("profile_photos");
+            System.out.println("Creating profile_photos directory at: " + profileDir.getAbsolutePath());
+            if (profileDir.mkdirs()) {
+                System.out.println("Profile_photos directory created successfully");
+            } else {
+                System.out.println("Profile_photos directory already exists or failed to create");
+            }
 
-        if (file.length() > MAX_FILE_SIZE) {
-            photoErrorLabel.setText("La taille du fichier dépasse la limite de 5 Mo");
-            photoErrorLabel.setVisible(true);
-            return false;
+            chatService = new GeminiChatService();
+            System.out.println("chatCard: " + chatCard);
+        } catch (Exception e) {
+            System.err.println("ERROR: " + e.getMessage());
+            messageLabel.setText("Cannot initialize face detection");
         }
-
-        return true;
     }
 
     @FXML
     private void onSignupClicked() {
-        String prenom = prenomField.getText().trim();
-        String nom = nomField.getText().trim();
         String email = emailField.getText().trim();
         String username = usernameField.getText().trim();
         String password = passwordField.getText().trim();
         String confirmPassword = confirmPasswordField.getText().trim();
         String travail = travailField.getText().trim();
+        String nom = nomField.getText().trim();
+        String prenom = prenomField.getText().trim();
         String numTel = numTelField.getText().trim();
-        String photoUrl = "";
 
-        if (prenom.isEmpty()) {
-            messageLabel.setText("Le prénom est requis");
-            return;
-        }
-        if (!prenom.matches("^[A-Za-z\\u00C0-\\u00FF\\s-]+$")) {
-            messageLabel.setText("Le prénom ne doit contenir que des lettres, espaces ou tirets");
-            return;
-        }
-
-        if (nom.isEmpty()) {
-            messageLabel.setText("Le nom est requis");
-            return;
-        }
-        if (!nom.matches("^[A-Za-z\\u00C0-\\u00FF\\s-]+$")) {
-            messageLabel.setText("Le nom ne doit contenir que des lettres, espaces ou tirets");
-            return;
-        }
-
-        if (email.isEmpty()) {
-            messageLabel.setText("L'email est requis");
-            return;
-        }
-        if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-            messageLabel.setText("Format de l'email invalide");
-            return;
-        }
-
-        if (username.isEmpty()) {
-            messageLabel.setText("Le nom d'utilisateur est requis");
-            return;
-        }
-
-        if (password.isEmpty()) {
-            messageLabel.setText("Le mot de passe est requis");
-            return;
-        }
-        if (!password.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}$")) {
-            messageLabel.setText("Le mot de passe doit contenir au moins 8 caractères, dont une majuscule, une minuscule et un chiffre");
+        if (email.isEmpty() || username.isEmpty() || password.isEmpty() || confirmPassword.isEmpty() ||
+            nom.isEmpty() || prenom.isEmpty()) {
+            messageLabel.setText("Please fill in all required fields");
             return;
         }
 
         if (!password.equals(confirmPassword)) {
-            messageLabel.setText("Les mots de passe ne correspondent pas");
+            messageLabel.setText("Passwords do not match");
             return;
         }
 
-        if (travail.isEmpty()) {
-            travail = "Non spécifié";
-        }
-
-        if (numTel.isEmpty()) {
-            messageLabel.setText("Le numéro de téléphone est requis");
-            return;
-        }
-        if (!numTel.matches("^\\d{8}$")) {
-            messageLabel.setText("Le numéro de téléphone doit contenir exactement 8 chiffres");
+        if (selectedProfilePhoto == null) {
+            messageLabel.setText("Please select a profile photo");
             return;
         }
 
-        if (selectedPhoto != null) {
-            try {
-                String targetDir = "src/main/resources/com/example/auth/images/users/";
-                File dir = new File(targetDir);
-                if (!dir.exists()) {
-                    if (!dir.mkdirs()) {
-                        messageLabel.setText("Erreur : Impossible de créer le dossier pour les images.");
-                        return;
-                    }
-                }
+        if (selectedFacePhoto == null && capturedFace == null) {
+            messageLabel.setText("Please select or capture a face photo");
+            return;
+        }
 
-                String fileExtension = selectedPhoto.getName().substring(selectedPhoto.getName().lastIndexOf("."));
-                String newFileName = username + "_" + System.currentTimeMillis() + fileExtension;
-                Path targetPath = Paths.get(targetDir, newFileName);
-
-                Files.copy(selectedPhoto.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-                System.out.println("Profile photo saved at: " + targetPath.toAbsolutePath());
-
-                photoUrl = "/com/example/auth/images/users/" + newFileName;
-            } catch (IOException e) {
-                messageLabel.setText("Erreur lors de l’enregistrement de la photo : " + e.getMessage());
-                e.printStackTrace();
+        String profilePhotoPath = "profile_photos/" + email + "_profile.jpg";
+        try {
+            Mat profileImage = Imgcodecs.imread(selectedProfilePhoto.getAbsolutePath());
+            if (!profileImage.empty()) {
+                Imgcodecs.imwrite(profilePhotoPath, profileImage);
+                System.out.println("Profile photo saved at: " + new File(profilePhotoPath).getAbsolutePath());
+            } else {
+                messageLabel.setText("Failed to load profile photo");
                 return;
             }
-        } else {
-            photoUrl = "/com/example/images/default_profile.jpg";
-        }
-
-        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
-        confirmation.setTitle("Confirmation d'inscription");
-        confirmation.setHeaderText("Veuillez confirmer vos informations");
-        confirmation.setContentText("Êtes-vous sûr de vouloir vous inscrire avec cet email :\n" + email);
-        if (confirmation.showAndWait().get() != ButtonType.OK) {
+        } catch (Exception e) {
+            messageLabel.setText("Error saving profile photo");
+            System.out.println("Error saving profile photo: " + e.getMessage());
             return;
         }
 
-        if (authService.signup(email, password, travail, photoUrl, nom, prenom, numTel, Collections.singletonList("ROLE_USER"))) {
-            messageLabel.setText("Inscription réussie ! Veuillez vous connecter.");
-            clearFields();
+        String facePhotoPath = "faces/" + email + ".jpg";
+        try {
+            Mat faceImage = null;
+            if (selectedFacePhoto != null) {
+                faceImage = Imgcodecs.imread(selectedFacePhoto.getAbsolutePath());
+                if (!faceImage.empty()) {
+                    MatOfRect faces = new MatOfRect();
+                    faceDetector.detectMultiScale(faceImage, faces);
+                    if (!faces.empty()) {
+                        Rect face = faces.toArray()[0];
+                        faceImage = new Mat(faceImage, face);
+                    } else {
+                        messageLabel.setText("No face detected in chosen photo");
+                        return;
+                    }
+                } else {
+                    messageLabel.setText("Failed to load face photo");
+                    return;
+                }
+            } else if (capturedFace != null) {
+                faceImage = capturedFace;
+            }
+
+            if (faceImage != null) {
+                Imgproc.resize(faceImage, faceImage, new Size(100, 100));
+                if (faceImage.channels() > 1) {
+                    Imgproc.cvtColor(faceImage, faceImage, Imgproc.COLOR_BGR2GRAY);
+                }
+                Imgproc.equalizeHist(faceImage, faceImage);
+                Imgcodecs.imwrite(facePhotoPath, faceImage);
+                System.out.println("Face image saved at: " + new File(facePhotoPath).getAbsolutePath());
+                if (!new File(facePhotoPath).exists()) {
+                    messageLabel.setText("Failed to save face photo");
+                    return;
+                }
+            }
+        } catch (Exception e) {
+            messageLabel.setText("Error saving face photo");
+            System.out.println("Error saving face photo: " + e.getMessage());
+            return;
+        }
+
+        String verificationCode = authService.generateVerificationCode();
+        boolean success = authService.signup(email, password, travail, profilePhotoPath, nom, prenom, numTel, Arrays.asList("ROLE_USER"), verificationCode);
+        if (success) {
+            try {
+                String emailBody = "<h2>Email Verification</h2>" +
+                        "<p>Your verification code is: <b>" + verificationCode + "</b></p>" +
+                        "<p>Enter this code in the application to verify your account.</p>" +
+                        "<p>This code will expire in 24 hours.</p>";
+                EmailUtil.sendEmail(email, "Verify Your Email", emailBody);
+                messageLabel.setText("Signup successful! Please enter the verification code sent to your email.");
+
+                Stage stage = (Stage) signupButton.getScene().getWindow();
+                boolean isFullScreen = stage.isFullScreen();
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/auth/code-verification.fxml"));
+                Parent root = loader.load();
+                CodeVerificationController controller = loader.getController();
+                controller.setEmail(email);
+                Scene scene = new Scene(root, 400, 300);
+                java.net.URL cssResource = getClass().getResource("/com/example/auth/modern-theme.css");
+                if (cssResource != null) {
+                    scene.getStylesheets().add(cssResource.toExternalForm());
+                } else {
+                    System.err.println("Warning: modern-theme.css not found");
+                }
+                cssResource = getClass().getResource("/com/example/auth/chat.css");
+                if (cssResource != null) {
+                    scene.getStylesheets().add(cssResource.toExternalForm());
+                } else {
+                    System.err.println("Warning: chat.css not found");
+                }
+                stage.setScene(scene);
+                stage.setFullScreen(isFullScreen);
+                stage.show();
+            } catch (MessagingException e) {
+                messageLabel.setText("Signup successful, but failed to send verification email.");
+                System.err.println("Error sending verification email: " + e.getMessage());
+            } catch (IOException e) {
+                messageLabel.setText("Error loading verification page");
+                System.err.println("Error loading verification page: " + e.getMessage());
+            }
         } else {
-            messageLabel.setText("Cet email existe déjà");
+            messageLabel.setText("Signup failed. Email may already exist.");
+        }
+    }
+
+    @FXML
+    private void onChooseProfilePhotoClicked() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Select Profile Photo");
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg")
+        );
+        selectedProfilePhoto = fileChooser.showOpenDialog(signupButton.getScene().getWindow());
+        if (selectedProfilePhoto != null) {
+            try {
+                Image image = new Image(selectedProfilePhoto.toURI().toString());
+                profilePhotoPreview.setImage(image);
+            } catch (Exception e) {
+                messageLabel.setText("Error loading profile photo preview");
+            }
+        }
+    }
+
+    @FXML
+    private void onChooseFacePhotoClicked() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Select Face Photo");
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg")
+        );
+        selectedFacePhoto = fileChooser.showOpenDialog(signupButton.getScene().getWindow());
+        if (selectedFacePhoto != null) {
+            try {
+                Image image = new Image(selectedFacePhoto.toURI().toString());
+                facePhotoPreview.setImage(image);
+            } catch (Exception e) {
+                messageLabel.setText("Error loading face photo preview");
+            }
         }
     }
 
     @FXML
     private void onLoginClicked() {
         try {
-            Stage stage = (Stage) emailField.getScene().getWindow();
+            Stage stage = (Stage) loginLink.getScene().getWindow();
             boolean isFullScreen = stage.isFullScreen();
             Parent root = FXMLLoader.load(getClass().getResource("/com/example/auth/login.fxml"));
-            if (root == null) {
-                return;
-            }
-            Scene scene = new Scene(root, 700, 700);
-            java.net.URL stylesheetUrl = getClass().getClassLoader().getResource("com/example/auth/styles.css");
-            if (stylesheetUrl != null) {
-                scene.getStylesheets().add(stylesheetUrl.toExternalForm());
+            Scene scene = new Scene(root, 400, 500);
+            java.net.URL cssResource = getClass().getResource("/com/example/auth/styles.css");
+            if (cssResource != null) {
+                scene.getStylesheets().add(cssResource.toExternalForm());
             } else {
-                System.err.println("Stylesheet modern-theme.css not found!");
+                System.err.println("Warning: styles.css not found");
             }
-
+            cssResource = getClass().getResource("/com/example/auth/chat.css");
+            if (cssResource != null) {
+                scene.getStylesheets().add(cssResource.toExternalForm());
+            } else {
+                System.err.println("Warning: chat.css not found");
+            }
             stage.setScene(scene);
             stage.setFullScreen(isFullScreen);
             stage.show();
         } catch (IOException e) {
-            e.printStackTrace();
+            messageLabel.setText("Error loading login page");
+            System.err.println("Error loading login page: " + e.getMessage());
         }
     }
 
-    private void clearFields() {
-        prenomField.clear();
-        nomField.clear();
-        emailField.clear();
-        usernameField.clear();
-        passwordField.clear();
-        confirmPasswordField.clear();
-        travailField.clear();
-        numTelField.clear();
-        messageLabel.setText("");
-        selectedPhoto = null;
-        photoPreview.setImage(null);
-        photoErrorLabel.setVisible(false);
+    @FXML
+    private void captureFace() {
+        if (faceDetector == null || faceDetector.empty()) {
+            messageLabel.setText("Face detection not initialized");
+            return;
+        }
+
+        if (isCapturing) {
+            isCapturing = false;
+            captureFaceButton.setText("Capture Face");
+            if (capture != null && capture.isOpened()) {
+                capture.release();
+            }
+            return;
+        }
+
+        isCapturing = true;
+        captureFaceButton.setText("Stop Capture");
+        capture = new VideoCapture(0);
+        if (!capture.isOpened()) {
+            messageLabel.setText("Cannot open camera");
+            isCapturing = false;
+            captureFaceButton.setText("Capture Face");
+            return;
+        }
+
+        Mat frame = new Mat();
+        new Thread(() -> {
+            while (isCapturing && capture.isOpened()) {
+                if (capture.read(frame) && !frame.empty()) {
+                    MatOfRect faces = new MatOfRect();
+                    faceDetector.detectMultiScale(frame, faces);
+                    if (!faces.empty()) {
+                        Rect face = faces.toArray()[0];
+                        capturedFace = new Mat(frame, face);
+                        Platform.runLater(() -> {
+                            try {
+                                Image image = matToImage(capturedFace);
+                                facePhotoPreview.setImage(image);
+                            } catch (Exception e) {
+                                messageLabel.setText("Error displaying captured face");
+                            }
+                        });
+                    }
+                }
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }).start();
+    }
+
+    @FXML
+    private void sendChatMessage() {
+        String message = chatInput.getText().trim();
+        if (message.isEmpty()) {
+            return;
+        }
+
+        chatHistory.appendText("You: " + message + "\n");
+        chatInput.clear();
+
+        new Thread(() -> {
+            try {
+                String response = chatService.sendMessage(message);
+                Platform.runLater(() -> {
+                    chatHistory.appendText("AgriChat: " + response + "\n");
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    chatHistory.appendText("AgriChat: Error: " + e.getMessage() + "\n");
+                });
+                System.err.println("DEBUG: Error sending chat message: " + e.getMessage());
+            }
+        }).start();
+    }
+
+    private Image matToImage(Mat mat) {
+        MatOfByte buffer = new MatOfByte();
+        Imgcodecs.imencode(".png", mat, buffer);
+        return new Image(new ByteArrayInputStream(buffer.toArray()));
     }
 }

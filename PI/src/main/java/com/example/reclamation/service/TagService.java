@@ -23,7 +23,6 @@ public class TagService {
         }
     }
 
-    // Create: Add a new tag
     public boolean addTag(String name) {
         UUID id = UUID.randomUUID();
         String sql = "INSERT INTO tag (id, name) VALUES (?, ?)";
@@ -42,7 +41,6 @@ public class TagService {
         }
     }
 
-    // Read: Get tag by ID
     public Tag getTagById(UUID id) {
         String sql = "SELECT * FROM tag WHERE id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -60,7 +58,6 @@ public class TagService {
         return null;
     }
 
-    // Read: Get tag by name
     public Tag getTagByName(String name) {
         String sql = "SELECT * FROM tag WHERE name = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -78,7 +75,6 @@ public class TagService {
         return null;
     }
 
-    // Read: Get all tags
     public List<Tag> getAllTags() {
         List<Tag> tags = new ArrayList<>();
         String sql = "SELECT * FROM tag";
@@ -96,7 +92,6 @@ public class TagService {
         return tags;
     }
 
-    // Update: Update an existing tag
     public boolean updateTag(Tag tag) {
         String sql = "UPDATE tag SET name = ? WHERE id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -114,7 +109,6 @@ public class TagService {
         }
     }
 
-    // Delete: Delete a tag by ID
     public boolean deleteTag(UUID id) {
         String sql = "DELETE FROM tag WHERE id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {

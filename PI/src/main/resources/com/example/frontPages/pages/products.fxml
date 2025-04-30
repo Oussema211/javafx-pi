@@ -6,13 +6,12 @@
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.geometry.Insets?>
 
-<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.produit.controller.ProductCardController" styleClass="main-content" spacing="20" stylesheets="@products.css">
-    <Label text="Products" styleClass="content-title"/>
-    <ScrollPane fx:id="scrollPane" fitToWidth="true" styleClass="product-scroll">
-        <VBox fx:id="productContainer" styleClass="product-container" spacing="20"/>
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.produit.controller.ProductCardController" styleClass="main-content" spacing="15" stylesheets="@products.css" VBox.vgrow="ALWAYS">
+    <ScrollPane fx:id="scrollPane" fitToWidth="true" fitToHeight="true" styleClass="product-scroll" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
+        <VBox fx:id="productContainer" styleClass="product-container" spacing="15" VBox.vgrow="ALWAYS"/>
     </ScrollPane>
-    <HBox fx:id="paginationControls" spacing="10" alignment="CENTER">
-        <Button fx:id="prevButton" text="Previous" styleClass="pagination-button" onAction="#handlePrevious"/>
+    <HBox fx:id="paginationControls" spacing="8" alignment="CENTER">
+        <Button fx:id="prevButton" text="Prev" styleClass="pagination-button" onAction="#handlePrevious"/>
         <Label fx:id="pageLabel" text="Page 1" styleClass="page-label"/>
         <Button fx:id="nextButton" text="Next" styleClass="pagination-button" onAction="#handleNext"/>
     </HBox>

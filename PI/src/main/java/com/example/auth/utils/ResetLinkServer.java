@@ -38,7 +38,7 @@ public class ResetLinkServer {
         synchronized (lock) {
             if (server != null) {
                 try {
-                    server.stop(1); // Graceful shutdown with 1-second delay
+                    server.stop(1);
                     System.out.println("Reset link server stopped");
                 } catch (Exception e) {
                     System.err.println("Error stopping server: " + e.getMessage());
@@ -51,7 +51,7 @@ public class ResetLinkServer {
 
     public static boolean startServer() {
         synchronized (lock) {
-            stopServer(); // Ensure any existing server is stopped
+            stopServer();
 
             int port = 8082;
             if (!isPortAvailable(port)) {
@@ -116,7 +116,6 @@ public class ResetLinkServer {
                     stage.setScene(scene);
                     stage.show();
 
-                    // Do not stop server on window close; let it run until token expiry or reset
                     stage.setOnCloseRequest(event -> {
                         System.out.println("Password reset window closed");
                     });

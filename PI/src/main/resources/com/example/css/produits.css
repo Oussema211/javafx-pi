@@ -138,10 +138,6 @@
     -fx-font-family: Calibri;
 }
 
-.filter-combo .list-cell:hover {
-    -fx-background-color: #f5f5f5;
-}
-
 .filter-field {
     -fx-pref-width: 120px;
     -fx-pref-height: 32px;
@@ -207,7 +203,6 @@
     -fx-cursor: hand;
 }
 
-/* Table Container */
 .product-table-container {
     -fx-padding: 0;
     -fx-background-color: transparent;
@@ -356,17 +351,6 @@
 
 .category-table-view .scroll-bar:vertical .thumb:hover {
     -fx-background-color: #999999;
-}
-
-.generate-button {
-    -fx-background-color: #4CAF50;
-    -fx-text-fill: white;
-    -fx-padding: 5 10;
-    -fx-background-radius: 5;
-}
-
-.generate-button:hover {
-    -fx-background-color: #45a049;
 }
 
 .action-button {
@@ -549,10 +533,6 @@
     -fx-background-color: #ffffff;
 }
 
-.modal-combo-box .list-cell:hover {
-    -fx-background-color: #ecf0f1;
-}
-
 .modal-combo-box:focused {
     -fx-border-color: #3498db;
     -fx-background-color: #ffffff;
@@ -630,9 +610,22 @@
 .modal-cancel-button:hover {
     -fx-background-color: #d0d0d0;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 5, 0, 0, 1);
+}r
+
+ .modal-save-button:hover {
+     -fx-background-color: #005bb5;
+     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 5, 0, 0, 1);
+ }
+
+.check-box {
+    -fx-pointer-events: auto;
+    -fx-opacity: 1;
+    -fx-font-family: "Inter";
+    -fx-border-color: #e2e8f0;
+    -fx-background-color: #ffffff;
 }
 
-.modal-save-button:hover {
-    -fx-background-color: #005bb5;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 5, 0, 0, 1);
+.check-box:selected {
+    -fx-background-color: #6366f1;
 }
+

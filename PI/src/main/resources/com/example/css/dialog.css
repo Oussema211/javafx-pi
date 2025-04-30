@@ -1,0 +1,53 @@
+.dialog-pane {
+    -fx-background-color: linear-gradient(to bottom right, #f8f9fa, #e9ecef);
+    -fx-border-color: #ced4da;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-padding: 20;
+    -fx-font-family: "Segoe UI", sans-serif;
+}
+
+.label {
+    -fx-font-size: 14px;
+    -fx-text-fill: #343a40;
+}
+
+.label.title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #212529;
+}
+
+.separator {
+    -fx-background-color: #adb5bd;
+    -fx-padding: 5 0 5 0;
+}
+.dialog-container {
+    -fx-background-color: linear-gradient(to bottom, #fdfdfd, #f2f2f2);
+    -fx-border-radius: 12px;
+    -fx-background-radius: 12px;
+}
+
+.dialog-title {
+    -fx-fill: #2c3e50;
+}
+
+.product-list {
+    -fx-padding: 10;
+}
+
+.product-row {
+    -fx-padding: 6;
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0.3, 0, 2);
+}
+
+.product-name {
+    -fx-font-weight: bold;
+    -fx-text-fill: #2c3e50;
+}
+
+.product-details {
+    -fx-text-fill: #555;
+}
