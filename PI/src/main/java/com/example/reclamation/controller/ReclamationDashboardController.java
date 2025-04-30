@@ -43,7 +43,6 @@ import java.util.stream.Collectors;
 public class ReclamationDashboardController {
 
     @FXML private ListView<VBox> reclamationsListView;
-    @FXML private ScrollPane scrollPane;
     @FXML private TextField searchField;
     @FXML private Button clearSearchButton;
     @FXML private Button retrainButton;
@@ -80,7 +79,6 @@ public class ReclamationDashboardController {
 
     private void setupListView() {
         reclamationsListView.setStyle("-fx-background-color: transparent;");
-        scrollPane.setFitToWidth(true);
         reclamationsListView.setCellFactory(lv -> new ListCell<VBox>() {
             @Override
             protected void updateItem(VBox item, boolean empty) {
@@ -91,6 +89,7 @@ public class ReclamationDashboardController {
         reclamationsListView.sceneProperty().addListener((obs, oldScene, newScene) -> {
             if (newScene != null) {
                 reclamationsListView.prefWidthProperty().bind(newScene.widthProperty().subtract(40));
+                reclamationsListView.prefHeightProperty().bind(newScene.heightProperty().multiply(0.6));
             }
         });
     }
@@ -124,6 +123,10 @@ public class ReclamationDashboardController {
     private void setupPagination() {
         prevPageButton.setOnAction(e -> previousPage());
         nextPageButton.setOnAction(e -> nextPage());
+        prevPageButton.setOnMouseEntered(e -> prevPageButton.setStyle("-fx-background-color: #2563eb; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 10 20; -fx-font-size: 14; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);"));
+        prevPageButton.setOnMouseExited(e -> prevPageButton.setStyle("-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 10 20; -fx-font-size: 14; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);"));
+        nextPageButton.setOnMouseEntered(e -> nextPageButton.setStyle("-fx-background-color: #2563eb; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 10 20; -fx-font-size: 14; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);"));
+        nextPageButton.setOnMouseExited(e -> nextPageButton.setStyle("-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 10 20; -fx-font-size: 14; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);"));
         updatePaginationControls();
     }
 

@@ -23,13 +23,6 @@
         </GridPane.margin>
     </Text>
 
-    <!-- Welcome Label -->
-    <Label fx:id="welcomeLabel" GridPane.rowIndex="1" text="Welcome, Admin!" style="-fx-font: normal 18px 'System'; -fx-text-fill: #1e293b; -fx-background-color: #dbeafe; -fx-padding: 10; -fx-background-radius: 12; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);">
-        <GridPane.margin>
-            <Insets bottom="15" />
-        </GridPane.margin>
-    </Label>
-
     <!-- Search Bar and Buttons -->
     <HBox GridPane.rowIndex="2" spacing="15" alignment="CENTER">
         <TextField fx:id="searchField" promptText="Search reclamations..." style="-fx-pref-width: 320; -fx-background-color: #ffffff; -fx-border-color: #bfdbfe; -fx-border-radius: 12; -fx-background-radius: 12; -fx-padding: 12; -fx-font-size: 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);" />
@@ -41,9 +34,7 @@
     </HBox>
 
     <!-- Reclamations ListView -->
-    <ScrollPane fx:id="scrollPane" GridPane.rowIndex="3" fitToWidth="true" style="-fx-background-color: transparent; -fx-border-color: transparent;">
-        <ListView fx:id="reclamationsListView" style="-fx-background-color: transparent; -fx-padding: 15;" />
-    </ScrollPane>
+    <ListView fx:id="reclamationsListView" GridPane.rowIndex="3" style="-fx-background-color: transparent; -fx-padding: 15;" />
 
     <!-- Pagination Controls -->
     <HBox GridPane.rowIndex="4" spacing="15" alignment="CENTER">
