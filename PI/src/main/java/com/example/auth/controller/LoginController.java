@@ -3,6 +3,7 @@ package com.example.auth.controller;
 import com.example.auth.model.User;
 import com.example.auth.service.AuthService;
 import com.example.auth.service.GeminiChatService;
+import com.example.auth.utils.AuthManager;
 import com.example.auth.utils.SessionManager;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -114,6 +115,7 @@ public class LoginController {
         }
 
         sessionManager.setLoggedInUser(user);
+        AuthManager.setCurrentUser(user); // Ajout fondamental
 
         // Redirect based on user role
         String fxmlFile = user.hasRole("ROLE_ADMIN") ? "/com/example/auth/dashboard.fxml" : "/com/example/frontPages/dashboard.fxml";
@@ -352,6 +354,8 @@ public class LoginController {
                     User user = authService.authenticate(email, null);
                     if (user != null) {
                         sessionManager.setLoggedInUser(user);
+                        AuthManager.setCurrentUser(user);
+
                         String fxmlFile = user.hasRole("ROLE_ADMIN") ? "/com/example/auth/dashboard.fxml" : "/com/example/frontPages/dashboard.fxml";
                         Platform.runLater(() -> {
                             try {

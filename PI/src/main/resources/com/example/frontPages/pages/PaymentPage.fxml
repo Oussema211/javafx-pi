@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.example.cart.controller.PaymentPageController"
+            style="-fx-background-color: linear-gradient(to right, #00b09b, #96c93d); -fx-padding: 30;">
+
+    <top>
+        <Label text="💳 Paiement par Carte Bancaire"
+               style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: white;"
+               BorderPane.alignment="CENTER"/>
+    </top>
+
+    <center>
+        <VBox spacing="20" alignment="CENTER">
+            <TextField fx:id="numeroCarteField" promptText="Numéro de Carte" style="-fx-background-radius: 10; -fx-padding: 10;"/>
+            <TextField fx:id="dateExpirationField" promptText="Date d'expiration (MM/AA)" style="-fx-background-radius: 10; -fx-padding: 10;"/>
+            <TextField fx:id="cvvField" promptText="CVV" style="-fx-background-radius: 10; -fx-padding: 10;"/>
+            <TextField fx:id="montantField" promptText="Montant à payer" style="-fx-background-radius: 10; -fx-padding: 10;"/>
+            <Button text="Payer" onAction="#handlePayer"
+                    style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 10 20;"/>
+        </VBox>
+    </center>
+
+</BorderPane>

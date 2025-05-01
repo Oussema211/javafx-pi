@@ -2,6 +2,9 @@ package com.example.cart.controller;
 
 import com.example.cart.OrderHistoryManager;
 import com.example.cart.model.OrderSummary;
+import com.example.cart.model.ProduitCommande;
+import com.example.cart.service.ProduitCommandeDAO;
+import com.example.cart.view.OrderDetailsDialog;
 import javafx.animation.FadeTransition;
 import javafx.animation.TranslateTransition;
 import javafx.collections.FXCollections;
@@ -10,6 +13,7 @@ import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
@@ -27,36 +31,43 @@ public class OrderHistoryController {
     private Label averagePriceLabel;
     @FXML
     private ScrollPane orderScrollPane;
+    private int currentPage = 1;
+    private final int pageSize = 5;
+    private List<OrderSummary> allOrders;
+    private List<OrderSummary> filteredOrders;
+    @FXML private Label pageInfoLabel;
 
-    @FXML
-    private void initialize() {
-        ObservableList<OrderSummary> orders = FXCollections.observableArrayList(OrderHistoryManager.getOrderHistory());
+    private void afficherPage(int page) {
+        orderContainer.getChildren().clear();
 
-        for (OrderSummary order : orders) {
-            VBox card = new VBox(10);
-            card.getStyleClass().add("order-card");
+        int fromIndex = (page - 1) * pageSize;
+        int toIndex = Math.min(fromIndex + pageSize, filteredOrders.size());
 
-            Label titleLabel = new Label("Commande de l'utilisateur : " + order.getUserId());
-            titleLabel.getStyleClass().add("order-title");
+        List<OrderSummary> pageItems = filteredOrders.subList(fromIndex, toIndex);
 
-            Label dateLabel = new Label("Date d'achat : " + order.getDateAchat());
-            dateLabel.getStyleClass().add("order-date");
-
-            Label priceLabel = new Label(String.format("Prix total : %.2f DT", order.getPrixTotal()));
-            priceLabel.getStyleClass().add("order-price");
-
-            card.getChildren().addAll(titleLabel, dateLabel, priceLabel);
-            card.setPrefWidth(500);
-
-            // 🔥 Affichage des détails au clic
-            card.setOnMouseClicked(e -> {
-                new com.example.cart.view.OrderDetailsDialog(order).showAndWait();
-            });
-
+        for (OrderSummary order : pageItems) {
+            VBox card = createOrderCard(order);
             orderContainer.getChildren().add(card);
         }
 
+        pageInfoLabel.setText("Page " + page + " / " + Math.max(1, getTotalPages()));
+        if (pageItems.isEmpty()) {
+            Label emptyLabel = new Label("Aucune commande trouvée.");
+            emptyLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: gray;");
+            orderContainer.getChildren().add(emptyLabel);
+        }
+
+    }
+
+    @FXML
+    private void initialize() {
+        allOrders = OrderHistoryManager.getOrderHistory();
+        filteredOrders = allOrders;
         updateStats();
+        afficherPage(currentPage);
+
+
+
         animateStatisticsCards();
 
         // 🔗 Appliquer le CSS
@@ -127,6 +138,74 @@ public class OrderHistoryController {
         card.setStyle("-fx-background-color: white; -fx-background-radius: 15; -fx-padding: 15;"
                 + "-fx-effect: dropshadow(gaussian, #00c6ff, 20, 0.5, 0, 0); -fx-pref-width: 180;"
                 + "-fx-translate-y: 0;");
+    }
+    private int getTotalPages() {
+        return (int) Math.ceil((double) filteredOrders.size() / pageSize);
+    }
+
+    @FXML
+    private void handleNextPage() {
+        if (currentPage < getTotalPages()) {
+            currentPage++;
+            afficherPage(currentPage);
+        }
+    }
+
+    @FXML
+    private void handlePrevPage() {
+        if (currentPage > 1) {
+            currentPage--;
+            afficherPage(currentPage);
+        }
+    }
+    @FXML
+    private TextField searchField;
+
+    @FXML
+    private void handleSearch() {
+        String query = searchField.getText().toLowerCase().trim();
+
+        if (query.isEmpty()) {
+            filteredOrders = allOrders;
+        } else {
+            filteredOrders = allOrders.stream()
+                    .filter(order -> order.getUserId().toLowerCase().contains(query)
+                            || order.getDateAchat().toLowerCase().contains(query)
+                            || String.valueOf(order.getPrixTotal()).contains(query))
+                    .toList();
+        }
+
+
+        currentPage = 1;
+        afficherPage(currentPage);
+    }
+    private VBox createOrderCard(OrderSummary order) {
+        VBox card = new VBox(10);
+        card.getStyleClass().add("order-card");
+
+        Label titleLabel = new Label("Commande de l'utilisateur : " + order.getUserId());
+        titleLabel.getStyleClass().add("order-title");
+
+        Label dateLabel = new Label("Date d'achat : " + order.getDateAchat());
+        dateLabel.getStyleClass().add("order-date");
+
+        Label priceLabel = new Label(String.format("Prix total : %.2f DT", order.getPrixTotal()));
+        priceLabel.getStyleClass().add("order-price");
+
+        card.getChildren().addAll(titleLabel, dateLabel, priceLabel);
+        card.setPrefWidth(500);
+
+        card.setOnMouseClicked(e -> {
+            // Récupération des produits de la commande
+            List<ProduitCommande> produits = ProduitCommandeDAO.getProduitsParCommande(order.getId());
+            order.setProduitsCommandes(produits);
+
+            // Affichage dans le Dialog
+            new OrderDetailsDialog(order).showAndWait();
+        });
+
+
+        return card;
     }
 
     private void animateStatisticsCards() {
