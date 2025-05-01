@@ -18,6 +18,7 @@ import java.time.Duration;
 import java.time.format.DateTimeFormatter;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import com.example.Evenement.Service.WeatherService;
 
 public class EventDetailsController {
 
@@ -37,6 +38,7 @@ public class EventDetailsController {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd MMMM yyyy HH:mm");
     private GoogleCalendarService googleCalendarService;
     private SessionManager sessionManager = SessionManager.getInstance();
+    private WeatherService weatherService = new WeatherService();
 
     public void setEvent(Evenement event) {
         this.currentEvent = event;
@@ -161,6 +163,25 @@ public class EventDetailsController {
             error.setContentText("Erreur lors de l'ajout à Google Calendar : " + e.getMessage());
             error.showAndWait();
         }
+    }
+
+    @FXML
+    private void handleWeather() {
+        if (currentEvent == null) return;
+
+        // Utiliser la première région de l'événement comme ville pour la météo
+        String city = currentEvent.getRegions().isEmpty() ? "Tunis" : 
+                     currentEvent.getRegions().get(0).getNom();
+
+        // Obtenir la météo pour la date de début de l'événement
+        String weatherInfo = weatherService.getWeatherForDate(city, currentEvent.getDateDebut());
+
+        // Afficher les informations météo dans une boîte de dialogue
+        Alert weatherAlert = new Alert(Alert.AlertType.INFORMATION);
+        weatherAlert.setTitle("Météo pour l'événement");
+        weatherAlert.setHeaderText("Prévisions météorologiques");
+        weatherAlert.setContentText(weatherInfo);
+        weatherAlert.showAndWait();
     }
 
     @FXML
