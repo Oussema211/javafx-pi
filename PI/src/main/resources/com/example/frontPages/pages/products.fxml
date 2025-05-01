@@ -6,6 +6,8 @@
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.geometry.Insets?>
 
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
 <VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.produit.controller.ProductCardController" styleClass="main-content" spacing="0" stylesheets="@products.css" VBox.vgrow="ALWAYS">
     <!-- Title -->
     <HBox alignment="CENTER" styleClass="title-container">
@@ -20,8 +22,17 @@
         <padding>
             <Insets top="2" right="10" bottom="2" left="10"/>
         </padding>
-        <Button fx:id="fastBuyButton" text="Fast Buy" styleClass="fast-buy-button"/>
+        <Button fx:id="fastBuyButton" text="Fast Buy" styleClass="fast-buy-button">
+            <graphic>
+                <ImageView fitHeight="18" fitWidth="18">
+                    <image>
+                        <Image url="@/com/example/frontPages/icons/shopping_bag_speed.png"/>
+                    </image>
+                </ImageView>
+            </graphic>
+        </Button>
     </HBox>
+
 
     <!-- Product Grid -->
     <ScrollPane fx:id="scrollPane" fitToWidth="true" fitToHeight="true" styleClass="product-scroll" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS" minHeight="0">
