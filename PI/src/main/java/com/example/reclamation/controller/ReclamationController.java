@@ -55,6 +55,9 @@ public class ReclamationController {
     private int currentPage = 1;
     private int totalPages = 1;
 
+    // Selected tag for filtering
+    private UUID selectedTagId = null;
+
     public void setPrimaryStage(Stage stage) {
         this.primaryStage = stage;
     }
@@ -78,7 +81,9 @@ public class ReclamationController {
         mainContainer.getChildren().clear();
         mainContainer.setPadding(new Insets(10));
         HBox header = createHeader();
-        List<Reclamation> reclamations = reclamationService.getAllReclamations();
+        List<Reclamation> reclamations = selectedTagId == null 
+            ? reclamationService.getAllReclamations() 
+            : reclamationService.getReclamationsByTag(selectedTagId);
         totalPages = (int) Math.ceil((double) reclamations.size() / ITEMS_PER_PAGE);
         VBox reclamationList = reclamations.isEmpty() ? createEmptyState() : createPaginatedReclamationList(reclamations);
         HBox paginationControls = createPaginationControls();
@@ -95,7 +100,9 @@ public class ReclamationController {
         Label headerText = new Label("Reclamation Discussions");
         headerText.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;");
 
-        List<Reclamation> reclamations = reclamationService.getAllReclamations();
+        List<Reclamation> reclamations = selectedTagId == null 
+            ? reclamationService.getAllReclamations() 
+            : reclamationService.getReclamationsByTag(selectedTagId);
         Label headerCount = new Label(reclamations.size() + " active");
         headerCount.setStyle("-fx-font-size: 14px; -fx-text-fill: white; -fx-background-color: rgba(255,255,255,0.2); " +
                 "-fx-padding: 5 10; -fx-background-radius: 20;");
@@ -262,7 +269,7 @@ public class ReclamationController {
             ImageView editIcon = new ImageView(new Image(getClass().getResourceAsStream("/icons/edit.png")));
             editIcon.setFitWidth(16);
             editIcon.setFitHeight(16);
-            editBtn.setGraphic(editIcon);
+            
             editBtn.setStyle("-fx-background-color: #f5f5f5; -fx-background-radius: 50%; -fx-padding: 8;");
             editBtn.setOnAction(e -> handleEdit(rec.getId()));
             editBtn.setOnMouseEntered(e -> editBtn.setStyle("-fx-background-color: #4CAF50; -fx-background-radius: 50%; -fx-padding: 8;"));
@@ -371,6 +378,55 @@ public class ReclamationController {
 
         sidebarActions.getChildren().addAll(newDiscussionBtn, writeReviewBtn);
 
+        // Add tag filter section
+        VBox tagFilterSection = new VBox(10);
+        Label tagFilterLabel = new Label("Filter by Tags");
+        tagFilterLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
+        
+        FlowPane tagContainer = new FlowPane(8, 8);
+        tagContainer.setPadding(new Insets(10));
+        tagContainer.setStyle("-fx-background-color: #f8f9fa; -fx-background-radius: 10;");
+
+        // Add "All Tags" button to reset filter
+        Button allTagsBtn = new Button("All Tags");
+        allTagsBtn.setStyle("-fx-background-color: " + (selectedTagId == null ? "#6C983B" : "#999999") + "; -fx-text-fill: white; -fx-background-radius: 20; -fx-padding: 5 10;");
+        allTagsBtn.setOnAction(e -> {
+            selectedTagId = null;
+            currentPage = 1;
+            setupMainContainer();
+            // Update tag button styles
+            tagContainer.getChildren().forEach(node -> {
+                if (node instanceof Button) {
+                    Button btn = (Button) node;
+                    btn.setStyle("-fx-background-color: " + (btn == allTagsBtn ? "#6C983B" : "#999999") + "; -fx-text-fill: white; -fx-background-radius: 20; -fx-padding: 5 10;");
+                }
+            });
+        });
+        tagContainer.getChildren().add(allTagsBtn);
+
+        // Add tag buttons
+        List<Tag> tags = tagService.getAllTags();
+        for (Tag tag : tags) {
+            Button tagBtn = new Button("#" + tag.getName());
+            tagBtn.setStyle("-fx-background-color: " + getTagColor(tag.getId()) + "; -fx-text-fill: white; -fx-background-radius: 20; -fx-padding: 5 10;");
+            tagBtn.setOnAction(e -> {
+                selectedTagId = tag.getId();
+                currentPage = 1;
+                setupMainContainer();
+                // Update tag button styles
+                tagContainer.getChildren().forEach(node -> {
+                    if (node instanceof Button) {
+                        Button btn = (Button) node;
+                        btn.setStyle("-fx-background-color: " + (btn == tagBtn ? getTagColor(tag.getId()) : "#999999") + "; -fx-text-fill: white; -fx-background-radius: 20; -fx-padding: 5 10;");
+                    }
+                });
+                allTagsBtn.setStyle("-fx-background-color: #999999; -fx-text-fill: white; -fx-background-radius: 20; -fx-padding: 5 10;");
+            });
+            tagContainer.getChildren().add(tagBtn);
+        }
+
+        tagFilterSection.getChildren().addAll(tagFilterLabel, tagContainer);
+
         VBox sidebarInfo = new VBox(10);
         sidebarInfo.setAlignment(Pos.CENTER);
         sidebarInfo.setStyle("-fx-background-color: #f8f9fa; -fx-background-radius: 10; -fx-padding: 10;");
@@ -384,7 +440,7 @@ public class ReclamationController {
         stats.setStyle("-fx-font-size: 12px; -fx-text-fill: #666;");
         sidebarInfo.getChildren().addAll(infoText, stats);
 
-        sidebar.getChildren().addAll(searchWrapper, sidebarActions, sidebarInfo);
+        sidebar.getChildren().addAll(searchWrapper, sidebarActions, tagFilterSection, sidebarInfo);
     }
 
     private String getTagColor(UUID tagId) {
@@ -613,7 +669,7 @@ public class ReclamationController {
         Label descError = new Label();
         descError.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
         descGroup.getChildren().addAll(descFieldLabel, descField, descError);
-    Button voiceBtn = new Button("🎙 Speak");
+        Button voiceBtn = new Button("🎙 Speak");
         voiceBtn.setOnAction(evt -> {
             voiceBtn.setText("Listening...");
             voiceBtn.setDisable(true);
@@ -731,6 +787,131 @@ public class ReclamationController {
     }
 
     private void handleWriteReview() {
-        System.out.println("Opening write review form - not implemented yet.");
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("Write Review");
+
+        DialogPane dialogPane = dialog.getDialogPane();
+        dialogPane.getStylesheets().add(getClass().getResource("/css/modern-dialog.css").toExternalForm());
+
+        ButtonType submitButtonType = new ButtonType("Submit", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(submitButtonType, ButtonType.CANCEL);
+
+        VBox content = new VBox(15);
+        content.setStyle("-fx-padding: 20;");
+        content.setAlignment(Pos.CENTER);
+        content.setMaxWidth(700);
+
+        Label titleLabel = new Label("Write a Review");
+        titleLabel.getStyleClass().add("header-label");
+
+        Label subtitle = new Label("Please provide your feedback below.");
+        subtitle.getStyleClass().add("subtitle-label");
+
+        VBox reviewGroup = new VBox(8);
+        Label reviewLabel = new Label("Your Review:");
+        reviewLabel.getStyleClass().add("form-label");
+        TextArea reviewField = new TextArea();
+        reviewField.setPromptText("Enter your review (min 10 words)");
+        reviewField.setPrefRowCount(6);
+        reviewField.getStyleClass().add("form-field");
+        Label reviewError = new Label();
+        reviewError.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
+        reviewGroup.getChildren().addAll(reviewLabel, reviewField, reviewError);
+
+        VBox tagGroup = new VBox(8);
+        Label tagLabel = new Label("Select Tag:");
+        tagLabel.getStyleClass().add("form-label");
+        ComboBox<Tag> tagCombo = new ComboBox<>();
+        tagCombo.getItems().addAll(tagService.getAllTags());
+        tagCombo.setPromptText("Select a tag");
+        tagCombo.getStyleClass().add("form-field");
+        tagGroup.getChildren().addAll(tagLabel, tagCombo);
+
+        Label messageLabel = new Label();
+        messageLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
+
+        content.getChildren().addAll(titleLabel, subtitle, reviewGroup, tagGroup, messageLabel);
+
+        Button submitButton = (Button) dialog.getDialogPane().lookupButton(submitButtonType);
+        submitButton.getStyleClass().add("primary-button");
+
+        submitButton.setOnMousePressed(e -> {
+            ScaleTransition st = new ScaleTransition(Duration.millis(200), submitButton);
+            st.setFromX(1.0);
+            st.setFromY(1.0);
+            st.setToX(1.05);
+            st.setToY(1.05);
+            st.setCycleCount(2);
+            st.setAutoReverse(true);
+            st.play();
+        });
+
+        submitButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
+            String review = reviewField.getText().trim();
+            Tag selectedTag = tagCombo.getValue();
+
+            reviewError.setText("");
+            messageLabel.setText("");
+
+            boolean hasErrors = false;
+
+            String[] words = review.split("\\s+");
+            if (review.isEmpty() || words.length < 10) {
+                reviewError.setText("Review must contain at least 10 words.");
+                hasErrors = true;
+            }
+
+            if (selectedTag == null) {
+                messageLabel.setText("Please select a tag.");
+                hasErrors = true;
+            }
+
+            if (hasErrors) {
+                event.consume();
+            }
+        });
+
+        submitButton.setOnAction(e -> {
+            try {
+                User currentUser = sessionManager.getLoggedInUser();
+                if (currentUser == null) {
+                    showAlert("Unauthorized", "You must be logged in to submit a review.", Alert.AlertType.WARNING);
+                    dialog.close();
+                    return;
+                }
+
+                String review = reviewField.getText().trim();
+                Tag selectedTag = tagCombo.getValue();
+
+                boolean success = reclamationService.addReclamation(
+                    currentUser.getId(),
+                    selectedTag.getId(),
+                    1,
+                    "Review: " + review.substring(0, Math.min(review.length(), 20)),
+                    review,
+                    Status.WAITING
+                );
+
+                if (success) {
+                    reviewError.setText("");
+                    messageLabel.setText("");
+                    currentPage = 1;
+                    setupMainContainer();
+                    dialog.close();
+                } else {
+                    messageLabel.setText("Failed to submit review. Check database constraints.");
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                messageLabel.setText("An unexpected error occurred: " + ex.getMessage());
+            }
+        });
+
+        FadeTransition fadeIn = new FadeTransition(Duration.millis(500), content);
+        fadeIn.setFromValue(0);
+        fadeIn.setToValue(1);
+        dialog.setOnShown(e -> fadeIn.play());
+
+        dialog.show();
     }
 }

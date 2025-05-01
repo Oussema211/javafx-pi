@@ -48,7 +48,8 @@ public class ReclamationService {
             System.err.println("Error initializing reclamations table: " + e.getMessage());
         }
     }
-        public String assignTagToReclamation(UUID id) throws Exception {
+
+    public String assignTagToReclamation(UUID id) throws Exception {
         // Step 1: Retrieve the reclamation by ID
         Reclamation reclamation = getReclamationById(id);
         if (reclamation == null) {
@@ -170,7 +171,7 @@ public class ReclamationService {
             return false;
         }
     }
-    // Read: Get reclamation by ID
+
     public Reclamation getReclamationById(UUID id) {
         String sql = "SELECT * FROM reclamations WHERE id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -185,7 +186,7 @@ public class ReclamationService {
                         rs.getInt("rate"),
                         rs.getString("title"),
                         rs.getString("description"),
-                        Status.fromString(rs.getString("statut")) // Convert DB string to enum
+                        Status.fromString(rs.getString("statut"))
                 );
             }
         } catch (SQLException e) {
@@ -193,9 +194,7 @@ public class ReclamationService {
         }
         return null;
     }
-    
 
-    // Read: Get all reclamations
     public List<Reclamation> getAllReclamations() {
         List<Reclamation> reclamations = new ArrayList<>();
         String sql = "SELECT * FROM reclamations";
@@ -210,7 +209,7 @@ public class ReclamationService {
                         rs.getInt("rate"),
                         rs.getString("title"),
                         rs.getString("description"),
-                        Status.fromString(rs.getString("statut")) // Convert DB string to enum
+                        Status.fromString(rs.getString("statut"))
                 ));
             }
         } catch (SQLException e) {
@@ -219,7 +218,30 @@ public class ReclamationService {
         return reclamations;
     }
 
-    // Update: Update an existing reclamation
+    public List<Reclamation> getReclamationsByTag(UUID tagId) {
+        List<Reclamation> reclamations = new ArrayList<>();
+        String sql = "SELECT * FROM reclamations WHERE tag_id = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, tagId.toString());
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                reclamations.add(new Reclamation(
+                        UUID.fromString(rs.getString("id")),
+                        UUID.fromString(rs.getString("user_id")),
+                        rs.getString("tag_id") != null ? UUID.fromString(rs.getString("tag_id")) : null,
+                        rs.getTimestamp("date_reclamation"),
+                        rs.getInt("rate"),
+                        rs.getString("title"),
+                        rs.getString("description"),
+                        Status.fromString(rs.getString("statut"))
+                ));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching reclamations by tag ID: " + e.getMessage());
+        }
+        return reclamations;
+    }
+
     public boolean updateReclamation(Reclamation reclamation) {
         String sql = "UPDATE reclamations SET user_id = ?, tag_id = ?, date_reclamation = ?, rate = ?, " +
                      "title = ?, description = ?, statut = ? WHERE id = ?";
@@ -230,7 +252,7 @@ public class ReclamationService {
             pstmt.setInt(4, reclamation.getRate());
             pstmt.setString(5, reclamation.getTitle());
             pstmt.setString(6, reclamation.getDescription());
-            pstmt.setString(7, reclamation.getStatut().getDisplayName()); // Store enum's display name
+            pstmt.setString(7, reclamation.getStatut().getDisplayName());
             pstmt.setString(8, reclamation.getId().toString());
             int rowsAffected = pstmt.executeUpdate();
             return rowsAffected > 0;
@@ -240,7 +262,6 @@ public class ReclamationService {
         }
     }
 
-    // Delete: Delete a reclamation by ID
     public boolean deleteReclamation(UUID id) {
         String sql = "DELETE FROM reclamations WHERE id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -252,6 +273,4 @@ public class ReclamationService {
             return false;
         }
     }
-
-    
 }
