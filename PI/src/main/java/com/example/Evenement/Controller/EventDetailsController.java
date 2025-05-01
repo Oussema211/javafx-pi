@@ -21,6 +21,7 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import com.example.Evenement.Service.WeatherService;
 import org.json.JSONObject;
+import java.util.Optional;
 
 public class EventDetailsController {
 
@@ -169,37 +170,110 @@ public class EventDetailsController {
 
     @FXML
     private void handleWeather() {
-        if (currentEvent == null) return;
+        if (currentEvent == null || currentEvent.getRegions().isEmpty()) return;
 
         try {
-            // Utiliser la première région de l'événement comme ville pour la météo
-            String city = currentEvent.getRegions().isEmpty() ? "Tunis" : 
-                         currentEvent.getRegions().get(0).getNom();
+            // Créer une boîte de dialogue pour choisir la région
+            ChoiceDialog<Region> dialog = new ChoiceDialog<>(
+                currentEvent.getRegions().get(0),
+                currentEvent.getRegions()
+            );
+            dialog.setTitle("Choix de la région");
+            dialog.setHeaderText("Choisissez la région pour voir la météo");
+            dialog.setContentText("Région :");
 
-            // Obtenir les données météo
-            JSONObject weatherData = weatherService.getWeatherForDate(city, currentEvent.getDateDebut());
+            // Personnaliser l'affichage des régions dans la liste
+            dialog.getItems().setAll(currentEvent.getRegions());
+            
+            // Attendre le choix de l'utilisateur
+            Optional<Region> result = dialog.showAndWait();
+            
+            if (result.isPresent()) {
+                Region selectedRegion = result.get();
+                // Convertir le nom de la région en nom de ville pour l'API météo
+                String city = convertRegionToCity(selectedRegion.getNom());
 
-            // Charger la vue météo
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/Evenement/weather-view.fxml"));
-            Parent root = loader.load();
+                // Obtenir les données météo
+                JSONObject weatherData = weatherService.getWeatherForDate(city, currentEvent.getDateDebut());
 
-            // Configurer le contrôleur
-            WeatherViewController controller = loader.getController();
-            Stage weatherStage = new Stage();
-            controller.setStage(weatherStage);
-            controller.setWeatherData(weatherData, city, currentEvent.getDateDebut());
+                // Charger la vue météo
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/Evenement/weather-view.fxml"));
+                Parent root = loader.load();
 
-            // Configurer et afficher la fenêtre
-            weatherStage.setTitle("Météo pour l'événement");
-            weatherStage.setScene(new Scene(root));
-            weatherStage.show();
+                // Configurer le contrôleur
+                WeatherViewController controller = loader.getController();
+                Stage weatherStage = new Stage();
+                controller.setStage(weatherStage);
+                controller.setWeatherData(weatherData, selectedRegion.getNom(), currentEvent.getDateDebut());
 
+                // Configurer et afficher la fenêtre
+                weatherStage.setTitle("Météo pour " + selectedRegion.getNom());
+                weatherStage.setScene(new Scene(root));
+                weatherStage.show();
+            }
         } catch (Exception e) {
             Alert error = new Alert(Alert.AlertType.ERROR);
             error.setTitle("Erreur");
             error.setHeaderText(null);
             error.setContentText("Erreur lors de la récupération de la météo : " + e.getMessage());
             error.showAndWait();
+        }
+    }
+
+    // Méthode pour convertir le nom de la région en nom de ville pour l'API météo
+    private String convertRegionToCity(String region) {
+        // Correspondance des régions avec les principales villes
+        switch (region.toLowerCase()) {
+            case "tunis":
+                return "Tunis,TN";
+            case "ariana":
+                return "Ariana,TN";
+            case "ben arous":
+                return "Ben Arous,TN";
+            case "manouba":
+                return "Manouba,TN";
+            case "nabeul":
+                return "Nabeul,TN";
+            case "zaghouan":
+                return "Zaghouan,TN";
+            case "bizerte":
+                return "Bizerte,TN";
+            case "béja":
+                return "Beja,TN";
+            case "jendouba":
+                return "Jendouba,TN";
+            case "kef":
+                return "Le Kef,TN";
+            case "siliana":
+                return "Siliana,TN";
+            case "sousse":
+                return "Sousse,TN";
+            case "monastir":
+                return "Monastir,TN";
+            case "mahdia":
+                return "Mahdia,TN";
+            case "sfax":
+                return "Sfax,TN";
+            case "kairouan":
+                return "Kairouan,TN";
+            case "kasserine":
+                return "Kasserine,TN";
+            case "sidi bouzid":
+                return "Sidi Bouzid,TN";
+            case "gabès":
+                return "Gabes,TN";
+            case "medenine":
+                return "Medenine,TN";
+            case "tataouine":
+                return "Tataouine,TN";
+            case "gafsa":
+                return "Gafsa,TN";
+            case "tozeur":
+                return "Tozeur,TN";
+            case "kebili":
+                return "Kebili,TN";
+            default:
+                return "Tunis,TN"; // Par défaut, utiliser Tunis
         }
     }
 
