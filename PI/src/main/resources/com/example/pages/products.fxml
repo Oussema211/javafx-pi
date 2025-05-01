@@ -26,8 +26,7 @@
         <Region HBox.hgrow="ALWAYS" />
         <Button fx:id="deleteSelectedButton" onAction="#handleBulkDelete" styleClass="primary-button" text="DELETE SELECTED" disable="true" />
         <Button fx:id="exportSelectedButton" onAction="#exportToPDF" styleClass="secondary-button" text="EXPORT SELECTED" disable="true" />
-        <Button styleClass="secondary-button" text="IMPORT" />
-        <Button fx:id="addProductButton" onAction="#handleAddProduct" styleClass="primary-button" text="ADD PRODUCT" />
+        <Button fx:id="addScriptButton" text="Add via Script" onAction="#handleAddScript" styleClass="primary-button" />        <Button fx:id="addProductButton" onAction="#handleAddProduct" styleClass="primary-button" text="ADD PRODUCT" />
     </HBox>
 
     <VBox styleClass="search-section">

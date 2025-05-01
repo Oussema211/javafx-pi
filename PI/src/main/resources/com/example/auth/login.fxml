@@ -39,6 +39,9 @@
             <!-- Face Login Button -->
             <Button fx:id="signInWithFaceButton" text="Login with Face" prefWidth="150" styleClass="button" onAction="#signInWithFace" />
 
+            <!-- Gmail Login Button -->
+            <Button text="Continue with Gmail" prefWidth="150" styleClass="button" onAction="#handleGmailLogin" />
+
             <!-- Message Label for Validation Feedback -->
             <Label fx:id="messageLabel" styleClass="message-label" alignment="CENTER" />
 
@@ -49,9 +52,9 @@
         <!-- Chat Card (Always Visible) -->
         <VBox fx:id="chatCard" styleClass="chat-card" prefWidth="300" prefHeight="400" alignment="TOP_CENTER" spacing="10">
             <!-- Robot GIF -->
-            <ImageView fitWidth="50" fitHeight="50" preserveRatio="true">
+            <ImageView fx:id="robotImageView" fitWidth="50" fitHeight="50" preserveRatio="true" styleClass="robot-gif">
                 <image>
-                    <Image url="@../images/robot.gif" />
+                    <Image url="@images/robot.gif" />
                 </image>
             </ImageView>
             <HBox alignment="CENTER" spacing="10">
