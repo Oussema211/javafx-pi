@@ -7,6 +7,7 @@ import com.example.auth.utils.SessionManager;
 import com.example.auth.model.User;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.*;
 import javafx.scene.layout.*;
@@ -19,6 +20,7 @@ import java.time.format.DateTimeFormatter;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import com.example.Evenement.Service.WeatherService;
+import org.json.JSONObject;
 
 public class EventDetailsController {
 
@@ -169,19 +171,36 @@ public class EventDetailsController {
     private void handleWeather() {
         if (currentEvent == null) return;
 
-        // Utiliser la première région de l'événement comme ville pour la météo
-        String city = currentEvent.getRegions().isEmpty() ? "Tunis" : 
-                     currentEvent.getRegions().get(0).getNom();
+        try {
+            // Utiliser la première région de l'événement comme ville pour la météo
+            String city = currentEvent.getRegions().isEmpty() ? "Tunis" : 
+                         currentEvent.getRegions().get(0).getNom();
 
-        // Obtenir la météo pour la date de début de l'événement
-        String weatherInfo = weatherService.getWeatherForDate(city, currentEvent.getDateDebut());
+            // Obtenir les données météo
+            JSONObject weatherData = weatherService.getWeatherForDate(city, currentEvent.getDateDebut());
 
-        // Afficher les informations météo dans une boîte de dialogue
-        Alert weatherAlert = new Alert(Alert.AlertType.INFORMATION);
-        weatherAlert.setTitle("Météo pour l'événement");
-        weatherAlert.setHeaderText("Prévisions météorologiques");
-        weatherAlert.setContentText(weatherInfo);
-        weatherAlert.showAndWait();
+            // Charger la vue météo
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/Evenement/weather-view.fxml"));
+            Parent root = loader.load();
+
+            // Configurer le contrôleur
+            WeatherViewController controller = loader.getController();
+            Stage weatherStage = new Stage();
+            controller.setStage(weatherStage);
+            controller.setWeatherData(weatherData, city, currentEvent.getDateDebut());
+
+            // Configurer et afficher la fenêtre
+            weatherStage.setTitle("Météo pour l'événement");
+            weatherStage.setScene(new Scene(root));
+            weatherStage.show();
+
+        } catch (Exception e) {
+            Alert error = new Alert(Alert.AlertType.ERROR);
+            error.setTitle("Erreur");
+            error.setHeaderText(null);
+            error.setContentText("Erreur lors de la récupération de la météo : " + e.getMessage());
+            error.showAndWait();
+        }
     }
 
     @FXML
