@@ -6,12 +6,14 @@ import com.example.reclamation.model.Status;
 import com.example.auth.model.User;
 import com.example.auth.service.AuthService;
 import com.example.reclamation.service.ReclamationService;
+import com.example.reclamation.service.SpeechRecognizerService;
 import com.example.reclamation.service.TagService;
 import utils.SessionManager;
 
 import javafx.animation.FadeTransition;
 import javafx.animation.PauseTransition;
 import javafx.animation.ScaleTransition;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
@@ -429,7 +431,35 @@ public class ReclamationController {
         Label descError = new Label();
         descError.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
         descGroup.getChildren().addAll(descLabel, descField, descError);
+        Button voiceBtn = new Button("🎙 Speak");
+        voiceBtn.setOnAction(evt -> {
+            voiceBtn.setText("Listening...");
+            voiceBtn.setDisable(true);
 
+            Task<String> task = new Task<>() {
+                @Override
+                protected String call() {
+                    SpeechRecognizerService recognizer = new SpeechRecognizerService("C:\\Users\\eunab\\Downloads\\vosk-model-en-us-0.22\\vosk-model-en-us-0.22");
+                    return recognizer.recognize(8); // listen for 8 seconds
+                }
+            };
+
+            task.setOnSucceeded(e -> {
+                descField.setText(task.getValue());
+                voiceBtn.setText("🎙 Speak");
+                voiceBtn.setDisable(false);
+            });
+
+            task.setOnFailed(e -> {
+                voiceBtn.setText("Error");
+                voiceBtn.setDisable(false);
+                e.getSource().getException().printStackTrace();
+            });
+
+            new Thread(task).start();
+        });
+
+        descGroup.getChildren().add(voiceBtn);
         VBox statusGroup = new VBox(8);
         Label statusLabel = new Label("Status:");
         statusLabel.getStyleClass().add("form-label");
@@ -583,7 +613,35 @@ public class ReclamationController {
         Label descError = new Label();
         descError.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
         descGroup.getChildren().addAll(descFieldLabel, descField, descError);
-    
+    Button voiceBtn = new Button("🎙 Speak");
+        voiceBtn.setOnAction(evt -> {
+            voiceBtn.setText("Listening...");
+            voiceBtn.setDisable(true);
+
+            Task<String> task = new Task<>() {
+                @Override
+                protected String call() {
+                    SpeechRecognizerService recognizer = new SpeechRecognizerService("C:\\Users\\eunab\\Downloads\\vosk-model-en-us-0.22\\vosk-model-en-us-0.22");
+                    return recognizer.recognize(8); // listen for 8 seconds
+                }
+            };
+
+            task.setOnSucceeded(e -> {
+                descField.setText(task.getValue());
+                voiceBtn.setText("🎙 Speak");
+                voiceBtn.setDisable(false);
+            });
+
+            task.setOnFailed(e -> {
+                voiceBtn.setText("Error");
+                voiceBtn.setDisable(false);
+                e.getSource().getException().printStackTrace();
+            });
+
+            new Thread(task).start();
+        });
+
+        descGroup.getChildren().add(voiceBtn);
         Label messageLabel = new Label();
         messageLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
     
