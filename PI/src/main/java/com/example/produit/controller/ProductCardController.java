@@ -21,13 +21,14 @@ import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.ResourceBundle;
 
 public class ProductCardController implements Initializable {
 
     @FXML private ScrollPane scrollPane;
     @FXML private VBox productContainer;
+    @FXML private HBox fastBuyContainer;
+    @FXML private Button fastBuyButton;
     @FXML private Button prevButton;
     @FXML private Button nextButton;
     @FXML private Label pageLabel;
@@ -42,10 +43,23 @@ public class ProductCardController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         try {
             allProducts = ProduitDAO.getAllProducts();
+            if (allProducts == null) {
+                allProducts = new ArrayList<>();
+            }
             allProducts.forEach(product -> product.setCommentaires(
                     CommentaireDAO.getCommentairesByProduit(product)));
             configureScrollPane();
             updatePage();
+
+            // Configure Fast Buy Button
+            fastBuyButton.setOnAction(e -> {
+                try {
+                    FastBuyController fastBuyController = new FastBuyController();
+                    fastBuyController.showFastBuyDialog();
+                } catch (Exception ex) {
+                    showAlert(Alert.AlertType.ERROR, "Fast Buy Error", "Failed to open Fast Buy dialog: " + ex.getMessage());
+                }
+            });
         } catch (Exception e) {
             showAlert(Alert.AlertType.ERROR, "Initialization Error", "Failed to load products: " + e.getMessage());
         }
@@ -162,7 +176,7 @@ public class ProductCardController implements Initializable {
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle(product.getNom());
         dialog.getDialogPane().getStyleClass().add("product-dialog");
-        dialog.getDialogPane().setPrefSize(800, 600); // Large dialog
+        dialog.getDialogPane().setPrefSize(800, 600);
 
         ButtonType submitButtonType = new ButtonType("Submit", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(submitButtonType, ButtonType.CANCEL);
@@ -172,9 +186,8 @@ public class ProductCardController implements Initializable {
         content.setPadding(new Insets(15));
         content.setAlignment(Pos.TOP_LEFT);
 
-        // Left Section: Image and Details
         VBox leftBox = new VBox(10);
-        leftBox.setPrefWidth(320); // 40% of 800
+        leftBox.setPrefWidth(320);
         leftBox.setAlignment(Pos.TOP_CENTER);
 
         // Image
@@ -211,7 +224,7 @@ public class ProductCardController implements Initializable {
 
         // Right Section: Description, Reviews, Add Review
         VBox rightBox = new VBox(10);
-        rightBox.setPrefWidth(465); // 60% of 800 - padding
+        rightBox.setPrefWidth(465);
         rightBox.setAlignment(Pos.TOP_LEFT);
 
         // Description
