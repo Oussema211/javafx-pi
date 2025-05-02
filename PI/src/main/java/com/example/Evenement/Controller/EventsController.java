@@ -4,6 +4,7 @@ import com.example.Evenement.Dao.EvenementDAO;
 import com.example.Evenement.Model.Evenement;
 import com.example.Evenement.Model.TypeEvenement;
 import com.example.Evenement.Service.GoogleCalendarService;
+import com.example.Evenement.Service.TranslationService;
 import com.google.api.services.calendar.model.Event;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -39,6 +40,7 @@ public class EventsController {
     @FXML private FlowPane eventsFlowPane;
     @FXML private Button previousPageBtn;
     @FXML private Button nextPageBtn;
+    @FXML private ComboBox<String> languageSelector;
 
     // Nouveaux composants FXML pour le calendrier
     @FXML private Button prevMonthBtn;
@@ -63,6 +65,7 @@ public class EventsController {
 
     private GoogleCalendarService googleCalendarService;
     private Map<String, String> eventIdMap = new HashMap<>(); // Maps local event IDs to Google Calendar event IDs
+    private TranslationService translationService = TranslationService.getInstance();
 
     @FXML
     public void initialize() {
@@ -73,6 +76,40 @@ public class EventsController {
             e.printStackTrace();
         }
         
+        // Configuration du sélecteur de langue
+        ObservableList<String> languageOptions = FXCollections.observableArrayList(
+            "Français",
+            "Anglais",
+            "Arabe"
+        );
+        languageSelector.setItems(languageOptions);
+        languageSelector.setValue("Français");
+
+        // Map pour convertir les noms en codes
+        Map<String, String> languageMap = Map.of(
+            "Français", "fr",
+            "Anglais", "en",
+            "Arabe", "ar"
+        );
+
+        languageSelector.setOnAction(e -> {
+            String selectedLanguage = languageSelector.getValue();
+            if (selectedLanguage == null) return;
+            
+            try {
+                String languageCode = languageMap.get(selectedLanguage);
+                if (languageCode == null) {
+                    throw new IllegalArgumentException("Langue non supportée: " + selectedLanguage);
+                }
+                translationService.setLanguage(languageCode);
+                System.out.println("Changement de langue vers: " + selectedLanguage);
+                updateEventTranslations();
+            } catch (Exception ex) {
+                showAlert("Erreur", "Une erreur est survenue lors du changement de langue : " + ex.getMessage());
+                ex.printStackTrace();
+            }
+        });
+
         setupSortComboBox();
         setupSearchFilter();
         loadEvents();
@@ -221,7 +258,13 @@ public class EventsController {
         int endIndex = Math.min(startIndex + itemsPerPage, sortedEvents.size());
 
         for (int i = startIndex; i < endIndex; i++) {
-            eventsFlowPane.getChildren().add(createEventCard(sortedEvents.get(i)));
+            Evenement event = sortedEvents.get(i);
+            try {
+                eventsFlowPane.getChildren().add(createEventCard(event));
+            } catch (Exception e) {
+                System.err.println("Erreur lors de la création de la carte d'événement : " + e.getMessage());
+                continue; // Passer à l'événement suivant
+            }
         }
     }
 
@@ -251,7 +294,13 @@ public class EventsController {
         }
 
         // Title
-        Label titleLabel = new Label(event.getTitre());
+        String translatedTitle = event.getTitre();
+        try {
+            translatedTitle = translationService.translateText(event.getTitre());
+        } catch (Exception e) {
+            handleTranslationError(e);
+        }
+        Label titleLabel = new Label(translatedTitle);
         titleLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
         titleLabel.setWrapText(true);
 
@@ -266,7 +315,13 @@ public class EventsController {
         regionLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #666;");
 
         // Type and Status
-        Label typeLabel = new Label("Type : " + event.getType().getLabel() +
+        String translatedType = event.getType().getLabel();
+        try {
+            translatedType = translationService.translateText(event.getType().getLabel());
+        } catch (Exception e) {
+            handleTranslationError(e);
+        }
+        Label typeLabel = new Label("Type : " + translatedType +
                 " | Statut : " + event.getStatut().getLabel());
         typeLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #666;");
 
@@ -381,6 +436,46 @@ public class EventsController {
     private void setupCalendar() {
         updateCalendar();
         loadEventsIntoCalendar();
+    }
+
+    private void handleTranslationError(Exception e) {
+        System.err.println("Erreur de traduction : " + e.getMessage());
+        showAlert("Erreur", "Une erreur est survenue lors de la traduction : " + e.getMessage());
+    }
+
+    private void updateEventTranslations() {
+        try {
+            if (!translationService.isServiceAvailable()) {
+                showAlert("Information", "Le service de traduction n'est pas disponible. Utilisation du texte original.");
+                return;
+            }
+
+            // Mettre à jour les traductions pour tous les événements affichés
+            for (Evenement event : eventList) {
+                String translatedTitle = event.getTitre();
+                String translatedDescription = event.getDescription();
+                
+                try {
+                    translatedTitle = translationService.translateText(event.getTitre());
+                    translatedDescription = translationService.translateText(event.getDescription());
+                    System.out.println("Traduction de " + event.getTitre() + " : " + translatedTitle);
+                } catch (Exception ex) {
+                    System.err.println("Erreur lors de la traduction de l'événement " + event.getTitre() + ": " + ex.getMessage());
+                    // Continuer avec le texte original si la traduction échoue
+                }
+                
+                event.setTitre(translatedTitle);
+                event.setDescription(translatedDescription);
+            }
+            
+            // Mettre à jour l'affichage
+            displayEvents();
+            loadEventsIntoCalendar();
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la mise à jour des traductions : " + e.getMessage());
+            e.printStackTrace(); // Afficher la trace complète de l'erreur
+            showAlert("Erreur", "Une erreur est survenue lors de la mise à jour des traductions.");
+        }
     }
 
     private void updateCalendar() {
