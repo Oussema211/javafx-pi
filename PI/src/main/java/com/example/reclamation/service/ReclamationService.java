@@ -13,8 +13,10 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.sql.*;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -137,6 +139,24 @@ public class ReclamationService {
             int rowsAffected = pstmt.executeUpdate();
     
             if (rowsAffected > 0) {
+                Map<String, Object> payload = new HashMap<>();
+                payload.put("id", id.toString());
+                payload.put("userId", userId.toString());
+                payload.put("title", title);
+                payload.put("description", description);
+                payload.put("status", statut.getDisplayName());
+                payload.put("date", Instant.ofEpochMilli(dateReclamation.getTime()).toString());
+    
+                // Fire the event on channel "admins" and event "new-reclamation"
+                System.out.println("Attempting to trigger Pusher event on channel 'admins' with event 'new-reclamation'");
+                try {
+                    PusherClient.get().trigger("admins", "new-reclamation", payload);
+                    System.out.println("Successfully triggered Pusher event for reclamation ID: " + id);
+                } catch (Exception e) {
+                    System.err.println("Failed to trigger Pusher event: " + e.getMessage());
+                    e.printStackTrace();
+                }
+    
                 // Call assignTagToReclamation to automatically assign a tag
                 try {
                     String assignedTag = assignTagToReclamation(id);
