@@ -5,11 +5,10 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.geometry.Insets?>
-
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.image.Image?>
-<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.produit.controller.ProductCardController" styleClass="main-content" spacing="0" stylesheets="@products.css" VBox.vgrow="ALWAYS">
 
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.produit.controller.TopRatedProductsController" styleClass="main-content" spacing="0" stylesheets="@products.css" VBox.vgrow="ALWAYS">
     <!-- Fast Buy Button -->
     <HBox fx:id="fastBuyContainer" alignment="CENTER_RIGHT">
         <padding>
@@ -25,7 +24,6 @@
             </graphic>
         </Button>
     </HBox>
-
 
     <!-- Product Grid -->
     <ScrollPane fx:id="scrollPane" fitToWidth="true" fitToHeight="true" styleClass="product-scroll" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS" minHeight="0">

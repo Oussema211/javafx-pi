@@ -37,6 +37,13 @@
                     </ImageView>
                 </graphic>
             </Hyperlink>
+            <Hyperlink fx:id="topRatedButton" text="Top Rated" graphicTextGap="10" styleClass="nav-link"> <!-- New Hyperlink -->
+                <graphic>
+                    <ImageView fitHeight="20" fitWidth="20">
+                        <Image url="@icons/star.png"/>
+                    </ImageView>
+                </graphic>
+            </Hyperlink>
             <Hyperlink fx:id="reclamationButton" text="Discussions" graphicTextGap="10" styleClass="nav-link">
                 <graphic>
                     <ImageView fitHeight="20" fitWidth="20">
@@ -70,7 +77,6 @@
     </left>
     <top>
         <HBox styleClass="top-bar" spacing="20" alignment="CENTER">
-            <!-- Added welcomeLabel -->
             <Label fx:id="welcomeLabel" text="Welcome" styleClass="welcome-label"/>
             <HBox styleClass="search-container" HBox.hgrow="ALWAYS">
                 <ImageView fitHeight="16" fitWidth="16" styleClass="search-icon">
