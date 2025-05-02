@@ -9,123 +9,135 @@
 <AnchorPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.example.Evenement.Controller.EventDetailsController"
-            style="-fx-background-color: #f8f9fa;">
+            style="-fx-background-color: #f5f7fa;">
 
-    <!-- Conteneur horizontal : contenu principal + chatbot -->
     <HBox AnchorPane.topAnchor="0" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0"
-          spacing="30" style="-fx-padding: 20;">
+          spacing="10" style="-fx-padding: 10;">
 
-        <!-- Partie gauche : Scroll avec le contenu de l’événement -->
+        <!-- Section événement (70%) -->
         <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
-                    style="-fx-background-color:transparent;"
+                    style="-fx-background-color: transparent;"
                     HBox.hgrow="ALWAYS">
-            <VBox spacing="20" style="-fx-padding: 0;" alignment="TOP_CENTER">
+            <VBox spacing="15" style="-fx-padding: 10;" alignment="TOP_CENTER">
 
-                <!-- Header -->
-                <HBox alignment="CENTER_LEFT" style="-fx-padding: 0 0 15 0;">
-                    <Button fx:id="backButton" onAction="#handleBack"
-                            style="-fx-background-color: transparent; -fx-text-fill: #2196F3;
-                                   -fx-font-weight: bold; -fx-cursor: hand; -fx-font-size: 14;"
-                            text="← Retour à la liste"/>
-                </HBox>
+                <!-- Bouton retour -->
+                <Button fx:id="backButton" onAction="#handleBack" alignment="TOP_LEFT"
+                        style="-fx-background-color: transparent; -fx-text-fill: #2196F3;
+                              -fx-font-weight: bold; -fx-cursor: hand; -fx-font-size: 14;"
+                        text="← Retour"/>
 
-                <!-- Carte principale -->
-                <VBox style="-fx-background-color: white; -fx-padding: 25; -fx-background-radius: 10;
-                            -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.08), 10, 0, 0, 3);
-                            -fx-max-width: 600;" spacing="20">
+                <!-- Carte événement -->
+                <VBox style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 10;
+                            -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 3);"
+                      spacing="15">
 
+                    <!-- Image -->
                     <ImageView fx:id="eventImage" fitWidth="550" fitHeight="275" preserveRatio="true"
                                style="-fx-border-radius: 5; -fx-border-color: #e0e0e0;"/>
 
+                    <!-- Titre et badges -->
                     <VBox spacing="10">
-                        <Label fx:id="eventTitle" style="-fx-font-size: 22; -fx-font-weight: bold; -fx-wrap-text: true; -fx-text-fill: #333333;"/>
-                        <HBox spacing="15">
-                            <Label fx:id="eventType" style="-fx-background-color: #E3F2FD; -fx-padding: 4 14;
-                                   -fx-background-radius: 12; -fx-text-fill: #1976D2; -fx-font-size: 13;"/>
-                            <Label fx:id="eventStatus" style="-fx-background-color: #E8F5E9; -fx-padding: 4 14;
-                                   -fx-background-radius: 12; -fx-text-fill: #388E3C; -fx-font-size: 13;"/>
+                        <Label fx:id="eventTitle" style="-fx-font-size: 20; -fx-font-weight: bold;
+                                                       -fx-wrap-text: true; -fx-text-fill: #2c3e50;"/>
+
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <Label fx:id="eventType" style="-fx-background-color: #E3F2FD; -fx-padding: 5 12;
+                                                          -fx-background-radius: 12; -fx-text-fill: #1976D2; -fx-font-size: 13;"/>
+                            <Label fx:id="eventStatus" style="-fx-background-color: #E8F5E9; -fx-padding: 5 12;
+                                                            -fx-background-radius: 12; -fx-text-fill: #388E3C; -fx-font-size: 13;"/>
                         </HBox>
                     </VBox>
 
-                    <GridPane hgap="25" vgap="10">
+                    <!-- Dates -->
+                    <GridPane hgap="15" vgap="10">
                         <columnConstraints>
-                            <ColumnConstraints hgrow="SOMETIMES" minWidth="150"/>
-                            <ColumnConstraints hgrow="SOMETIMES" minWidth="150"/>
-                            <ColumnConstraints hgrow="SOMETIMES" minWidth="150"/>
+                            <ColumnConstraints hgrow="SOMETIMES" minWidth="120" prefWidth="150"/>
+                            <ColumnConstraints hgrow="SOMETIMES" minWidth="120" prefWidth="150"/>
+                            <ColumnConstraints hgrow="SOMETIMES" minWidth="120" prefWidth="150"/>
                         </columnConstraints>
 
-                        <Label text="DÉBUT" style="-fx-text-fill: #555555; -fx-font-size: 12; -fx-font-weight: bold;"
-                               GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-                        <Label text="FIN" style="-fx-text-fill: #555555; -fx-font-size: 12; -fx-font-weight: bold;"
-                               GridPane.rowIndex="0" GridPane.columnIndex="1"/>
-                        <Label text="DURÉE" style="-fx-text-fill: #555555; -fx-font-size: 12; -fx-font-weight: bold;"
-                               GridPane.rowIndex="0" GridPane.columnIndex="2"/>
+                        <Label text="DÉBUT" style="-fx-text-fill: #7f8c8d; -fx-font-size: 13;
+                                                  -fx-font-weight: bold;" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                        <Label text="FIN" style="-fx-text-fill: #7f8c8d; -fx-font-size: 13;
+                                                -fx-font-weight: bold;" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                        <Label text="DURÉE" style="-fx-text-fill: #7f8c8d; -fx-font-size: 13;
+                                                 -fx-font-weight: bold;" GridPane.rowIndex="0" GridPane.columnIndex="2"/>
 
-                        <Label fx:id="startDate" style="-fx-font-size: 14; -fx-font-weight: bold; -fx-text-fill: #333333; -fx-wrap-text: true;"
-                               GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-                        <Label fx:id="endDate" style="-fx-font-size: 14; -fx-font-weight: bold; -fx-text-fill: #333333; -fx-wrap-text: true;"
-                               GridPane.rowIndex="1" GridPane.columnIndex="1"/>
-                        <Label fx:id="duration" style="-fx-font-size: 14; -fx-font-weight: bold; -fx-text-fill: #333333; -fx-wrap-text: true;"
-                               GridPane.rowIndex="1" GridPane.columnIndex="2"/>
+                        <Label fx:id="startDate" style="-fx-font-size: 14; -fx-font-weight: bold;
+                                                      -fx-text-fill: #34495e;" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                        <Label fx:id="endDate" style="-fx-font-size: 14; -fx-font-weight: bold;
+                                                    -fx-text-fill: #34495e;" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                        <Label fx:id="duration" style="-fx-font-size: 14; -fx-font-weight: bold;
+                                                     -fx-text-fill: #34495e;" GridPane.rowIndex="1" GridPane.columnIndex="2"/>
                     </GridPane>
 
-                    <VBox spacing="10">
-                        <Label text="DESCRIPTION" style="-fx-text-fill: #555555; -fx-font-size: 12; -fx-font-weight: bold;"/>
+                    <!-- Description -->
+                    <VBox spacing="8">
+                        <Label text="DESCRIPTION" style="-fx-text-fill: #7f8c8d; -fx-font-size: 13;
+                                                        -fx-font-weight: bold;"/>
                         <TextArea fx:id="descriptionText" editable="false" wrapText="true"
-                                  style="-fx-font-size: 14; -fx-background-color: transparent; -fx-border-color: #e0e0e0; -fx-text-fill: #333333;"
-                                  prefHeight="100" prefWidth="550"/>
+                                  style="-fx-font-size: 14; -fx-background-color: #f9f9f9;
+                                        -fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-text-fill: #2c3e50;"
+                                  prefHeight="100"/>
                     </VBox>
 
-                    <VBox spacing="10">
-                        <Label text="RÉGIONS CONCERNÉES" style="-fx-text-fill: #555555; -fx-font-size: 12; -fx-font-weight: bold;"/>
-                        <FlowPane fx:id="regionsFlow" hgap="15" vgap="15" alignment="CENTER_LEFT"/>
+                    <!-- Régions -->
+                    <VBox spacing="8">
+                        <Label text="RÉGIONS" style="-fx-text-fill: #7f8c8d; -fx-font-size: 13;
+                                                    -fx-font-weight: bold;"/>
+                        <FlowPane fx:id="regionsFlow" hgap="10" vgap="10" alignment="CENTER_LEFT"/>
                     </VBox>
 
-                    <HBox alignment="CENTER" spacing="25" style="-fx-padding: 20 0 5 0;">
-                        <Button onAction="#handleInscription" prefWidth="130"
+                    <!-- Boutons -->
+                    <HBox alignment="CENTER" spacing="15" style="-fx-padding: 15 0 0 0;">
+                        <Button onAction="#handleInscription" prefWidth="130" prefHeight="35"
                                 style="-fx-background-color: #2196F3; -fx-text-fill: white;
-                                       -fx-padding: 10 0; -fx-font-size: 14; -fx-background-radius: 5; -fx-cursor: hand;"
+                                      -fx-font-size: 14; -fx-background-radius: 5; -fx-cursor: hand;"
                                 text="S'inscrire"/>
-                        <Button onAction="#handleWeather" prefWidth="130"
+                        <Button onAction="#handleWeather" prefWidth="130" prefHeight="35"
                                 style="-fx-background-color: #4CAF50; -fx-text-fill: white;
-                                       -fx-padding: 10 0; -fx-font-size: 14; -fx-background-radius: 5; -fx-cursor: hand;"
+                                      -fx-font-size: 14; -fx-background-radius: 5; -fx-cursor: hand;"
                                 text="Météo"/>
-                        <Button fx:id="chatbotButton" onAction="#toggleChatbot" prefWidth="130"
+                        <Button fx:id="chatbotButton" onAction="#toggleChatbot" prefWidth="130" prefHeight="35"
                                 style="-fx-background-color: #9C27B0; -fx-text-fill: white;
-                                       -fx-padding: 10 0; -fx-font-size: 14; -fx-background-radius: 5; -fx-cursor: hand;"
+                                      -fx-font-size: 14; -fx-background-radius: 5; -fx-cursor: hand;"
                                 text="Assistant"/>
                     </HBox>
                 </VBox>
             </VBox>
         </ScrollPane>
 
-        <!-- Partie droite : Chatbot -->
-        <VBox fx:id="chatbotContainer" visible="false" spacing="20" alignment="TOP_CENTER"
-              style="-fx-background-color: white; -fx-padding: 25; -fx-background-radius: 10;
-             -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.08), 10, 0, 0, 3);"
-              prefWidth="350" VBox.vgrow="ALWAYS">
-            <HBox alignment="CENTER_LEFT" spacing="15">
-                <Label text="ASSISTANT INTELLIGENT" style="-fx-text-fill: #9C27B0; -fx-font-weight: bold; -fx-font-size: 16;"/>
+        <!-- Chatbot (30%) -->
+        <VBox fx:id="chatbotContainer" visible="false" spacing="15" alignment="TOP_CENTER"
+              style="-fx-background-color: white; -fx-padding: 15; -fx-background-radius: 10;
+                   -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 3);"
+              prefWidth="300">
+
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <Label text="ASSISTANT" style="-fx-text-fill: #9C27B0;
+                                              -fx-font-weight: bold; -fx-font-size: 15;"/>
                 <Button onAction="#toggleChatbot" text="✕"
-                        style="-fx-background-color: transparent; -fx-text-fill: #555555; -fx-font-size: 14;
-                       -fx-cursor: hand; -fx-padding: 0 5;"/>
+                        style="-fx-background-color: transparent; -fx-text-fill: #555555;
+                              -fx-font-size: 15; -fx-cursor: hand;"/>
             </HBox>
+
             <ScrollPane fx:id="chatScroll" vbarPolicy="AS_NEEDED" hbarPolicy="NEVER"
                         fitToWidth="true"
-                        style="-fx-background-color: #f9f9f9;"
-                        VBox.vgrow="ALWAYS">
-                <VBox fx:id="chatMessages" spacing="10" style="-fx-padding: 10;" prefWidth="320"/>
+                        style="-fx-background-color: #f9f9f9; -fx-border-radius: 5;"
+                        prefHeight="300">
+                <VBox fx:id="chatMessages" spacing="10" style="-fx-padding: 10;"/>
             </ScrollPane>
+
             <HBox spacing="10" alignment="CENTER">
-                <TextField fx:id="userMessage" promptText="Posez votre question ici..."
-                           style="-fx-font-size: 14; -fx-background-radius: 5; -fx-text-fill: #333333; -fx-border-color: #b0b0b0; -fx-background-color: white;"
+                <TextField fx:id="userMessage" promptText="Posez votre question..."
+                           style="-fx-font-size: 14; -fx-background-radius: 5;
+                                 -fx-border-color: #b0b0b0; -fx-background-color: white; -fx-padding: 8;"
                            HBox.hgrow="ALWAYS"/>
                 <Button fx:id="sendButton" onAction="#sendMessage" text="Envoyer"
-                        style="-fx-background-color: #9C27B0; -fx-text-fill: white; -fx-font-size: 14;
-                       -fx-background-radius: 5; -fx-padding: 10 15; -fx-cursor: hand;"
-                        disable="${userMessage.text.empty}"/>
+                        style="-fx-background-color: #9C27B0; -fx-text-fill: white;
+                              -fx-font-size: 14; -fx-background-radius: 5; -fx-padding: 8 15;
+                              -fx-cursor: hand;"/>
             </HBox>
         </VBox>
-
     </HBox>
 </AnchorPane>
