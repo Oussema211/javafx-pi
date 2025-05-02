@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.geometry.Insets?>
+
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.produit.controller.ProductCardController" styleClass="main-content" spacing="0" stylesheets="@products.css" VBox.vgrow="ALWAYS">
+
+    <!-- Fast Buy Button -->
+    <HBox fx:id="fastBuyContainer" alignment="CENTER_RIGHT">
+        <padding>
+            <Insets top="2" right="10" bottom="2" left="10"/>
+        </padding>
+        <Button fx:id="fastBuyButton" text="Fast Buy" styleClass="fast-buy-button">
+            <graphic>
+                <ImageView fitHeight="18" fitWidth="18">
+                    <image>
+                        <Image url="@/com/example/frontPages/icons/shopping_bag_speed.png"/>
+                    </image>
+                </ImageView>
+            </graphic>
+        </Button>
+    </HBox>
+
+
+    <!-- Product Grid -->
+    <ScrollPane fx:id="scrollPane" fitToWidth="true" fitToHeight="true" styleClass="product-scroll" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS" minHeight="0">
+        <VBox fx:id="productContainer" styleClass="product-container" spacing="20" VBox.vgrow="ALWAYS">
+            <padding>
+                <Insets top="25" right="25" bottom="25" left="25"/>
+            </padding>
+        </VBox>
+    </ScrollPane>
+
+    <!-- Pagination -->
+    <HBox fx:id="paginationControls" spacing="10" alignment="CENTER">
+        <padding>
+            <Insets top="2" right="10" bottom="2" left="10"/>
+        </padding>
+        <Button fx:id="prevButton" text="Previous" styleClass="pagination-button" onAction="#handlePrevious"/>
+        <Label fx:id="pageLabel" text="Page 1" styleClass="page-label"/>
+        <Button fx:id="nextButton" text="Next" styleClass="pagination-button" onAction="#handleNext"/>
+    </HBox>
+</VBox>

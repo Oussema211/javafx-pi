@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.shape.Circle?>
+
+<BorderPane fx:id="borderPane" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.auth.controller.DashboardFrontController" styleClass="black-background" stylesheets="@styles.css">
+    <left>
+        <VBox fx:id="sidebar" spacing="10" prefWidth="220" styleClass="sidebar">
+            <VBox VBox.vgrow="ALWAYS"/>
+            <Hyperlink fx:id="dashboardButton" text="Dashboard" graphicTextGap="10" styleClass="nav-link">
+                <graphic>
+                    <ImageView fitHeight="20" fitWidth="20">
+                        <Image url="@icons/grid_view.png"/>
+                    </ImageView>
+                </graphic>
+            </Hyperlink>
+            <Hyperlink fx:id="productButton" text="Products" graphicTextGap="10" styleClass="nav-link">
+                <graphic>
+                    <ImageView fitHeight="20" fitWidth="20">
+                        <Image url="@icons/product.png"/>
+                    </ImageView>
+                </graphic>
+            </Hyperlink>
+            <Hyperlink fx:id="achat" text="Shop" graphicTextGap="10" styleClass="nav-link">
+                <graphic>
+                    <ImageView fitHeight="20" fitWidth="20">
+                        <Image url="@icons/store.png"/>
+                    </ImageView>
+                </graphic>
+            </Hyperlink>
+            <Hyperlink fx:id="categoryButton" text="Wishlist" styleClass="nav-link">
+                <graphic>
+                    <ImageView fitHeight="20" fitWidth="20">
+                        <Image url="@icons/favorite.png"/>
+                    </ImageView>
+                </graphic>
+            </Hyperlink>
+            <Hyperlink fx:id="topRatedButton" text="Top Rated" graphicTextGap="10" styleClass="nav-link"> <!-- New Hyperlink -->
+                <graphic>
+                    <ImageView fitHeight="20" fitWidth="20">
+                        <Image url="@icons/star.png"/>
+                    </ImageView>
+                </graphic>
+            </Hyperlink>
+            <Hyperlink fx:id="reclamationButton" text="Discussions" graphicTextGap="10" styleClass="nav-link">
+                <graphic>
+                    <ImageView fitHeight="20" fitWidth="20">
+                        <Image url="@icons/reclamation.png"/>
+                    </ImageView>
+                </graphic>
+            </Hyperlink>
+            <Hyperlink fx:id="profileButton" text="Profile" graphicTextGap="10" styleClass="nav-link" onAction="#handleProfileClick">
+                <graphic>
+                    <ImageView fitHeight="20" fitWidth="20">
+                        <Image url="@icons/profile.png"/>
+                    </ImageView>
+                </graphic>
+            </Hyperlink>
+            <Hyperlink fx:id="settings" text="Settings" graphicTextGap="10" styleClass="nav-link">
+                <graphic>
+                    <ImageView fitHeight="20" fitWidth="20">
+                        <Image url="@icons/settings.png"/>
+                    </ImageView>
+                </graphic>
+            </Hyperlink>
+            <VBox VBox.vgrow="ALWAYS"/>
+            <Hyperlink fx:id="logoutButton" text="Logout" graphicTextGap="10" styleClass="nav-link" onAction="#handleLogout">
+                <graphic>
+                    <ImageView fitHeight="20" fitWidth="20">
+                        <Image url="@icons/logout.png"/>
+                    </ImageView>
+                </graphic>
+            </Hyperlink>
+        </VBox>
+    </left>
+    <top>
+        <HBox styleClass="top-bar" spacing="20" alignment="CENTER">
+            <Label fx:id="welcomeLabel" text="Welcome" styleClass="welcome-label"/>
+            <HBox styleClass="search-container" HBox.hgrow="ALWAYS">
+                <ImageView fitHeight="16" fitWidth="16" styleClass="search-icon">
+                    <Image url="@icons/search.png"/>
+                </ImageView>
+                <TextField promptText="Search..." styleClass="search-field"/>
+            </HBox>
+            <HBox spacing="16" alignment="CENTER_RIGHT">
+                <StackPane styleClass="icon-container">
+                    <ImageView fitHeight="20" fitWidth="20">
+                        <Image url="@icons/notification.png"/>
+                    </ImageView>
+                    <Circle styleClass="notification-badge" radius="4"/>
+                </StackPane>
+            </HBox>
+        </HBox>
+    </top>
+    <center>
+        <VBox styleClass="main-content" spacing="20">
+            <Label styleClass="section-title" text="Overview" />
+            <Label styleClass="section-subtitle" text="Your current sales summary and activity" />
+            <HBox styleClass="stats-container" spacing="20">
+                <VBox styleClass="stat-card">
+                    <Label styleClass="stat-title" text="Total Orders" />
+                    <Label styleClass="stat-value" text="1,293" />
+                    <Label styleClass="stat-change-negative" text="-2.12% From last month" />
+                </VBox>
+                <VBox styleClass="stat-card">
+                    <Label styleClass="stat-title" text="Avg. Order Value" />
+                    <Label styleClass="stat-value" text="72.28" />
+                    <Label styleClass="stat-change-negative" text="-3.24% From last month" />
+                </VBox>
+                <VBox styleClass="stat-card">
+                    <Label styleClass="stat-title" text="Lifetime Value" />
+                    <Label styleClass="stat-value" text="569" />
+                    <Label styleClass="stat-change-positive" text="+2.97% From last month" />
+                </VBox>
+                <VBox styleClass="stat-card">
+                    <Label styleClass="stat-title" text="Gross Revenue" />
+                    <Label styleClass="stat-value" text="1,217.43" />
+                    <Label styleClass="stat-change-positive" text="+3.72% From last month" />
+                </VBox>
+            </HBox>
+        </VBox>
+    </center>
+</BorderPane>
