@@ -496,16 +496,15 @@ public class ReclamationController {
         descError.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
         descGroup.getChildren().addAll(descLabel, descField, descError);
     
-        // Voice input
         Button voiceBtn = new Button("🎙 Speak");
         AtomicBoolean isRecording = new AtomicBoolean(false);
         AtomicReference<AudioRecorder> recorderRef = new AtomicReference<>();
-        
+        voiceBtn.setStyle("-fx-background-color: #6C983B; -fx-text-fill: white; -fx-background-radius: 5;");
         voiceBtn.setOnAction(evt -> {
             if (!isRecording.get()) {
-                // Start recording
                 isRecording.set(true);
-                voiceBtn.setText("🔴 Stop");
+                voiceBtn.setText("🔴 Recording...");
+                voiceBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-background-radius: 5;");
                 AudioRecorder recorder = new AudioRecorder();
                 recorderRef.set(recorder);
                 new Thread(() -> {
@@ -514,31 +513,32 @@ public class ReclamationController {
                     } catch (Exception e) {
                         Platform.runLater(() -> {
                             voiceBtn.setText("🎙 Speak");
+                            voiceBtn.setStyle("-fx-background-color: #6C983B; -fx-text-fill: white; -fx-background-radius: 5;");
                             voiceBtn.setDisable(false);
                             showAlert("Recording Error", e.getMessage(), Alert.AlertType.ERROR);
                         });
                     }
                 }).start();
             } else {
-                // Stop and transcribe
                 isRecording.set(false);
-                voiceBtn.setText("🎙 Speak");
+                voiceBtn.setText("Processing...");
+                voiceBtn.setStyle("-fx-background-color: #999; -fx-text-fill: white; -fx-background-radius: 5;");
                 voiceBtn.setDisable(true);
-        
                 new Thread(() -> {
                     try {
                         File audioFile = recorderRef.get().stopAndSave();
                         AssemblyAIRecognizer recognizer = new AssemblyAIRecognizer();
                         String transcription = recognizer.transcribe(audioFile);
-        
                         Platform.runLater(() -> {
                             descField.setText(transcription);
+                            voiceBtn.setText("🎙 Speak");
+                            voiceBtn.setStyle("-fx-background-color: #6C983B; -fx-text-fill: white; -fx-background-radius: 5;");
                             voiceBtn.setDisable(false);
                         });
                     } catch (Exception e) {
-                        e.printStackTrace();
                         Platform.runLater(() -> {
                             voiceBtn.setText("Error");
+                            voiceBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-background-radius: 5;");
                             voiceBtn.setDisable(false);
                         });
                     }
@@ -719,53 +719,54 @@ public class ReclamationController {
 
         // Voice input button (optional)
         Button voiceBtn = new Button("🎙 Speak");
-       AtomicBoolean isRecording = new AtomicBoolean(false);
-AtomicReference<AudioRecorder> recorderRef = new AtomicReference<>();
-
-voiceBtn.setOnAction(evt -> {
-    if (!isRecording.get()) {
-        // Start recording
-        isRecording.set(true);
-        voiceBtn.setText("🔴 Stop");
-        AudioRecorder recorder = new AudioRecorder();
-        recorderRef.set(recorder);
-        new Thread(() -> {
-            try {
-                recorder.start();
-            } catch (Exception e) {
-                Platform.runLater(() -> {
-                    voiceBtn.setText("🎙 Speak");
-                    voiceBtn.setDisable(false);
-                    showAlert("Recording Error", e.getMessage(), Alert.AlertType.ERROR);
-                });
+        AtomicBoolean isRecording = new AtomicBoolean(false);
+        AtomicReference<AudioRecorder> recorderRef = new AtomicReference<>();
+        voiceBtn.setStyle("-fx-background-color: #6C983B; -fx-text-fill: white; -fx-background-radius: 5;");
+        voiceBtn.setOnAction(evt -> {
+            if (!isRecording.get()) {
+                isRecording.set(true);
+                voiceBtn.setText("🔴 Recording...");
+                voiceBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-background-radius: 5;");
+                AudioRecorder recorder = new AudioRecorder();
+                recorderRef.set(recorder);
+                new Thread(() -> {
+                    try {
+                        recorder.start();
+                    } catch (Exception e) {
+                        Platform.runLater(() -> {
+                            voiceBtn.setText("🎙 Speak");
+                            voiceBtn.setStyle("-fx-background-color: #6C983B; -fx-text-fill: white; -fx-background-radius: 5;");
+                            voiceBtn.setDisable(false);
+                            showAlert("Recording Error", e.getMessage(), Alert.AlertType.ERROR);
+                        });
+                    }
+                }).start();
+            } else {
+                isRecording.set(false);
+                voiceBtn.setText("Processing...");
+                voiceBtn.setStyle("-fx-background-color: #999; -fx-text-fill: white; -fx-background-radius: 5;");
+                voiceBtn.setDisable(true);
+                new Thread(() -> {
+                    try {
+                        File audioFile = recorderRef.get().stopAndSave();
+                        AssemblyAIRecognizer recognizer = new AssemblyAIRecognizer();
+                        String transcription = recognizer.transcribe(audioFile);
+                        Platform.runLater(() -> {
+                            descField.setText(transcription);
+                            voiceBtn.setText("🎙 Speak");
+                            voiceBtn.setStyle("-fx-background-color: #6C983B; -fx-text-fill: white; -fx-background-radius: 5;");
+                            voiceBtn.setDisable(false);
+                        });
+                    } catch (Exception e) {
+                        Platform.runLater(() -> {
+                            voiceBtn.setText("Error");
+                            voiceBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-background-radius: 5;");
+                            voiceBtn.setDisable(false);
+                        });
+                    }
+                }).start();
             }
-        }).start();
-    } else {
-        // Stop and transcribe
-        isRecording.set(false);
-        voiceBtn.setText("🎙 Speak");
-        voiceBtn.setDisable(true);
-
-        new Thread(() -> {
-            try {
-                File audioFile = recorderRef.get().stopAndSave();
-                AssemblyAIRecognizer recognizer = new AssemblyAIRecognizer();
-                String transcription = recognizer.transcribe(audioFile);
-
-                Platform.runLater(() -> {
-                    descField.setText(transcription);
-                    voiceBtn.setDisable(false);
-                });
-            } catch (Exception e) {
-                e.printStackTrace();
-                Platform.runLater(() -> {
-                    voiceBtn.setText("Error");
-                    voiceBtn.setDisable(false);
-                });
-            }
-        }).start();
-    }
-});
+        });
         descGroup.getChildren().add(voiceBtn);
 
         Label messageLabel = new Label();
