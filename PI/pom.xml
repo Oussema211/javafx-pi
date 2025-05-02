@@ -15,7 +15,21 @@
   </properties>
 
   <dependencies>
-  
+  <dependency>
+    <groupId>org.json</groupId>
+    <artifactId>json</artifactId>
+    <version>20240303</version>
+</dependency>
+  <dependency>
+  <groupId>com.assemblyai</groupId>
+  <artifactId>assemblyai-java</artifactId>
+  <version>4.0.1</version>
+</dependency>
+  <dependency>
+    <groupId>com.modernmt.text</groupId>
+    <artifactId>profanity-filter</artifactId>
+    <version>1.0.1</version>
+</dependency>
     <dependency>
       <groupId>org.openjfx</groupId>
       <artifactId>javafx-controls</artifactId>
@@ -42,6 +56,7 @@
       <artifactId>jackson-databind</artifactId>
       <version>2.17.2</version>
     </dependency>
+    
     <dependency>
   <groupId>com.alphacephei</groupId>
   <artifactId>vosk</artifactId>

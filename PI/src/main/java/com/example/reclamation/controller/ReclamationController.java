@@ -1,5 +1,6 @@
 package com.example.reclamation.controller;
-
+import com.modernmt.text.profanity.ProfanityFilter;
+import com.modernmt.text.profanity.dictionary.Profanity;
 import com.example.reclamation.model.Reclamation;
 import com.example.reclamation.model.Tag;
 import com.example.reclamation.model.Status;
@@ -13,7 +14,9 @@ import utils.SessionManager;
 import javafx.animation.FadeTransition;
 import javafx.animation.PauseTransition;
 import javafx.animation.ScaleTransition;
+import javafx.application.Platform;
 import javafx.concurrent.Task;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
@@ -29,12 +32,15 @@ import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class ReclamationController {
 
@@ -42,6 +48,7 @@ public class ReclamationController {
     private final ReclamationService reclamationService = new ReclamationService();
     private final TagService tagService = new TagService();
     private final SessionManager sessionManager = SessionManager.getInstance();
+    private final ProfanityFilter profanityFilter = new ProfanityFilter();
 
     @FXML private BorderPane root;
     @FXML private GridPane contentContainer;
@@ -457,16 +464,17 @@ public class ReclamationController {
     private void handleEdit(UUID reclamationId) {
         Dialog<Reclamation> dialog = new Dialog<>();
         dialog.setTitle("Edit Reclamation");
-
+    
         DialogPane dialogPane = dialog.getDialogPane();
         dialogPane.getStylesheets().add(getClass().getResource("/css/modern-dialog.css").toExternalForm());
-
-        ButtonType saveButtonType = new ButtonType("Save", ButtonData.OK_DONE);
+    
+        ButtonType saveButtonType = new ButtonType("Save", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
-
+    
         VBox content = new VBox(15);
         content.setStyle("-fx-padding: 20;");
-
+    
+        // Title group
         VBox titleGroup = new VBox(8);
         Label titleLabel = new Label("Title:");
         titleLabel.getStyleClass().add("form-label");
@@ -476,7 +484,8 @@ public class ReclamationController {
         Label titleError = new Label();
         titleError.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
         titleGroup.getChildren().addAll(titleLabel, titleField, titleError);
-
+    
+        // Description group
         VBox descGroup = new VBox(8);
         Label descLabel = new Label("Description:");
         descLabel.getStyleClass().add("form-label");
@@ -487,35 +496,59 @@ public class ReclamationController {
         Label descError = new Label();
         descError.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
         descGroup.getChildren().addAll(descLabel, descField, descError);
+    
+        // Voice input
         Button voiceBtn = new Button("🎙 Speak");
+        AtomicBoolean isRecording = new AtomicBoolean(false);
+        AtomicReference<AudioRecorder> recorderRef = new AtomicReference<>();
+        
         voiceBtn.setOnAction(evt -> {
-            voiceBtn.setText("Listening...");
-            voiceBtn.setDisable(true);
-
-            Task<String> task = new Task<>() {
-                @Override
-                protected String call() {
-                    SpeechRecognizerService recognizer = new SpeechRecognizerService("C:\\Users\\eunab\\Downloads\\vosk-model-en-us-0.22\\vosk-model-en-us-0.22");
-                    return recognizer.recognize(8); // listen for 8 seconds
-                }
-            };
-
-            task.setOnSucceeded(e -> {
-                descField.setText(task.getValue());
+            if (!isRecording.get()) {
+                // Start recording
+                isRecording.set(true);
+                voiceBtn.setText("🔴 Stop");
+                AudioRecorder recorder = new AudioRecorder();
+                recorderRef.set(recorder);
+                new Thread(() -> {
+                    try {
+                        recorder.start();
+                    } catch (Exception e) {
+                        Platform.runLater(() -> {
+                            voiceBtn.setText("🎙 Speak");
+                            voiceBtn.setDisable(false);
+                            showAlert("Recording Error", e.getMessage(), Alert.AlertType.ERROR);
+                        });
+                    }
+                }).start();
+            } else {
+                // Stop and transcribe
+                isRecording.set(false);
                 voiceBtn.setText("🎙 Speak");
-                voiceBtn.setDisable(false);
-            });
-
-            task.setOnFailed(e -> {
-                voiceBtn.setText("Error");
-                voiceBtn.setDisable(false);
-                e.getSource().getException().printStackTrace();
-            });
-
-            new Thread(task).start();
+                voiceBtn.setDisable(true);
+        
+                new Thread(() -> {
+                    try {
+                        File audioFile = recorderRef.get().stopAndSave();
+                        AssemblyAIRecognizer recognizer = new AssemblyAIRecognizer();
+                        String transcription = recognizer.transcribe(audioFile);
+        
+                        Platform.runLater(() -> {
+                            descField.setText(transcription);
+                            voiceBtn.setDisable(false);
+                        });
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        Platform.runLater(() -> {
+                            voiceBtn.setText("Error");
+                            voiceBtn.setDisable(false);
+                        });
+                    }
+                }).start();
+            }
         });
-
         descGroup.getChildren().add(voiceBtn);
+    
+        // Status group
         VBox statusGroup = new VBox(8);
         Label statusLabel = new Label("Status:");
         statusLabel.getStyleClass().add("form-label");
@@ -524,67 +557,79 @@ public class ReclamationController {
         statusCombo.setPromptText("Select status");
         statusCombo.getStyleClass().add("form-field");
         statusGroup.getChildren().addAll(statusLabel, statusCombo);
-
+    
         Label messageLabel = new Label();
         messageLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
-
+    
         Reclamation rec = reclamationService.getReclamationById(reclamationId);
         if (rec != null) {
             titleField.setText(rec.getTitle());
             descField.setText(rec.getDescription());
             statusCombo.setValue(rec.getStatut());
         }
-
+    
         content.getChildren().addAll(titleGroup, descGroup, statusGroup, messageLabel);
         dialog.getDialogPane().setContent(content);
-
+    
         Button saveButton = (Button) dialog.getDialogPane().lookupButton(saveButtonType);
         saveButton.getStyleClass().add("primary-button");
-
+    
         saveButton.setOnMousePressed(e -> {
             ScaleTransition st = new ScaleTransition(Duration.millis(200), saveButton);
-            st.setFromX(1.0);
-            st.setFromY(1.0);
-            st.setToX(1.05);
-            st.setToY(1.05);
+            st.setFromX(1.0); st.setFromY(1.0);
+            st.setToX(1.05); st.setToY(1.05);
             st.setCycleCount(2);
             st.setAutoReverse(true);
             st.play();
         });
-
+    
+        // Validation and profanity filtering
         saveButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
             String title = titleField.getText().trim();
             String description = descField.getText().trim();
-
+    
             titleError.setText("");
             descError.setText("");
             messageLabel.setText("");
-
+    
             boolean hasErrors = false;
-
+            String lang = "en";
+    
+            Profanity tProf = profanityFilter.find(lang, title);
+            if (tProf != null) {
+                titleError.setText("Disallowed word: " + tProf.text());
+                hasErrors = true;
+            }
+    
+            Profanity dProf = profanityFilter.find(lang, description);
+            if (dProf != null) {
+                descError.setText("Disallowed word: " + dProf.text());
+                hasErrors = true;
+            }
+    
             if (title.length() < 5) {
                 titleError.setText("Title must be at least 5 letters long.");
                 hasErrors = true;
             }
-
-            String[] words = description.split("\\s+");
-            if (description.isEmpty() || words.length < 6) {
+    
+            if (description.isEmpty() || description.split("\\s+").length < 6) {
                 descError.setText("Description must contain at least 6 words.");
                 hasErrors = true;
             }
-
+    
             if (hasErrors) {
                 event.consume();
             }
         });
-
+    
+        // Update on valid input
         saveButton.setOnAction(e -> {
             try {
                 if (rec != null) {
                     rec.setTitle(titleField.getText().trim());
                     rec.setDescription(descField.getText().trim());
                     rec.setStatut(statusCombo.getValue());
-
+    
                     boolean success = reclamationService.updateReclamation(rec);
                     if (success) {
                         titleError.setText("");
@@ -603,14 +648,14 @@ public class ReclamationController {
                 messageLabel.setText("An unexpected error occurred: " + ex.getMessage());
             }
         });
-
+    
         FadeTransition fadeIn = new FadeTransition(Duration.millis(500), content);
-        fadeIn.setFromValue(0);
-        fadeIn.setToValue(1);
+        fadeIn.setFromValue(0); fadeIn.setToValue(1);
         dialog.setOnShown(e -> fadeIn.play());
-
+    
         dialog.show();
     }
+    
 
     private void handleDelete(UUID reclamationId) {
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to delete this reclamation?");
@@ -622,33 +667,35 @@ public class ReclamationController {
         });
     }
 
-    private void handleNewDiscussion() {
+   private void handleNewDiscussion() {
         User currentUser = sessionManager.getLoggedInUser();
         if (currentUser == null) {
             showAlert("Unauthorized", "You must be logged in to create a discussion.", Alert.AlertType.WARNING);
             return;
         }
-    
+
         Dialog<Reclamation> dialog = new Dialog<>();
         dialog.setTitle("New Discussion");
-    
+
         DialogPane dialogPane = dialog.getDialogPane();
         dialogPane.getStylesheets().add(getClass().getResource("/css/modern-dialog.css").toExternalForm());
-    
+
         ButtonType createButtonType = new ButtonType("Create", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(createButtonType, ButtonType.CANCEL);
-    
+        dialogPane.getButtonTypes().addAll(createButtonType, ButtonType.CANCEL);
+
+        // Build form UI
         VBox content = new VBox(15);
         content.setStyle("-fx-padding: 20;");
         content.setAlignment(Pos.CENTER);
         content.setMaxWidth(700);
-    
+
         Label titleLabel = new Label("Submit Your Problem");
         titleLabel.getStyleClass().add("header-label");
-    
+
         Label subtitle = new Label("We value your feedback. Please describe your concern below.");
         subtitle.getStyleClass().add("subtitle-label");
-    
+
+        // Title field
         VBox titleGroup = new VBox(8);
         Label titleFieldLabel = new Label("Title:");
         titleFieldLabel.getStyleClass().add("form-label");
@@ -658,7 +705,8 @@ public class ReclamationController {
         Label titleError = new Label();
         titleError.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
         titleGroup.getChildren().addAll(titleFieldLabel, titleField, titleError);
-    
+
+        // Description field
         VBox descGroup = new VBox(8);
         Label descFieldLabel = new Label("Describe Your Problem:");
         descFieldLabel.getStyleClass().add("form-label");
@@ -669,87 +717,130 @@ public class ReclamationController {
         Label descError = new Label();
         descError.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
         descGroup.getChildren().addAll(descFieldLabel, descField, descError);
+
+        // Voice input button (optional)
         Button voiceBtn = new Button("🎙 Speak");
-        voiceBtn.setOnAction(evt -> {
-            voiceBtn.setText("Listening...");
-            voiceBtn.setDisable(true);
+       AtomicBoolean isRecording = new AtomicBoolean(false);
+AtomicReference<AudioRecorder> recorderRef = new AtomicReference<>();
 
-            Task<String> task = new Task<>() {
-                @Override
-                protected String call() {
-                    SpeechRecognizerService recognizer = new SpeechRecognizerService("C:\\Users\\eunab\\Downloads\\vosk-model-en-us-0.22\\vosk-model-en-us-0.22");
-                    return recognizer.recognize(8); // listen for 8 seconds
-                }
-            };
+voiceBtn.setOnAction(evt -> {
+    if (!isRecording.get()) {
+        // Start recording
+        isRecording.set(true);
+        voiceBtn.setText("🔴 Stop");
+        AudioRecorder recorder = new AudioRecorder();
+        recorderRef.set(recorder);
+        new Thread(() -> {
+            try {
+                recorder.start();
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    voiceBtn.setText("🎙 Speak");
+                    voiceBtn.setDisable(false);
+                    showAlert("Recording Error", e.getMessage(), Alert.AlertType.ERROR);
+                });
+            }
+        }).start();
+    } else {
+        // Stop and transcribe
+        isRecording.set(false);
+        voiceBtn.setText("🎙 Speak");
+        voiceBtn.setDisable(true);
 
-            task.setOnSucceeded(e -> {
-                descField.setText(task.getValue());
-                voiceBtn.setText("🎙 Speak");
-                voiceBtn.setDisable(false);
-            });
+        new Thread(() -> {
+            try {
+                File audioFile = recorderRef.get().stopAndSave();
+                AssemblyAIRecognizer recognizer = new AssemblyAIRecognizer();
+                String transcription = recognizer.transcribe(audioFile);
 
-            task.setOnFailed(e -> {
-                voiceBtn.setText("Error");
-                voiceBtn.setDisable(false);
-                e.getSource().getException().printStackTrace();
-            });
-
-            new Thread(task).start();
-        });
-
+                Platform.runLater(() -> {
+                    descField.setText(transcription);
+                    voiceBtn.setDisable(false);
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+                Platform.runLater(() -> {
+                    voiceBtn.setText("Error");
+                    voiceBtn.setDisable(false);
+                });
+            }
+        }).start();
+    }
+});
         descGroup.getChildren().add(voiceBtn);
+
         Label messageLabel = new Label();
         messageLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 12px;");
-    
+
         content.getChildren().addAll(titleLabel, subtitle, titleGroup, descGroup, messageLabel);
-    
-        Button createButton = (Button) dialog.getDialogPane().lookupButton(createButtonType);
+
+        dialogPane.setContent(content);
+
+        Button createButton = (Button) dialogPane.lookupButton(createButtonType);
         createButton.getStyleClass().add("primary-button");
-    
+
+        // Button press animation
         createButton.setOnMousePressed(e -> {
             ScaleTransition st = new ScaleTransition(Duration.millis(200), createButton);
-            st.setFromX(1.0);
-            st.setFromY(1.0);
-            st.setToX(1.05);
-            st.setToY(1.05);
+            st.setFromX(1.0); st.setFromY(1.0);
+            st.setToX(1.05); st.setToY(1.05);
             st.setCycleCount(2);
             st.setAutoReverse(true);
             st.play();
         });
+
+        // Fade-in dialog content
         FadeTransition fadeIn = new FadeTransition(Duration.millis(500), content);
-        fadeIn.setFromValue(0);
-        fadeIn.setToValue(1);
+        fadeIn.setFromValue(0); fadeIn.setToValue(1);
         dialog.setOnShown(e -> fadeIn.play());
-    
-        dialog.getDialogPane().setContent(content);
-        createButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
-            String title = titleField.getText().trim();
-            String description = descField.getText().trim();
+
+        // Validation & profanity check before submission
+        createButton.addEventFilter(ActionEvent.ACTION, event -> {
+            // Clear previous errors
             titleError.setText("");
             descError.setText("");
             messageLabel.setText("");
             boolean hasErrors = false;
+
+            String title       = titleField.getText().trim();
+            String description = descField.getText().trim();
+
+            // 1) Profanity check (English)
+            String lang = "en";
+            Profanity tProf = profanityFilter.find(lang, title);
+            if (tProf != null) {
+                titleError.setText("Disallowed word: " + tProf.text());
+                hasErrors = true;
+            }
+            Profanity dProf = profanityFilter.find(lang, description);
+            if (dProf != null) {
+                descError.setText("Disallowed word: " + dProf.text());
+                hasErrors = true;
+            }
+
+            // 2) Title length
             if (title.length() < 5) {
                 titleError.setText("Title must be at least 5 letters long.");
                 hasErrors = true;
             }
-    
-            String[] words = description.split("\\s+");
-            if (description.isEmpty() || words.length < 6) {
+
+            // 3) Description word count
+            if (description.isEmpty() || description.split("\\s+").length < 6) {
                 descError.setText("Description must contain at least 6 words.");
                 hasErrors = true;
             }
-    
+
+            // Block if any errors
             if (hasErrors) {
                 event.consume();
             }
         });
-    
+
+        // On successful click (after validation)
         createButton.setOnAction(e -> {
+            String title       = titleField.getText().trim();
+            String description = descField.getText().trim();
             try {
-                String title = titleField.getText().trim();
-                String description = descField.getText().trim();
-    
                 boolean success = reclamationService.addReclamation(
                     currentUser.getId(),
                     null,
@@ -758,12 +849,8 @@ public class ReclamationController {
                     description,
                     Status.WAITING
                 );
-    
                 if (success) {
-                    titleError.setText("");
-                    descError.setText("");
-                    messageLabel.setText("");
-                    currentPage = 1; // Go to first page to show new reclamation
+                    currentPage = 1;
                     setupMainContainer();
                     dialog.close();
                 } else {
@@ -774,8 +861,8 @@ public class ReclamationController {
                 messageLabel.setText("An unexpected error occurred: " + ex.getMessage());
             }
         });
-    
-        dialog.show();
+
+        dialog.showAndWait();
     }
 
     private void showAlert(String title, String message, Alert.AlertType type) {
