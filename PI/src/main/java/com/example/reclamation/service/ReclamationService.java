@@ -52,35 +52,27 @@ public class ReclamationService {
     }
 
     public String assignTagToReclamation(UUID id) throws Exception {
-        // Step 1: Retrieve the reclamation by ID
         Reclamation reclamation = getReclamationById(id);
         if (reclamation == null) {
             return null;
         }
-
-        // Step 2: Fetch all tags
         List<Tag> tags = tagService.getAllTags();
         if (tags.isEmpty()) {
             System.err.println("No tags found in the database.");
             return null;
         }
 
-        // Step 3: Create a comma-separated string of tag names
         String formattedTags = tags.stream()
                 .map(Tag::getName)
                 .collect(Collectors.joining(", "));
 
-        // Step 4: Build the prompt for the Gemini API
         String description = reclamation.getDescription();
         String prompt = "answer with only one of those tags: " + formattedTags + " to this reclamation " + description;
-
-        // Step 5: Get the Gemini API key from environment variables
         String apiKey = "AIzaSyBaRoGkT-edsd9WToHHsSjEaCfaNzLcYM4";
         if (apiKey == null || apiKey.isEmpty()) {
             throw new RuntimeException("Gemini API key is not set in the environment.");
         }
 
-        // Step 6: Call the Gemini API
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(new URI("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=" + apiKey))
                 .header("Content-Type", "application/json")
@@ -99,19 +91,15 @@ public class ReclamationService {
             return null;
         }
 
-        // Step 7: Parse the response
         ObjectNode root = objectMapper.readValue(response.body(), ObjectNode.class);
         String responseText = root.path("candidates").get(0).path("content").path("parts").get(0).path("text").asText("").trim();
         System.out.println("Gemini response: " + responseText);
-
-        // Step 8: Find the tag by name
         Tag tag = tagService.getTagByName(responseText);
         if (tag == null) {
             System.err.println("Tag not found: " + responseText);
             return null;
         }
 
-        // Step 9: Assign the tag to the reclamation and update the database
         reclamation.setTagId(tag.getId());
         boolean updated = updateReclamation(reclamation);
         if (!updated) {
@@ -147,7 +135,6 @@ public class ReclamationService {
                 payload.put("status", statut.getDisplayName());
                 payload.put("date", Instant.ofEpochMilli(dateReclamation.getTime()).toString());
     
-                // Fire the event on channel "admins" and event "new-reclamation"
                 System.out.println("Attempting to trigger Pusher event on channel 'admins' with event 'new-reclamation'");
                 try {
                     PusherClient.get().trigger("admins", "new-reclamation", payload);

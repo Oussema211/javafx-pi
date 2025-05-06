@@ -605,7 +605,7 @@ public class ReclamationMessagesController {
 
     private Image loadEditIcon() {
         try {
-            Image image = new Image(getClass().getResourceAsStream("/icons/edit.png"));
+            Image image = new Image(getClass().getResourceAsStream("/icons/update.png"));
             if (!image.isError()) {
                 return image;
             } else {
@@ -619,7 +619,7 @@ public class ReclamationMessagesController {
 
     private Image loadDeleteIcon() {
         try {
-            Image image = new Image(getClass().getResourceAsStream("/icons/delete.png"));
+            Image image = new Image(getClass().getResourceAsStream("/icons/supp.png"));
             if (!image.isError()) {
                 return image;
             } else {

@@ -272,7 +272,7 @@ public class ReclamationController {
         User currentUser = sessionManager.getLoggedInUser();
         if (currentUser != null && rec.getUserId().equals(currentUser.getId())) {
             Button editBtn = new Button();
-            ImageView editIcon = new ImageView(new Image(getClass().getResourceAsStream("/icons/edit.png")));
+            ImageView editIcon = new ImageView(new Image(getClass().getResourceAsStream("/icons/update.png")));
             editIcon.setFitWidth(16);
             editIcon.setFitHeight(16);
             
@@ -284,7 +284,7 @@ public class ReclamationController {
             editBtn.setTooltip(editTooltip);
 
             Button deleteBtn = new Button();
-            ImageView deleteIcon = new ImageView(new Image(getClass().getResourceAsStream("/icons/delete.png")));
+            ImageView deleteIcon = new ImageView(new Image(getClass().getResourceAsStream("/icons/supp.png")));
             deleteIcon.setFitWidth(16);
             deleteIcon.setFitHeight(16);
             deleteBtn.setGraphic(deleteIcon);

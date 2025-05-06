@@ -364,10 +364,10 @@ public class ReclamationDashboardController {
     private void setupPagination() {
         prevPageButton.setOnAction(e -> previousPage());
         nextPageButton.setOnAction(e -> nextPage());
-        prevPageButton.setOnMouseEntered(e -> prevPageButton.setStyle("-fx-background-color: #2563eb; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 10 20; -fx-font-size: 14; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);"));
-        prevPageButton.setOnMouseExited(e -> prevPageButton.setStyle("-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 10 20; -fx-font-size: 14; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);"));
-        nextPageButton.setOnMouseEntered(e -> nextPageButton.setStyle("-fx-background-color: #2563eb; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 10 20; -fx-font-size: 14; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);"));
-        nextPageButton.setOnMouseExited(e -> nextPageButton.setStyle("-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 10 20; -fx-font-size: 14; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);"));
+        prevPageButton.setOnMouseEntered(e -> prevPageButton.setStyle("-fx-background-color: #6C983B; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 10 20; -fx-font-size: 14; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);"));
+        prevPageButton.setOnMouseExited(e -> prevPageButton.setStyle("-fx-background-color: #6C983B; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 10 20; -fx-font-size: 14; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);"));
+        nextPageButton.setOnMouseEntered(e -> nextPageButton.setStyle("-fx-background-color: #6C983B; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 10 20; -fx-font-size: 14; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);"));
+        nextPageButton.setOnMouseExited(e -> nextPageButton.setStyle("-fx-background-color: #6C983B; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 10 20; -fx-font-size: 14; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);"));
         updatePaginationControls();
     }
 
@@ -439,10 +439,10 @@ public class ReclamationDashboardController {
         HBox dateBox = createIconLabelBox("/icons/calendar.png", DATE_FORMATTER.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(reclamation.getDateReclamation().getTime()), ZoneId.systemDefault())), "-fx-font-size: 13; -fx-text-fill: #64748b;");
         HBox statusBox = createIconLabelBox("/icons/status.png", reclamation.getStatut().toString(), getStatusStyle(reclamation.getStatut().toString()));
 
-        Button editBtn = createIconButton("/icons/edit.png", "#3b82f6", "Edit Reclamation");
+        Button editBtn = createIconButton("/icons/update.png", "#3b82f6", "Edit Reclamation");
         editBtn.setOnAction(e -> showEditReclamationForm(reclamation));
 
-        Button delBtn = createIconButton("/icons/delete.png", "#ef4444", "Delete Reclamation");
+        Button delBtn = createIconButton("/icons/supp.png", "#ef4444", "Delete Reclamation");
         delBtn.setOnAction(e -> deleteReclamation(reclamation));
 
         Button msgBtn = createIconButton("/icons/m.png", "#8b5cf6", "View Messages");
