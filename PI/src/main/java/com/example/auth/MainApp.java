@@ -5,6 +5,7 @@ import com.example.auth.service.AuthService;
 import com.example.reclamation.service.MessageReclamationService;
 import com.example.reclamation.service.ReclamationService;
 import com.example.reclamation.service.TagService;
+import com.example.reclamation.service.NotificationsService;
 import com.example.auth.utils.SessionManager;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -16,10 +17,12 @@ import java.io.IOException;
 import java.net.URL;
 
 public class MainApp extends Application {
-    private final SessionManager sessionManager = SessionManager.getInstance();
-    private static final boolean FULL_SCREEN = false;
+    private SessionManager sessionManager = SessionManager.getInstance();
+    private static final boolean FULL_SCREEN = false; // Set to true for always full-screen, false for windowed
+    
     private final AuthService authService = new AuthService();
     private final TagService tagService = new TagService();
+    private final NotificationsService notificationsService = new NotificationsService();
     private final ReclamationService reclamationService = new ReclamationService();
     private final MessageReclamationService messageReclamationService = new MessageReclamationService();
 

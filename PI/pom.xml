@@ -161,7 +161,63 @@
             <artifactId>poi-ooxml</artifactId>
             <version>5.2.3</version>
         </dependency>
-
+<dependency>
+    <groupId>org.json</groupId>
+    <artifactId>json</artifactId>
+    <version>20240303</version>
+</dependency>
+  <dependency>
+  <groupId>com.assemblyai</groupId>
+  <artifactId>assemblyai-java</artifactId>
+  <version>4.0.1</version>
+</dependency>
+  <dependency>
+    <groupId>com.modernmt.text</groupId>
+    <artifactId>profanity-filter</artifactId>
+    <version>1.0.1</version>
+</dependency>
+    <dependency>
+      <groupId>org.openjfx</groupId>
+      <artifactId>javafx-controls</artifactId>
+      <version>${javafx.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.openjfx</groupId>
+      <artifactId>javafx-fxml</artifactId>
+      <version>${javafx.version}</version>
+    </dependency>
+ 
+    <dependency>
+      <groupId>mysql</groupId>
+      <artifactId>mysql-connector-java</artifactId>
+      <version>8.0.33</version>
+    </dependency>
+    <dependency>
+      <groupId>org.mindrot</groupId>
+      <artifactId>jbcrypt</artifactId>
+      <version>0.4</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.17.2</version>
+    </dependency>
+   
+<dependency>
+    <groupId>com.pusher</groupId>
+    <artifactId>pusher-java-client</artifactId>
+    <version>2.4.4</version>
+</dependency>
+<dependency>
+  <groupId>com.pusher</groupId>
+  <artifactId>pusher-http-java</artifactId>
+  <version>1.2.0</version>
+</dependency>
+    <dependency>
+  <groupId>com.alphacephei</groupId>
+  <artifactId>vosk</artifactId>
+  <version>0.3.45</version>
+</dependency>
 
 
 
@@ -205,6 +261,10 @@
     </build>
 
     <repositories>
+  <repository>
+    <id>jitpack.io</id>
+    <url>https://jitpack.io</url>
+  </repository>
         <repository>
             <id>central</id>
             <url>https://repo.maven.apache.org/maven2</url>
