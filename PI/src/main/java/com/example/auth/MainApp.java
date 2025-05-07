@@ -7,6 +7,8 @@ import com.example.reclamation.service.ReclamationService;
 import com.example.reclamation.service.TagService;
 import com.example.reclamation.service.NotificationsService;
 import com.example.auth.utils.SessionManager;
+import com.example.produit.service.FavoriteDAO;
+
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -21,6 +23,7 @@ public class MainApp extends Application {
     private static final boolean FULL_SCREEN = false; // Set to true for always full-screen, false for windowed
     
     private final AuthService authService = new AuthService();
+    private final FavoriteDAO favoriteDAO = new FavoriteDAO();
     private final TagService tagService = new TagService();
     private final NotificationsService notificationsService = new NotificationsService();
     private final ReclamationService reclamationService = new ReclamationService();

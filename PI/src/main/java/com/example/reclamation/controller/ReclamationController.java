@@ -192,7 +192,7 @@ public class ReclamationController {
         card.setStyle("-fx-background-color: white; -fx-background-radius: 15; " +
                 "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 15, 0, 0, 5);");
 
-        if (rec.getStatut() != Status.CLOSED) {
+        if (rec.getStatut() != Status.fermee) {
             card.setStyle(card.getStyle() + "-fx-cursor: hand;");
             card.setOnMouseClicked(e -> handleReclamationClick(rec));
             card.setOnMouseEntered(e -> card.setStyle(card.getStyle() + "-fx-translate-y: -5; " +
@@ -200,7 +200,7 @@ public class ReclamationController {
             card.setOnMouseExited(e -> {
                 String baseStyle = "-fx-background-color: white; -fx-background-radius: 15; " +
                         "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 15, 0, 0, 5); -fx-cursor: hand;";
-                if (rec.getStatut() == Status.RESOLVED) {
+                if (rec.getStatut() == Status.resolue) {
                     card.setStyle(baseStyle.replace("-fx-background-color: white;", "-fx-background-color: #e6f5e6;"));
                 } else {
                     card.setStyle(baseStyle);
@@ -237,10 +237,10 @@ public class ReclamationController {
 
         Circle status = new Circle(7.5);
         String statusColor = switch (rec.getStatut()) {
-            case CLOSED -> "#ff5555";
-            case RESOLVED -> "#4CAF50";
+            case fermee -> "#ff5555";
+            case resolue -> "#4CAF50";
             case REVIEW -> "#FF9800";
-            case WAITING -> "#999";
+            case en_cours -> "#999";
         };
         status.setStyle("-fx-fill: " + statusColor + "; -fx-stroke: white; -fx-stroke-width: 2;");
         StackPane.setAlignment(status, Pos.BOTTOM_RIGHT);
@@ -301,10 +301,10 @@ public class ReclamationController {
         card.getChildren().addAll(profileContainer, contentWrapper, actionButtons);
         HBox.setHgrow(contentWrapper, Priority.ALWAYS);
 
-        if (rec.getStatut() == Status.CLOSED) {
+        if (rec.getStatut() == Status.fermee) {
             card.setStyle("-fx-background-color: #ffe6e6; -fx-background-radius: 15; " +
                     "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 15, 0, 0, 5);");
-        } else if (rec.getStatut() == Status.RESOLVED) {
+        } else if (rec.getStatut() == Status.resolue) {
             card.setStyle("-fx-background-color: #e6f5e6; -fx-background-radius: 15; " +
                     "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 15, 0, 0, 5); -fx-cursor: hand;");
         }
@@ -847,7 +847,7 @@ public class ReclamationController {
                     1,
                     title,
                     description,
-                    Status.WAITING
+                    Status.en_cours
                 );
                 if (success) {
                     currentPage = 1;
@@ -976,7 +976,7 @@ public class ReclamationController {
                     1,
                     "Review: " + review.substring(0, Math.min(review.length(), 20)),
                     review,
-                    Status.WAITING
+                    Status.en_cours
                 );
 
                 if (success) {
