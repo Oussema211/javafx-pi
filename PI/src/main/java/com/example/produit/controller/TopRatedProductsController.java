@@ -16,14 +16,18 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
+import org.json.JSONObject;
 
 import java.io.File;
+import java.net.URI;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ResourceBundle;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.*;
+import java.util.stream.Collectors;
 
-public class ProductCardController implements Initializable {
+public class TopRatedProductsController implements Initializable {
 
     @FXML private ScrollPane scrollPane;
     @FXML private VBox productContainer;
@@ -32,42 +36,42 @@ public class ProductCardController implements Initializable {
     @FXML private Button prevButton;
     @FXML private Button nextButton;
     @FXML private Label pageLabel;
+    @FXML private HBox paginationControls;
 
     private final SessionManager sessionManager = SessionManager.getInstance();
-    private List<Produit> allProducts = new ArrayList<>();
+    private List<Produit> topProducts = new ArrayList<>();
     private int currentPage = 1;
     private static final int PRODUCTS_PER_PAGE = 8;
-    private static final int MAX_REVIEWS = 3;
+    private static final String API_URL = "http://localhost:5000/predict";
+    private final HttpClient httpClient = HttpClient.newHttpClient();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         try {
-            allProducts = ProduitDAO.getAllProducts();
-            if (allProducts == null) {
-                allProducts = new ArrayList<>();
-            }
-            allProducts.forEach(product -> product.setCommentaires(
-                    CommentaireDAO.getCommentairesByProduit(product)));
             configureScrollPane();
+            loadTopProducts();
+            configureFastBuyButton();
             updatePage();
-
-            // Configure Fast Buy Button
-            fastBuyButton.setOnAction(e -> {
-                try {
-                    FastBuyController fastBuyController = new FastBuyController();
-                    fastBuyController.showFastBuyDialog();
-                } catch (Exception ex) {
-                    showAlert(Alert.AlertType.ERROR, "Fast Buy Error", "Failed to open Fast Buy dialog: " + ex.getMessage());
-                }
-            });
         } catch (Exception e) {
-            showAlert(Alert.AlertType.ERROR, "Initialization Error", "Failed to load products: " + e.getMessage());
+            showAlert(Alert.AlertType.ERROR, "Initialization Error", "Failed to load top products: " + e.getMessage());
         }
     }
 
     private void configureScrollPane() {
         scrollPane.setFitToWidth(true);
+        scrollPane.setFitToHeight(true);
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+    }
+
+    private void configureFastBuyButton() {
+        fastBuyButton.setOnAction(e -> {
+            try {
+                FastBuyController fastBuyController = new FastBuyController();
+                fastBuyController.showFastBuyDialog();
+            } catch (Exception ex) {
+                showAlert(Alert.AlertType.ERROR, "Fast Buy Error", "Failed to open Fast Buy dialog: " + ex.getMessage());
+            }
+        });
     }
 
     @FXML
@@ -80,7 +84,7 @@ public class ProductCardController implements Initializable {
 
     @FXML
     private void handleNext() {
-        if (currentPage * PRODUCTS_PER_PAGE < allProducts.size()) {
+        if (currentPage * PRODUCTS_PER_PAGE < topProducts.size()) {
             currentPage++;
             updatePage();
         }
@@ -89,11 +93,11 @@ public class ProductCardController implements Initializable {
     private void updatePage() {
         productContainer.getChildren().clear();
         int startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
-        int endIndex = Math.min(startIndex + PRODUCTS_PER_PAGE, allProducts.size());
+        int endIndex = Math.min(startIndex + PRODUCTS_PER_PAGE, topProducts.size());
 
         HBox row = createRow();
         for (int i = startIndex; i < endIndex; i++) {
-            row.getChildren().add(createProductCard(allProducts.get(i)));
+            row.getChildren().add(createProductCard(topProducts.get(i)));
             if ((i - startIndex + 1) % 4 == 0 || i == endIndex - 1) {
                 productContainer.getChildren().add(row);
                 row = createRow();
@@ -102,7 +106,7 @@ public class ProductCardController implements Initializable {
 
         pageLabel.setText("Page " + currentPage);
         prevButton.setDisable(currentPage == 1);
-        nextButton.setDisable(endIndex >= allProducts.size());
+        nextButton.setDisable(endIndex >= topProducts.size());
     }
 
     private HBox createRow() {
@@ -112,27 +116,87 @@ public class ProductCardController implements Initializable {
         return row;
     }
 
+    private void loadTopProducts() {
+        List<Produit> allProducts = ProduitDAO.getAllProducts();
+        if (allProducts == null) {
+            allProducts = new ArrayList<>();
+        }
+        allProducts.forEach(product -> product.setCommentaires(
+                CommentaireDAO.getCommentairesByProduit(product)));
+
+        List<ProductWithScore> productsWithScores = allProducts.stream()
+                .map(product -> new ProductWithScore(product, calculatePositivityScore(product)))
+                .filter(pws -> pws.score > 0)
+                .sorted((p1, p2) -> Double.compare(p2.score, p1.score))
+                .limit(10)
+                .collect(Collectors.toList());
+
+        topProducts = productsWithScores.stream()
+                .map(pws -> pws.product)
+                .collect(Collectors.toList());
+    }
+
+    private double calculatePositivityScore(Produit product) {
+        List<Commentaire> commentaires = product.getCommentaires();
+        if (commentaires == null || commentaires.isEmpty()) {
+            return 0.0;
+        }
+
+        double totalPositiveConfidence = 0.0;
+        int positiveCount = 0;
+
+        for (Commentaire commentaire : commentaires) {
+            String review = commentaire.getContenu();
+            if (review == null || review.trim().isEmpty()) {
+                continue;
+            }
+
+            try {
+                JSONObject json = new JSONObject();
+                json.put("review", review);
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(API_URL))
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(json.toString()))
+                        .build();
+
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                if (response.statusCode() == 200) {
+                    JSONObject responseJson = new JSONObject(response.body());
+                    String sentiment = responseJson.getString("sentiment");
+                    double confidence = responseJson.getDouble("confidence");
+
+                    if ("Positive".equals(sentiment)) {
+                        totalPositiveConfidence += confidence;
+                        positiveCount++;
+                    }
+                } else {
+                    System.err.println("API error for review: " + review + ", Status: " + response.statusCode());
+                }
+            } catch (Exception e) {
+                System.err.println("Error processing review: " + review + ", Error: " + e.getMessage());
+            }
+        }
+
+        return positiveCount > 0 ? totalPositiveConfidence / commentaires.size() : 0.0;
+    }
+
     private VBox createProductCard(Produit product) {
         VBox card = new VBox(8);
         card.getStyleClass().add("product-card");
         card.setPadding(new Insets(8));
 
-        // Discount Badge
         Label discountBadge = new Label("10% OFF");
         discountBadge.getStyleClass().add("discount-badge");
 
-        // Image
         ImageView imageView = createProductImage(product, 120, 120);
         imageView.getStyleClass().add("product-image");
 
-        // Name
         Label nameLabel = new Label(product.getNom() != null ? product.getNom() : "Unknown");
         nameLabel.getStyleClass().add("product-name");
 
-        // Rating
         HBox ratingBox = createStarRating(getAverageRating(product.getCommentaires()));
 
-        // Price and Quantity
         HBox priceBox = new HBox(6);
         priceBox.setAlignment(Pos.CENTER_LEFT);
         Label priceLabel = new Label(String.format("$%.2f", product.getPrixUnitaire()));
@@ -141,11 +205,13 @@ public class ProductCardController implements Initializable {
         quantityLabel.getStyleClass().add("product-quantity");
         priceBox.getChildren().addAll(priceLabel, quantityLabel);
 
-        // Category
         Label categoryLabel = new Label(product.getCategory() != null ? product.getCategory().getNom() : "None");
         categoryLabel.getStyleClass().add("product-category");
 
-        // Add to Cart Button
+        double positivityScore = calculatePositivityScore(product);
+        Label positivityLabel = new Label(String.format("Positivity: %.2f%%", positivityScore * 100));
+        positivityLabel.getStyleClass().add("product-positivity");
+
         Button addToCartButton = new Button("Add to Cart");
         addToCartButton.getStyleClass().add("add-to-cart-button");
         addToCartButton.setOnAction(e -> {
@@ -153,10 +219,9 @@ public class ProductCardController implements Initializable {
             showAddedNotification(product.getNom());
         });
 
-        // Card click shows product dialog
         card.setOnMouseClicked(e -> showProductDialog(product));
 
-        card.getChildren().addAll(discountBadge, imageView, nameLabel, ratingBox, priceBox, categoryLabel, addToCartButton);
+        card.getChildren().addAll(discountBadge, imageView, nameLabel, ratingBox, priceBox, categoryLabel, positivityLabel, addToCartButton);
         return card;
     }
 
@@ -186,15 +251,14 @@ public class ProductCardController implements Initializable {
         content.setPadding(new Insets(15));
         content.setAlignment(Pos.TOP_LEFT);
 
+        // Left side: Product image and details
         VBox leftBox = new VBox(10);
         leftBox.setPrefWidth(320);
         leftBox.setAlignment(Pos.TOP_CENTER);
 
-        // Image
         ImageView imageView = createProductImage(product, 200, 200);
         imageView.getStyleClass().add("dialog-image");
 
-        // Details
         VBox detailsBox = new VBox(8);
         Label nameLabel = new Label(product.getNom());
         nameLabel.getStyleClass().add("dialog-title");
@@ -205,6 +269,8 @@ public class ProductCardController implements Initializable {
         quantityLabel.getStyleClass().add("dialog-quantity");
         Label categoryLabel = new Label("Category: " + (product.getCategory() != null ? product.getCategory().getNom() : "None"));
         categoryLabel.getStyleClass().add("dialog-category");
+        Label positivityLabel = new Label(String.format("Positivity Score: %.2f%%", calculatePositivityScore(product) * 100));
+        positivityLabel.getStyleClass().add("dialog-positivity");
 
         HBox actionBox = new HBox(8);
         Spinner<Integer> qtySpinner = new Spinner<>(1, Math.max(1, product.getQuantite()), 1);
@@ -219,20 +285,18 @@ public class ProductCardController implements Initializable {
             showAddedNotification(product.getNom());
         });
 
-        detailsBox.getChildren().addAll(nameLabel, ratingBox, priceLabel, quantityLabel, categoryLabel, actionBox, addToCartButton);
+        detailsBox.getChildren().addAll(nameLabel, ratingBox, priceLabel, quantityLabel, categoryLabel, positivityLabel, actionBox, addToCartButton);
         leftBox.getChildren().addAll(imageView, detailsBox);
 
-        // Right Section: Description, Reviews, Add Review
+        // Right side: Description, reviews, and add review
         VBox rightBox = new VBox(10);
         rightBox.setPrefWidth(465);
         rightBox.setAlignment(Pos.TOP_LEFT);
 
-        // Description
         Text descriptionText = new Text(product.getDescription() != null ? product.getDescription() : "No description available.");
         descriptionText.getStyleClass().add("dialog-description");
         descriptionText.setWrappingWidth(400);
 
-        // Reviews with ScrollPane
         ScrollPane reviewsScroll = new ScrollPane();
         reviewsScroll.getStyleClass().add("reviews-scroll");
         reviewsScroll.setPrefHeight(200);
@@ -241,11 +305,10 @@ public class ProductCardController implements Initializable {
 
         VBox reviewsBox = new VBox(8);
         reviewsBox.getStyleClass().add("reviews-box");
+        reviewsScroll.setContent(reviewsBox);
         List<Commentaire> commentaires = product.getCommentaires();
         populateComments(reviewsBox, commentaires != null ? commentaires : new ArrayList<>());
-        reviewsScroll.setContent(reviewsBox);
 
-        // Add Review
         VBox addReviewBox = new VBox(8);
         addReviewBox.getStyleClass().add("add-review-box");
         Label addReviewLabel = new Label("Add Review");
@@ -265,7 +328,6 @@ public class ProductCardController implements Initializable {
         content.getChildren().addAll(leftBox, rightBox);
         dialog.getDialogPane().setContent(content);
 
-        // Validation
         Button submitButton = (Button) dialog.getDialogPane().lookupButton(submitButtonType);
         submitButton.setDisable(true);
         commentTextArea.textProperty().addListener((obs, old, newValue) ->
@@ -305,9 +367,9 @@ public class ProductCardController implements Initializable {
             Label authorLabel = new Label(c.getAuteur() != null ? c.getAuteur() : "Anonymous");
             authorLabel.getStyleClass().add("comment-author");
             HBox stars = createStarRating(c.getNote() != null ? c.getNote() : 0);
-            Text contentText = new Text(truncateText(c.getContenu() != null ? c.getContenu() : "", 100));
-            contentText.getStyleClass().add("comment-text");
-            commentBox.getChildren().addAll(authorLabel, stars, contentText);
+            Text commentText = new Text(truncateText(c.getContenu() != null ? c.getContenu() : "", 100));
+            commentText.getStyleClass().add("comment-text");
+            commentBox.getChildren().addAll(authorLabel, stars, commentText);
             reviewsBox.getChildren().add(commentBox);
         }
     }
@@ -353,5 +415,15 @@ public class ProductCardController implements Initializable {
         alert.setHeaderText(null);
         alert.setContentText(productName + " a été ajouté au panier !");
         alert.showAndWait();
+    }
+
+    private static class ProductWithScore {
+        Produit product;
+        double score;
+
+        ProductWithScore(Produit product, double score) {
+            this.product = product;
+            this.score = score;
+        }
     }
 }

@@ -65,6 +65,43 @@ public class ProduitDAO {
         }
         return products;
     }
+    /* ------------------------------------------------------------------ */
+    /** Récupère UN produit par son UUID (null si non trouvé) */
+    public static Produit getProduitById(String id) {
+        String query = "SELECT id, nom, description, prix_unitaire, quantite, " +
+                "date_creation, image_name, categorie_id " +
+                "FROM produit WHERE id = ?";
+
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement ps = conn.prepareStatement(query)) {
+
+            ps.setString(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Produit p = new Produit();
+                    p.setId(java.util.UUID.fromString(rs.getString("id")));
+                    p.setNom(rs.getString("nom"));
+                    p.setDescription(rs.getString("description"));
+                    p.setPrixUnitaire(rs.getFloat("prix_unitaire"));
+                    p.setQuantite(rs.getInt("quantite"));
+                    p.setDateCreation(rs.getTimestamp("date_creation") != null
+                            ? rs.getTimestamp("date_creation").toLocalDateTime()
+                            : null);
+                    p.setImageName(rs.getString("image_name"));
+
+                    // Catégorie (si nécessaire)
+                    String catId = rs.getString("categorie_id");
+                    if (catId != null && !catId.isBlank()) {
+                        p.setCategory(CategorieDAO.getCategoryById(java.util.UUID.fromString(catId)));
+                    }
+                    return p;
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("SQL error in getProduitById: " + e.getMessage());
+        }
+        return null;
+    }
 
     public static void saveProduct(Produit product) {
         String query = "INSERT INTO produit (id, categorie_id, nom, description, prix_unitaire, quantite, date_creation, image_name) " +

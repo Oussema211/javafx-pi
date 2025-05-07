@@ -1,5 +1,22 @@
 package com.example.cart.controller;
 
+
+import com.example.auth.utils.AuthManager;
+import com.example.cart.service.CarteVirtuelleManager;
+import com.example.cart.service.RecommendationService;
+import com.example.produit.model.Produit;
+import com.example.produit.service.ProduitDAO;      // si besoin d’accéder à l’image
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.geometry.Pos;                 // <-- nouveau
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+
+import com.example.cart.service.RecommendationService;
+import com.example.produit.model.Produit;
+import com.example.produit.service.ProduitDAO;      // déjà ok
+// si ton projet possède une classe pour l'utilisateur connecté : // adapte le package si besoin
+
 import com.example.cart.model.CartItem;
 import com.example.cart.CartManager;
 import javafx.animation.FadeTransition;
@@ -13,19 +30,27 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import com.example.cart.service.CarteVirtuelleManager;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 public class CartController {
+    @FXML private HBox recoBox;   // conteneur ajouté dans le FXML
 
     @FXML
     private TableView<CartItem> cartTable;
     @FXML
     private Button checkoutButton;
-
+    @FXML
+    private Button carteVirtuelleButton; // Nouveau bouton pour ouvrir la carte virtuelle
+    @FXML
+    private Button payerAvecCarteVirtuelleButton; // Le bouton payer
     @FXML
     private TableColumn<CartItem, String> colProduit;
 
@@ -46,6 +71,7 @@ public class CartController {
 
     @FXML
     public void initialize() {
+
         checkoutButton.setDisable(CartManager.getCartItems().isEmpty());
 
         CartManager.getCartItems().addListener((javafx.collections.ListChangeListener<CartItem>) change -> {
@@ -89,6 +115,7 @@ public class CartController {
         cartTable.setItems(CartManager.getCartItems());
         updateTotal();
         animateCartTable();
+        loadRecommendations();   // <= nouvelles suggestions
 
         FadeTransition fadeBtn1 = new FadeTransition(Duration.millis(800), checkoutButton);
         fadeBtn1.setFromValue(0);
@@ -99,7 +126,103 @@ public class CartController {
         fadeBtn2.setFromValue(0);
         fadeBtn2.setToValue(1);
         fadeBtn2.play();
+
+        // 🔥 Pour le bouton payer avec carte virtuelle
+        payerAvecCarteVirtuelleButton.setDisable(!CarteVirtuelleManager.isCarteActive());
+
+        // 🔥 Ajout du contrôle automatique toutes les 2 secondes
+        javafx.animation.Timeline timeline = new javafx.animation.Timeline(
+                new javafx.animation.KeyFrame(
+                        javafx.util.Duration.seconds(2),
+                        event -> {
+                            if (CarteVirtuelleManager.isCarteActive()) {
+                                payerAvecCarteVirtuelleButton.setDisable(false);
+                            }
+                        }
+                )
+        );
+        timeline.setCycleCount(javafx.animation.Animation.INDEFINITE);
+        timeline.play();
     }
+    private void loadRecommendations() {
+        System.out.println("📦 Chargement des recommandations globales...");
+
+        List<Produit> recos = RecommendationService.getMostFrequentRecommendations(5);
+        System.out.println("🔎 Produits recommandés trouvés : " + recos.size());
+
+        recoBox.getChildren().clear();
+
+        if (recos == null || recos.isEmpty()) {
+            Label noRecos = new Label("Aucune recommandation disponible.");
+            noRecos.setStyle("-fx-text-fill: white; -fx-font-size: 14;");
+            recoBox.getChildren().add(noRecos);
+            return;
+        }
+
+        for (Produit p : recos) {
+            VBox card = new VBox(5);
+            card.setAlignment(Pos.CENTER);
+            card.setPrefWidth(110);
+            card.setStyle("""
+            -fx-background-color: #ffffff;
+            -fx-background-radius: 10;
+            -fx-padding: 8;
+            -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 4, 0, 0, 2);
+            -fx-cursor: hand;
+        """);
+
+            ImageView img = new ImageView();
+            img.setFitWidth(80);
+            img.setFitHeight(80);
+            img.setPreserveRatio(true);
+
+            boolean imageLoaded = false;
+
+            try {
+                String imgPath = p.getImageName();
+                if (imgPath != null && !imgPath.isBlank()) {
+                    File imageFile = new File(imgPath);
+                    if (imageFile.exists()) {
+                        img.setImage(new Image(imageFile.toURI().toString()));
+                        imageLoaded = true;
+                    } else {
+                        System.out.println("⚠️ Image introuvable : " + imageFile.getAbsolutePath());
+                    }
+                } else {
+                    System.out.println("⚠️ Aucun chemin d'image défini pour le produit : " + p.getNom());
+                }
+            } catch (Exception e) {
+                System.out.println("❌ Erreur lors du chargement de l'image : " + e.getMessage());
+            }
+
+            Label fallbackEmoji = new Label("📦");
+            fallbackEmoji.setStyle("-fx-font-size: 30px;");
+
+            Label name = new Label(p.getNom());
+            name.setWrapText(true);
+            name.setStyle("-fx-font-size: 11px; -fx-text-fill: #333333;");
+
+            if (imageLoaded) {
+                card.getChildren().addAll(img, name);
+            } else {
+                card.getChildren().addAll(fallbackEmoji, name);
+            }
+
+            card.setOnMouseClicked(e -> {
+                CartManager.addProduct(p);
+                cartTable.refresh();
+                updateTotal();
+                loadRecommendations(); // mise à jour après ajout
+            });
+
+            recoBox.getChildren().add(card);
+        }
+    }
+
+
+
+
+
 
     private void addActionButtonsToTable() {
         colActions.setCellFactory(param -> new TableCell<>() {
@@ -134,6 +257,74 @@ public class CartController {
         CartManager.clearCart();
         updateTotal();
     }
+    private void showAlert(Alert.AlertType type, String titre, String message) {
+        Alert alert = new Alert(type);
+        alert.setTitle(titre);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    @FXML
+    private void handleCarteVirtuelle() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/frontPages/pages/CarteVirtuelle.fxml"));
+            Parent cartePage = loader.load();
+
+            BorderPane root = (BorderPane) cartTable.getScene().lookup("#borderPane");
+            if (root != null) {
+                root.setCenter(cartePage);
+            } else {
+                Stage stage = (Stage) cartTable.getScene().getWindow();
+                stage.getScene().setRoot(cartePage);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    @FXML
+    private void handlePayerAvecCarteVirtuelle() {
+        if (!CarteVirtuelleManager.isCarteActive()) {
+            showAlert(Alert.AlertType.ERROR, "Carte Inactive", "Veuillez activer votre carte virtuelle avant de payer !");
+            return;
+        }
+
+        TextInputDialog passwordDialog = new TextInputDialog();
+        passwordDialog.setTitle("Authentification Requise");
+        passwordDialog.setHeaderText("Entrez le mot de passe de votre carte virtuelle pour payer :");
+        passwordDialog.setContentText("Mot de passe :");
+
+        passwordDialog.showAndWait().ifPresent(inputPassword -> {
+            if (CarteVirtuelleManager.verifierMotDePasse(inputPassword)) {
+                if (CartManager.getCartItems().isEmpty()) {
+                    showAlert(Alert.AlertType.WARNING, "Panier Vide", "Ajoutez des produits avant de payer.");
+                    return;
+                }
+
+                double totalAmount = CartManager.getCartItems().stream()
+                        .mapToDouble(item -> item.getProduit().getPrixUnitaire() * item.getQuantite())
+                        .sum();
+
+// 🔥 Correction : arrondir au centime
+                totalAmount = Math.round(totalAmount * 100.0) / 100.0;
+
+
+
+                boolean paymentSuccess = CarteVirtuelleManager.effectuerPaiement(totalAmount);
+
+                if (paymentSuccess) {
+                    CartManager.clearCart();
+                    updateTotal();
+                    showAlert(Alert.AlertType.INFORMATION, "Paiement Réussi", "Merci pour votre achat !");
+                } else {
+                    showAlert(Alert.AlertType.ERROR, "Échec du Paiement", "Solde insuffisant pour effectuer ce paiement.");
+                }
+            } else {
+                showAlert(Alert.AlertType.ERROR, "Mot de passe incorrect", "Le mot de passe saisi est invalide.");
+            }
+        });
+    }
+
 
     @FXML
     private void handleCheckout() {

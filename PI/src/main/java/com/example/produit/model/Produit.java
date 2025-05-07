@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 public class Produit {
+    private double prix;
 
     private final ObjectProperty<UUID> id = new SimpleObjectProperty<>();
     private final ObjectProperty<Categorie> category = new SimpleObjectProperty<>();
@@ -92,6 +93,9 @@ public class Produit {
         if (commentaire != null) {
             this.commentaires.add(commentaire);
         }
+    }
+    public double getPrix() {
+        return prix;
     }
 
     @Override

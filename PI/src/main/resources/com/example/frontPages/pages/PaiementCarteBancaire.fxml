@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.example.cart.controller.PaiementCarteBancaireController"
+            style="-fx-background-color: linear-gradient(to right, #6a11cb, #2575fc); -fx-padding: 30;">
+
+    <center>
+        <VBox spacing="20" alignment="CENTER">
+            <Label text="💳 Paiement par Carte Bancaire"
+                   style="-fx-font-size: 28px; -fx-text-fill: white; -fx-font-weight: bold;"/>
+
+            <TextField fx:id="numeroCarteField" promptText="Numéro de carte (16 chiffres)"
+                       style="-fx-font-size: 16px;"/>
+            <TextField fx:id="dateExpirationField" promptText="Date expiration (MM/AA)"
+                       style="-fx-font-size: 16px;"/>
+            <TextField fx:id="cvvField" promptText="CVV (3 chiffres)"
+                       style="-fx-font-size: 16px;"/>
+            <TextField fx:id="nomTitulaireField" promptText="Nom du titulaire"
+                       style="-fx-font-size: 16px;"/>
+
+            <Button text="Valider Paiement"
+                    onAction="#handleValiderPaiement"
+                    style="-fx-background-color: white; -fx-text-fill: #2575fc; -fx-font-size: 18px; -fx-padding: 10px 20px; -fx-background-radius: 15px;"/>
+        </VBox>
+    </center>
+
+</BorderPane>

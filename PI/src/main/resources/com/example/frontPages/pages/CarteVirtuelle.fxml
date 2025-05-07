@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.example.cart.controller.CarteVirtuelleController"
+            style="-fx-background-color: linear-gradient(to right, #6a11cb, #2575fc); -fx-padding: 30;"
+            fx:id="borderPane">
+
+    <top>
+        <HBox spacing="20" alignment="CENTER_RIGHT" BorderPane.alignment="TOP_RIGHT">
+            <Label text="💳 Ma Carte Virtuelle"
+                   style="-fx-font-size: 30px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+            <Button text="🔒 Activer Carte Virtuelle"
+                    fx:id="activerButton"
+                    onAction="#handleActiverCarte"
+                    style="-fx-background-color: #ff9800; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10;"/>
+            <Button text="🚫 Désactiver Carte"
+                    onAction="#handleDesactiverCarte"
+                    style="-fx-background-color: #e53935; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10;"/>
+        </HBox>
+    </top>
+
+    <center>
+        <VBox spacing="30" alignment="CENTER">
+            <!-- Infos Carte -->
+            <VBox spacing="15" alignment="CENTER"
+                  style="-fx-background-color: white; -fx-background-radius: 15; -fx-padding: 20;">
+                <Label fx:id="numeroCarteLabel" text="Numéro Carte : " style="-fx-font-size: 18px; -fx-text-fill: #333;"/>
+                <Label fx:id="soldeLabel" text="Solde : " style="-fx-font-size: 18px; -fx-text-fill: #333;"/>
+                <Label fx:id="etatCarteLabel" text="État : " style="-fx-font-size: 18px; -fx-text-fill: #333;"/>
+            </VBox>
+
+            <!-- Recharger Carte -->
+            <VBox spacing="10" alignment="CENTER"
+                  style="-fx-background-color: #ffffffaa; -fx-background-radius: 10; -fx-padding: 20;">
+                <Label text="🔋 Recharger la carte" style="-fx-font-size: 18px; -fx-text-fill: #333;"/>
+                <Button fx:id="chargerButton"
+                        text="Charger"
+                        onAction="#handleCharger"
+                        style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-background-radius: 10;"/>
+                <TextField fx:id="montantField" promptText="Montant à recharger"
+                           style="-fx-background-radius: 10; -fx-padding: 5;"/>
+
+                <Button fx:id="historiqueButton"
+                        text="📜 Voir Historique Transactions"
+                        onAction="#handleVoirHistorique"
+                        style="-fx-background-color: #2196f3; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 10 20;"/>
+            </VBox>
+        </VBox>
+    </center>
+</BorderPane>

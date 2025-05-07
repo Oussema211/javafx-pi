@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.geometry.Insets?>
 
 <BorderPane xmlns="http://javafx.com/javafx/17"
             xmlns:fx="http://javafx.com/fxml/1"
@@ -45,18 +45,38 @@
                            style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #FF5722;"/>
                 </VBox>
             </HBox>
+
+            <!-- Barre de recherche -->
+            <HBox spacing="10" alignment="CENTER">
+                <TextField fx:id="searchField" promptText="🔍 Rechercher par ID, date ou prix..."
+                           style="-fx-pref-width: 300; -fx-background-radius: 10; -fx-padding: 5;"/>
+                <Button text="Rechercher" onAction="#handleSearch"
+                        style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-background-radius: 10;"/>
+            </HBox>
         </VBox>
     </top>
 
     <center>
-        <ScrollPane fx:id="orderScrollPane" fitToWidth="true" style="-fx-background-color: transparent;">
-            <VBox fx:id="orderContainer" spacing="15">
-                <padding>
-                    <Insets top="20" right="20" bottom="20" left="20"/>
-                </padding>
-                <!-- Les cartes de commandes s'ajouteront ici dynamiquement -->
-            </VBox>
-        </ScrollPane>
+        <VBox spacing="10" alignment="CENTER">
+            <ScrollPane fx:id="orderScrollPane" fitToWidth="true" style="-fx-background-color: transparent;">
+                <VBox fx:id="orderContainer" spacing="15">
+                    <padding>
+                        <Insets top="20" right="20" bottom="20" left="20"/>
+                    </padding>
+                    <!-- Les cartes de commandes s'ajouteront ici dynamiquement -->
+                </VBox>
+            </ScrollPane>
+
+            <!-- Pagination -->
+            <HBox alignment="CENTER" spacing="20" style="-fx-padding: 15;">
+                <Button fx:id="prevPageButton" text="⏮ Précédent" onAction="#handlePrevPage"
+                        style="-fx-background-color: #ddd; -fx-background-radius: 8;"/>
+                <Label fx:id="pageInfoLabel" text="Page 1"
+                       style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+                <Button fx:id="nextPageButton" text="Suivant ⏭" onAction="#handleNextPage"
+                        style="-fx-background-color: #ddd; -fx-background-radius: 8;"/>
+            </HBox>
+        </VBox>
     </center>
 
 </BorderPane>

@@ -89,16 +89,14 @@ public class ProductController {
     private static final String GROQ_API_KEY = "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";
     private static final String GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
     private static final String FLUX_API_URL = "https://queue.fal.run/fal-ai/flux-pro/v1.1-ultra";
-    private static final String FLUX_AUTHORIZATION_KEY = "Key 6c423262-e2bb-462d-90c5-be909bd8c699:50bae2796d58cc50f2892631c51944ee";
+    private static final String FLUX_AUTHORIZATION_KEY = "Key c88fe40b-4bd3-4a09-b842-a64b991e47d9:06c56c71f8b74bc0474236f60c7bf51e";
     private final HttpClient client = HttpClient.newHttpClient();
     private static final String IMAGE_DIR = "images/"; // Directory to save images
 
     @FXML
     public void initialize() {
         try {
-            // Create images directory if it doesn't exist
             createImagesDirectory();
-
             productTableView.setEditable(true);
             configureTableColumns();
             initializeComboBoxes();
