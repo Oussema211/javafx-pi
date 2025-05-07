@@ -23,6 +23,18 @@
                     </ImageView>
                 </graphic>
             </Hyperlink>
+
+            <Hyperlink fx:id="eventButton" text="Events" graphicTextGap="10" styleClass="nav-link">
+                <graphic>
+                    <ImageView fitHeight="20" fitWidth="20">
+                        <Image url="@/icons/un-evenement.png"/>
+                    </ImageView>
+                </graphic>
+            </Hyperlink>
+
+
+
+
             <Hyperlink fx:id="achat" text="Shop" graphicTextGap="10" styleClass="nav-link">
                 <graphic>
                     <ImageView fitHeight="20" fitWidth="20">

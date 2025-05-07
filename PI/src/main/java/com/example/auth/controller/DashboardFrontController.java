@@ -48,6 +48,7 @@ public class DashboardFrontController {
     @FXML private Hyperlink profileButton;
     private static NavbarController navbarController;
 
+    @FXML private Hyperlink eventButton;
 
 
 
@@ -110,7 +111,7 @@ public class DashboardFrontController {
         reclamationButton.setOnAction(event -> loadContent("/com/example/reclamation/Reclamation.fxml"));
         profileButton.setOnAction(event -> loadContent("/com/example/auth/profile.fxml"));
         settings.setOnAction(event -> loadContent("/com/example/frontPages/pages/settings.fxml"));
-
+        eventButton.setOnAction(event -> loadContent("/com/example/Evenement/Events.fxml"));
         logoutButton.setOnAction(event -> {
             try {
                 System.out.println("Logout button clicked");
@@ -121,6 +122,7 @@ public class DashboardFrontController {
             }
         });
     }
+//
 
     @FXML
     private void handleLogout() throws IOException {
@@ -144,6 +146,7 @@ public class DashboardFrontController {
         stage.setTitle("Login");
         stage.show();
         System.out.println("Navigated to login page");
+
     }
 
     public void setPrimaryStage(Stage stage) {
