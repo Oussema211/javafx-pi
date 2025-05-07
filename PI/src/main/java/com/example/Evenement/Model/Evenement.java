@@ -14,8 +14,8 @@ public class Evenement {
     private LocalDateTime dateFin;
     private String photoPath;
     private List<Region> regions = new ArrayList<>();
-    //private List<Inscription> inscriptions = new ArrayList<>();
-    //private List<CommentaireEvent> commentaires = new ArrayList<>();
+    private List<Inscription> inscriptions = new ArrayList<>();
+    private List<CommentaireEvent> commentaires = new ArrayList<>();
 
     // Constructeurs
     public Evenement() {}
@@ -59,9 +59,10 @@ public class Evenement {
     public void addRegion(Region region) { this.regions.add(region); }
     public void removeRegion(Region region) { this.regions.remove(region); }
 
-    //public List<Inscription> getInscriptions() { return inscriptions; }
-    //public void addInscription(Inscription inscription) { this.inscriptions.add(inscription); }
+    public List<Inscription> getInscriptions() { return inscriptions; }
+    public void addInscription(Inscription inscription) { this.inscriptions.add(inscription); }
 
-    //public List<CommentaireEvent> getCommentaires() { return commentaires; }
-    //public void addCommentaire(CommentaireEvent commentaire) { this.commentaires.add(commentaire); }
+    public List<CommentaireEvent> getCommentaires() { return commentaires; }
+    public void addCommentaire(CommentaireEvent commentaire) { this.commentaires.add(commentaire); }
+
 }

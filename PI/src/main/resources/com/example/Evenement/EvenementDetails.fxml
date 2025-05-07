@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.text.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.shape.*?>
+<?import javafx.collections.FXCollections?>
+<?import javafx.collections.ObservableList?>
+
+
+<?import java.lang.String?>
+<BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1">
+    <top>
+        <!-- Navbar -->
+        <HBox style="-fx-background-color: white; -fx-padding: 10px; -fx-alignment: center-left;">
+            <ImageView fitWidth="100" fitHeight="50" preserveRatio="true">
+                <image>
+                    <!--<Image url="@images/logofront.png"/>-->
+                </image>
+            </ImageView>
+
+            <HBox spacing="20" style="-fx-padding: 0 0 0 50;">
+                <!-- Navigation Links -->
+                <Button text="Home" style="-fx-background-color: transparent; -fx-border-color: transparent;"/>
+                <Button text="Shop" style="-fx-background-color: transparent; -fx-border-color: transparent;"/>
+                <Button text="Shop Detail" style="-fx-background-color: transparent; -fx-border-color: transparent;"/>
+
+                <!-- Dropdown Menu -->
+                <MenuButton text="Pages">
+                    <items>
+                        <MenuItem text="Panier"/>
+                        <MenuItem text="Historique des Commandes"/>
+                        <MenuItem text="Community"/>
+                        <MenuItem text="Reviews"/>
+                    </items>
+                </MenuButton>
+
+                <Button text="Events" style="-fx-background-color: transparent; -fx-border-color: transparent;"/>
+            </HBox>
+
+            <Region HBox.hgrow="ALWAYS"/>
+
+            <Button style="-fx-background-color: transparent;">
+                <graphic>
+                    <ImageView fitWidth="24" fitHeight="24">
+                        <!--<Image url="@images/user-icon.png"/>-->
+                    </ImageView>
+                </graphic>
+            </Button>
+        </HBox>
+    </top>
+
+    <center>
+        <VBox spacing="20" style="-fx-padding: 20;">
+            <!-- Event Header -->
+            <StackPane style="-fx-background-color: #4CAF50; -fx-padding: 30;">
+                <Text text="Détails d'événement" fill="white" style="-fx-font-size: 24px;"/>
+            </StackPane>
+
+            <!-- Event Details -->
+            <HBox spacing="20" style="-fx-padding: 20;">
+                <!-- Event Image -->
+                <VBox style="-fx-pref-width: 300;">
+                    <ImageView fitWidth="300" fitHeight="200" preserveRatio="true">
+                        <image>
+                            <!--<Image url="@images/default-event.jpg"/>-->
+                        </image>
+                    </ImageView>
+                </VBox>
+
+                <!-- Event Information -->
+                <VBox spacing="10" style="-fx-pref-width: 400;">
+                    <Text text="Event Title" style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
+                    <Text text="Description: Event description goes here" style="-fx-wrap-text: true;"/>
+                    <Text text="Type: Conference"/>
+                    <Text text="Statut: Active"/>
+                    <Text text="Date de début: 01/01/2023 10:00"/>
+                    <Text text="Date de fin: 01/01/2023 18:00"/>
+
+                    <VBox spacing="5" style="-fx-padding: 10 0 0 0;">
+                        <Text text="Régions associées:" style="-fx-font-weight: bold;"/>
+                        <ListView style="-fx-pref-height: 100;">
+                            <items>
+                                <FXCollections fx:factory="observableArrayList">
+                                    <String fx:value="Region 1 (City 1)"/>
+                                    <String fx:value="Region 2 (City 2)"/>
+                                </FXCollections>
+                            </items>
+                        </ListView>
+                    </VBox>
+
+                    <HBox spacing="10" style="-fx-padding: 10 0 0 0;">
+                        <Button text="Retour à la liste des événements" style="-fx-background-color: #4CAF50; -fx-text-fill: white;"/>
+                        <Button text="S'inscrire" style="-fx-background-color: #4CAF50; -fx-text-fill: white;"/>
+                    </HBox>
+                </VBox>
+
+                <!-- Search and Categories -->
+                <VBox spacing="20" style="-fx-pref-width: 250;">
+                    <VBox spacing="5">
+                        <HBox>
+                            <TextField promptText="keywords" style="-fx-pref-width: 180;"/>
+                            <Button style="-fx-background-color: transparent;">
+                                <graphic>
+                                    <ImageView fitWidth="16" fitHeight="16">
+                                        <!--<Image url="@images/search-icon.png"/>-->
+                                    </ImageView>
+                                </graphic>
+                            </Button>
+                        </HBox>
+                    </VBox>
+
+                    <VBox spacing="10">
+                        <Text text="Categories" style="-fx-font-weight: bold;"/>
+                        <VBox spacing="5">
+                            <HBox spacing="5" alignment="CENTER_LEFT">
+                                <ImageView fitWidth="16" fitHeight="16">
+                                    <!--<Image url="@images/category-icon.png"/>-->
+                                </ImageView>
+                                <Text text="Foire"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Text text="(3)"/>
+                            </HBox>
+                            <HBox spacing="5" alignment="CENTER_LEFT">
+                                <ImageView fitWidth="16" fitHeight="16">
+                                    <!--<Image url="@images/category-icon.png"/>-->
+                                </ImageView>
+                                <Text text="Conférence"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Text text="(5)"/>
+                            </HBox>
+                            <HBox spacing="5" alignment="CENTER_LEFT">
+                                <ImageView fitWidth="16" fitHeight="16">
+                                    <!--<Image url="@images/category-icon.png"/>-->
+                                </ImageView>
+                                <Text text="Formation"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Text text="(2)"/>
+                            </HBox>
+                        </VBox>
+                    </VBox>
+                </VBox>
+            </HBox>
+
+            <!-- Comments Section -->
+            <VBox spacing="20" style="-fx-padding: 20; -fx-background-color: #f0f2f5; -fx-border-radius: 5; -fx-background-radius: 5;">
+                <Text text="Ajouter un commentaire" style="-fx-font-weight: bold;"/>
+
+                <TextArea promptText="Votre commentaire..." style="-fx-pref-height: 100;"/>
+                <Button text="Envoyer" style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-pref-width: 100;"/>
+
+                <Text text="Commentaires" style="-fx-font-weight: bold;"/>
+
+                <!-- Comment Cards -->
+                <VBox spacing="10">
+                    <!-- Sample Comment -->
+                    <VBox style="-fx-background-color: white; -fx-padding: 10; -fx-border-radius: 5; -fx-background-radius: 5;">
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <ImageView fitWidth="25" fitHeight="25" preserveRatio="true">
+                                <image>
+                                    <Image url="https://mdbcdn.b-cdn.net/img/Photos/Avatars/img%20(4).webp"/>
+                                </image>
+                            </ImageView>
+                            <Text text="User Name"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Text text="01/01/2023 10:00" style="-fx-fill: gray;"/>
+                        </HBox>
+                        <Text text="This is a sample comment about the event." style="-fx-padding: 10 0 0 25; -fx-wrap-text: true;"/>
+                    </VBox>
+
+                    <!-- Placeholder when no comments -->
+                    <Text text="Aucun commentaire pour cet événement." style="-fx-font-style: italic;"/>
+                </VBox>
+            </VBox>
+        </VBox>
+    </center>
+
+    <bottom>
+        <!-- Footer -->
+        <VBox style="-fx-background-color: #343a40; -fx-padding: 30;">
+            <VBox spacing="20" style="-fx-padding: 0 0 20 0; -fx-border-color: rgba(226, 175, 24, 0.5); -fx-border-width: 0 0 1 0;">
+                <HBox>
+                    <VBox>
+                        <Text text="AGRIPLANNER" style="-fx-fill: #4CAF50; -fx-font-size: 24px; -fx-font-weight: bold;"/>
+                        <Text text="L'agriculture intelligente commence ici" style="-fx-fill: #6c757d;"/>
+                    </VBox>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <HBox spacing="10">
+                        <!-- Social Media Icons -->
+                        <Button style="-fx-background-color: transparent;">
+                            <graphic>
+                                <ImageView fitWidth="24" fitHeight="24">
+                                    <!--<Image url="@images/twitter-icon.png"/>-->
+                                </ImageView>
+                            </graphic>
+                        </Button>
+                        <Button style="-fx-background-color: transparent;">
+                            <graphic>
+                                <ImageView fitWidth="24" fitHeight="24">
+                                    <!--<Image url="@images/facebook-icon.png"/>-->
+                                </ImageView>
+                            </graphic>
+                        </Button>
+                        <Button style="-fx-background-color: transparent;">
+                            <graphic>
+                                <ImageView fitWidth="24" fitHeight="24">
+                                    <!--<Image url="@images/youtube-icon.png"/>-->
+                                </ImageView>
+                            </graphic>
+                        </Button>
+                        <Button style="-fx-background-color: transparent;">
+                            <graphic>
+                                <ImageView fitWidth="24" fitHeight="24">
+                                    <!--<Image url="@images/linkedin-icon.png"/>-->
+                                </ImageView>
+                            </graphic>
+                        </Button>
+                    </HBox>
+                </HBox>
+            </VBox>
+
+            <HBox spacing="50" style="-fx-padding: 20 0 0 0;">
+                <VBox spacing="10" style="-fx-pref-width: 300;">
+                    <Text text="Why People Like us!" style="-fx-fill: white; -fx-font-weight: bold;"/>
+                    <Text text="typesetting, remaining essentially unchanged. It was popularised in the 1960s with the like Aldus PageMaker including of Lorem Ipsum." style="-fx-fill: #6c757d; -fx-wrap-text: true;"/>
+                    <Button text="Read More" style="-fx-background-color: transparent; -fx-border-color: #6c757d; -fx-text-fill: #4CAF50; -fx-border-radius: 20;"/>
+                </VBox>
+
+                <VBox spacing="10">
+                    <Text text="Info" style="-fx-fill: white; -fx-font-weight: bold;"/>
+                    <Hyperlink text="About Us" style="-fx-text-fill: #6c757d;"/>
+                    <Hyperlink text="Contact Us" style="-fx-text-fill: #6c757d;"/>
+                    <Hyperlink text="Privacy Policy" style="-fx-text-fill: #6c757d;"/>
+                    <Hyperlink text="Terms and Condition" style="-fx-text-fill: #6c757d;"/>
+                    <Hyperlink text="Return Policy" style="-fx-text-fill: #6c757d;"/>
+                    <Hyperlink text="FAQs and Help" style="-fx-text-fill: #6c757d;"/>
+                </VBox>
+
+                <VBox spacing="10">
+                    <Text text="Contact" style="-fx-fill: white; -fx-font-weight: bold;"/>
+                    <Text text="Address: 2038 Ariana soghra , Ariana" style="-fx-fill: #6c757d;"/>
+                    <Text text="Email: AGRIPLANNER@gmail.com" style="-fx-fill: #6c757d;"/>
+                    <Text text="Phone: +21672000400" style="-fx-fill: #6c757d;"/>
+                    <Text text="Payment Accepted" style="-fx-fill: #6c757d;"/>
+                    <ImageView fitWidth="200" fitHeight="50" preserveRatio="true">
+                        <!--<Image url="@images/payment.png"/>-->
+                    </ImageView>
+                </VBox>
+            </HBox>
+        </VBox>
+
+        <!-- Copyright -->
+        <HBox style="-fx-background-color: #212529; -fx-padding: 10; -fx-alignment: center;">
+            <Text text="© Your Site Name, All right reserved." style="-fx-fill: #6c757d;"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Text text="Designed By HTML Codex Distributed By ThemeWagon" style="-fx-fill: white;"/>
+        </HBox>
+    </bottom>
+</BorderPane>
