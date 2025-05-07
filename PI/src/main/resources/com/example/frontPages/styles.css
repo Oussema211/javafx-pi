@@ -325,3 +325,36 @@
     -fx-padding: 24px 16px;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 10, 0, 0, 4);
 }
+
+/* Favorite Button Styling */
+.favorite-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 4px;
+    -fx-cursor: hand;
+}
+
+.favorite-empty .image-view {
+    -fx-opacity: 0.4;
+    -fx-effect: none;
+}
+
+.favorite-filled .image-view {
+    -fx-opacity: 1.0;
+    -fx-effect: dropshadow(gaussian, #ff4081, 8, 0.4, 0, 2);
+}
+
+.favorite-fallback {
+    -fx-font-size: 20px;
+    -fx-text-fill: #888888;
+    -fx-alignment: center;
+}
+
+.favorite-filled .favorite-fallback {
+    -fx-text-fill: #ff4081;
+    -fx-font-weight: bold;
+}
+
+.favorite-button:hover .favorite-fallback {
+    -fx-text-fill: #ff79b0;
+}

@@ -5,6 +5,7 @@ import com.example.cart.CartManager;
 import com.example.produit.model.Commentaire;
 import com.example.produit.model.Produit;
 import com.example.produit.service.CommentaireDAO;
+import com.example.produit.service.FavoriteDAO;
 import com.example.produit.service.ProduitDAO;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -14,11 +15,12 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import org.json.JSONObject;
 
-import java.io.File;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.net.http.HttpClient;
@@ -59,7 +61,6 @@ public class TopRatedProductsController implements Initializable {
 
     private void configureScrollPane() {
         scrollPane.setFitToWidth(true);
-        scrollPane.setFitToHeight(true);
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
     }
 
@@ -186,17 +187,28 @@ public class TopRatedProductsController implements Initializable {
         card.getStyleClass().add("product-card");
         card.setPadding(new Insets(8));
 
+        // Discount Badge and Favorite
+        HBox topBar = new HBox(8);
+        topBar.getStyleClass().add("top-bar");
+        topBar.setAlignment(Pos.CENTER_LEFT);
         Label discountBadge = new Label("10% OFF");
         discountBadge.getStyleClass().add("discount-badge");
+        Button favoriteButton = createFavoriteButton(product);
+        topBar.getChildren().addAll(discountBadge, favoriteButton);
+        HBox.setHgrow(favoriteButton, Priority.ALWAYS); // Push favorite to right
 
+        // Image
         ImageView imageView = createProductImage(product, 120, 120);
         imageView.getStyleClass().add("product-image");
 
+        // Name
         Label nameLabel = new Label(product.getNom() != null ? product.getNom() : "Unknown");
         nameLabel.getStyleClass().add("product-name");
 
+        // Rating
         HBox ratingBox = createStarRating(getAverageRating(product.getCommentaires()));
 
+        // Price and Quantity
         HBox priceBox = new HBox(6);
         priceBox.setAlignment(Pos.CENTER_LEFT);
         Label priceLabel = new Label(String.format("$%.2f", product.getPrixUnitaire()));
@@ -205,13 +217,16 @@ public class TopRatedProductsController implements Initializable {
         quantityLabel.getStyleClass().add("product-quantity");
         priceBox.getChildren().addAll(priceLabel, quantityLabel);
 
+        // Category
         Label categoryLabel = new Label(product.getCategory() != null ? product.getCategory().getNom() : "None");
         categoryLabel.getStyleClass().add("product-category");
 
+        // Positivity Score
         double positivityScore = calculatePositivityScore(product);
         Label positivityLabel = new Label(String.format("Positivity: %.2f%%", positivityScore * 100));
         positivityLabel.getStyleClass().add("product-positivity");
 
+        // Add to Cart Button
         Button addToCartButton = new Button("Add to Cart");
         addToCartButton.getStyleClass().add("add-to-cart-button");
         addToCartButton.setOnAction(e -> {
@@ -219,18 +234,93 @@ public class TopRatedProductsController implements Initializable {
             showAddedNotification(product.getNom());
         });
 
+        // Card click shows product dialog
         card.setOnMouseClicked(e -> showProductDialog(product));
 
-        card.getChildren().addAll(discountBadge, imageView, nameLabel, ratingBox, priceBox, categoryLabel, positivityLabel, addToCartButton);
+        card.getChildren().addAll(topBar, imageView, nameLabel, ratingBox, priceBox, categoryLabel, positivityLabel, addToCartButton);
         return card;
+    }
+
+    private Button createFavoriteButton(Produit product) {
+        Button favoriteButton = new Button();
+        favoriteButton.getStyleClass().add("favorite-button");
+
+        var imageUrl = getClass().getResource("/com/example/frontPages/icons/heart.png");
+        if (imageUrl != null) {
+            ImageView heartIcon = new ImageView(new Image(imageUrl.toExternalForm(), 28, 28, true, true));
+            heartIcon.getStyleClass().add("heart-icon");
+            favoriteButton.setGraphic(heartIcon);
+        } else {
+            System.err.println("Warning: heart.png not found at /com/example/frontPages/icons/heart.png");
+            Label heartLabel = new Label("♥");
+            heartLabel.getStyleClass().add("favorite-fallback");
+            favoriteButton.setGraphic(heartLabel);
+        }
+
+        updateFavoriteButtonStyle(favoriteButton, product.isFavoritedByCurrentUser());
+
+        favoriteButton.setOnAction(e -> {
+            UUID userId = sessionManager.getLoggedInUser() != null ? sessionManager.getLoggedInUser().getId() : null;
+            if (userId == null) {
+                showAlert(Alert.AlertType.WARNING, "Login Required", "Please log in to add favorites.");
+                return;
+            }
+            if (product.isFavoritedByCurrentUser()) {
+                FavoriteDAO.removeFavorite(userId, product.getId());
+                updateFavoriteButtonStyle(favoriteButton, false);
+                showAlert(Alert.AlertType.INFORMATION, "Favorite Removed", product.getNom() + " removed from favorites.");
+            } else {
+                FavoriteDAO.addFavorite(userId, product.getId());
+                updateFavoriteButtonStyle(favoriteButton, true);
+                showAlert(Alert.AlertType.INFORMATION, "Favorite Added", product.getNom() + " added to favorites.");
+            }
+        });
+
+        return favoriteButton;
+    }
+
+    private void updateFavoriteButtonStyle(Button favoriteButton, boolean isFavorited) {
+        if (isFavorited) {
+            favoriteButton.getStyleClass().remove("favorite-empty");
+            favoriteButton.getStyleClass().add("favorite-filled");
+        } else {
+            favoriteButton.getStyleClass().remove("favorite-filled");
+            favoriteButton.getStyleClass().add("favorite-empty");
+        }
     }
 
     private ImageView createProductImage(Produit product, double width, double height) {
         ImageView imageView = new ImageView();
-        String imagePath = product.getImageName() != null && !product.getImageName().isEmpty()
-                ? new File(product.getImageName()).toURI().toString()
-                : "file:src/main/resources/images/default.png";
-        Image image = new Image(imagePath, width, height, true, true, true);
+        Image image = null;
+
+        // Try loading the product's image from its URL
+        String imageUrl = product.getImageName();
+        if (imageUrl != null && !imageUrl.isEmpty()) {
+            try {
+                image = new Image(imageUrl, width, height, true, true, true);
+                if (image.isError()) {
+                    System.err.println("Error loading product image from URL: " + imageUrl);
+                    image = null;
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to load product image from URL " + imageUrl + ": " + e.getMessage());
+                image = null;
+            }
+        } else {
+            System.err.println("Product image URL is null or empty for product: " + product.getNom());
+        }
+
+        // Fallback to default image if the product image fails to load
+        if (image == null) {
+            InputStream defaultStream = getClass().getResourceAsStream("/images/default.png");
+            if (defaultStream != null) {
+                image = new Image(defaultStream, width, height, true, true);
+            } else {
+                System.err.println("Warning: default.png not found at /images/default.png");
+                image = null; // No fallback image available
+            }
+        }
+
         imageView.setImage(image);
         imageView.setFitWidth(width);
         imageView.setFitHeight(height);
@@ -251,17 +341,23 @@ public class TopRatedProductsController implements Initializable {
         content.setPadding(new Insets(15));
         content.setAlignment(Pos.TOP_LEFT);
 
-        // Left side: Product image and details
+        // Left Section: Image and Details
         VBox leftBox = new VBox(10);
         leftBox.setPrefWidth(320);
         leftBox.setAlignment(Pos.TOP_CENTER);
 
+        // Image
         ImageView imageView = createProductImage(product, 200, 200);
         imageView.getStyleClass().add("dialog-image");
 
+        // Details
         VBox detailsBox = new VBox(8);
+        HBox titleBar = new HBox(8);
         Label nameLabel = new Label(product.getNom());
         nameLabel.getStyleClass().add("dialog-title");
+        Button favoriteButton = createFavoriteButton(product);
+        titleBar.getChildren().addAll(nameLabel, favoriteButton);
+
         HBox ratingBox = createStarRating(getAverageRating(product.getCommentaires()));
         Label priceLabel = new Label(String.format("$%.2f", product.getPrixUnitaire()));
         priceLabel.getStyleClass().add("dialog-price");
@@ -285,18 +381,20 @@ public class TopRatedProductsController implements Initializable {
             showAddedNotification(product.getNom());
         });
 
-        detailsBox.getChildren().addAll(nameLabel, ratingBox, priceLabel, quantityLabel, categoryLabel, positivityLabel, actionBox, addToCartButton);
+        detailsBox.getChildren().addAll(titleBar, ratingBox, priceLabel, quantityLabel, categoryLabel, positivityLabel, actionBox, addToCartButton);
         leftBox.getChildren().addAll(imageView, detailsBox);
 
-        // Right side: Description, reviews, and add review
+        // Right Section: Description, Reviews, Add Review
         VBox rightBox = new VBox(10);
         rightBox.setPrefWidth(465);
         rightBox.setAlignment(Pos.TOP_LEFT);
 
+        // Description
         Text descriptionText = new Text(product.getDescription() != null ? product.getDescription() : "No description available.");
         descriptionText.getStyleClass().add("dialog-description");
         descriptionText.setWrappingWidth(400);
 
+        // Reviews with ScrollPane
         ScrollPane reviewsScroll = new ScrollPane();
         reviewsScroll.getStyleClass().add("reviews-scroll");
         reviewsScroll.setPrefHeight(200);
@@ -305,10 +403,11 @@ public class TopRatedProductsController implements Initializable {
 
         VBox reviewsBox = new VBox(8);
         reviewsBox.getStyleClass().add("reviews-box");
-        reviewsScroll.setContent(reviewsBox);
         List<Commentaire> commentaires = product.getCommentaires();
         populateComments(reviewsBox, commentaires != null ? commentaires : new ArrayList<>());
+        reviewsScroll.setContent(reviewsBox);
 
+        // Add Review
         VBox addReviewBox = new VBox(8);
         addReviewBox.getStyleClass().add("add-review-box");
         Label addReviewLabel = new Label("Add Review");
@@ -328,6 +427,7 @@ public class TopRatedProductsController implements Initializable {
         content.getChildren().addAll(leftBox, rightBox);
         dialog.getDialogPane().setContent(content);
 
+        // Validation
         Button submitButton = (Button) dialog.getDialogPane().lookupButton(submitButtonType);
         submitButton.setDisable(true);
         commentTextArea.textProperty().addListener((obs, old, newValue) ->
@@ -367,9 +467,9 @@ public class TopRatedProductsController implements Initializable {
             Label authorLabel = new Label(c.getAuteur() != null ? c.getAuteur() : "Anonymous");
             authorLabel.getStyleClass().add("comment-author");
             HBox stars = createStarRating(c.getNote() != null ? c.getNote() : 0);
-            Text commentText = new Text(truncateText(c.getContenu() != null ? c.getContenu() : "", 100));
-            commentText.getStyleClass().add("comment-text");
-            commentBox.getChildren().addAll(authorLabel, stars, commentText);
+            Text contentText = new Text(truncateText(c.getContenu() != null ? c.getContenu() : "", 100));
+            contentText.getStyleClass().add("comment-text");
+            commentBox.getChildren().addAll(authorLabel, stars, contentText);
             reviewsBox.getChildren().add(commentBox);
         }
     }

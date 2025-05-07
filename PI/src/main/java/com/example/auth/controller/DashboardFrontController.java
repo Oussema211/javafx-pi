@@ -28,10 +28,10 @@ public class DashboardFrontController {
     @FXML private Hyperlink productButton;
     @FXML private Hyperlink categoryButton;
     @FXML private Hyperlink settings;
-    @FXML private Hyperlink eventButton;
+    @FXML private Hyperlink eventButton; // Added Hyperlink for Events
     @FXML private Hyperlink logoutButton;
     @FXML private Hyperlink reclamationButton;
-    @FXML private Hyperlink topRatedButton; // New Hyperlink for Top Rated Products
+    @FXML private Hyperlink topRatedButton; // Hyperlink for Top Rated Products
     @FXML private Label welcomeLabel;
     @FXML private Label emailLabel;
     @FXML private Hyperlink profileButton;
@@ -93,12 +93,12 @@ public class DashboardFrontController {
         dashboardButton.setOnAction(event -> loadContent("/com/example/frontPages/pages/dashboard.fxml"));
         achat.setOnAction(event -> loadContent("/com/example/frontPages/pages/cart.fxml"));
         productButton.setOnAction(event -> loadContent("/com/example/frontPages/pages/products.fxml"));
-        categoryButton.setOnAction(event -> loadContent("/com/example/frontPages/pages/categories.fxml"));
+        categoryButton.setOnAction(event -> loadContent("/com/example/frontPages/pages/favorites.fxml"));
         reclamationButton.setOnAction(event -> loadContent("/com/example/reclamation/Reclamation.fxml"));
         profileButton.setOnAction(event -> loadContent("/com/example/auth/profile.fxml"));
-        eventButton.setOnAction(event -> loadContent("/com/example/Evenement/events.fxml"));
+        eventButton.setOnAction(event -> loadContent("/com/example/Evenement/events.fxml")); // Added action for Events
         settings.setOnAction(event -> loadContent("/com/example/frontPages/pages/settings.fxml"));
-        topRatedButton.setOnAction(event -> loadContent("/com/example/frontPages/pages/top_rated_products.fxml")); // New action for Top Rated Products
+        topRatedButton.setOnAction(event -> loadContent("/com/example/frontPages/pages/top_rated_products.fxml")); // Action for Top Rated Products
 
         logoutButton.setOnAction(event -> {
             try {

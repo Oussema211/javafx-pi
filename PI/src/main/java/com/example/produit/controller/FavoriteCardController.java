@@ -18,14 +18,19 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
-
+import org.json.JSONObject;
+import java.net.URI;
 import java.net.URL;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
-public class ProductCardController implements Initializable {
+public class FavoriteCardController implements Initializable {
 
     @FXML private ScrollPane scrollPane;
     @FXML private VBox productContainer;
@@ -36,24 +41,23 @@ public class ProductCardController implements Initializable {
     @FXML private Label pageLabel;
 
     private final SessionManager sessionManager = SessionManager.getInstance();
-    private List<Produit> allProducts = new ArrayList<>();
+    private List<Produit> favoriteProducts = new ArrayList<>();
     private int currentPage = 1;
     private static final int PRODUCTS_PER_PAGE = 8;
     private static final int MAX_REVIEWS = 3;
 
+    // Grok API configuration
+    private static final String GROQ_API_KEY = "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";
+    private static final String GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
+    private final HttpClient client = HttpClient.newHttpClient();
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         try {
-            allProducts = ProduitDAO.getAllProducts();
-            if (allProducts == null) {
-                allProducts = new ArrayList<>();
-            }
-            allProducts.forEach(product -> product.setCommentaires(
-                    CommentaireDAO.getCommentairesByProduit(product)));
+            loadFavoriteProducts();
             configureScrollPane();
             updatePage();
 
-            // Configure Fast Buy Button
             fastBuyButton.setOnAction(e -> {
                 try {
                     FastBuyController fastBuyController = new FastBuyController();
@@ -65,6 +69,24 @@ public class ProductCardController implements Initializable {
         } catch (Exception e) {
             showAlert(Alert.AlertType.ERROR, "Initialization Error", "Failed to load products: " + e.getMessage());
         }
+    }
+
+    private void loadFavoriteProducts() {
+        UUID userId = sessionManager.getLoggedInUser() != null ? sessionManager.getLoggedInUser().getId() : null;
+        if (userId == null) {
+            showAlert(Alert.AlertType.WARNING, "Login Required", "Please log in to view your favorites.");
+            return;
+        }
+
+        List<Produit> allProducts = ProduitDAO.getAllProducts();
+        if (allProducts == null) {
+            allProducts = new ArrayList<>();
+        }
+        allProducts.forEach(product -> product.setCommentaires(
+                CommentaireDAO.getCommentairesByProduit(product)));
+        favoriteProducts = allProducts.stream()
+                .filter(product -> FavoriteDAO.isFavorite(userId, product.getId()))
+                .collect(Collectors.toList());
     }
 
     private void configureScrollPane() {
@@ -82,7 +104,7 @@ public class ProductCardController implements Initializable {
 
     @FXML
     private void handleNext() {
-        if (currentPage * PRODUCTS_PER_PAGE < allProducts.size()) {
+        if (currentPage * PRODUCTS_PER_PAGE < favoriteProducts.size()) {
             currentPage++;
             updatePage();
         }
@@ -91,11 +113,11 @@ public class ProductCardController implements Initializable {
     private void updatePage() {
         productContainer.getChildren().clear();
         int startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
-        int endIndex = Math.min(startIndex + PRODUCTS_PER_PAGE, allProducts.size());
+        int endIndex = Math.min(startIndex + PRODUCTS_PER_PAGE, favoriteProducts.size());
 
         HBox row = createRow();
         for (int i = startIndex; i < endIndex; i++) {
-            row.getChildren().add(createProductCard(allProducts.get(i)));
+            row.getChildren().add(createProductCard(favoriteProducts.get(i)));
             if ((i - startIndex + 1) % 4 == 0 || i == endIndex - 1) {
                 productContainer.getChildren().add(row);
                 row = createRow();
@@ -104,7 +126,7 @@ public class ProductCardController implements Initializable {
 
         pageLabel.setText("Page " + currentPage);
         prevButton.setDisable(currentPage == 1);
-        nextButton.setDisable(endIndex >= allProducts.size());
+        nextButton.setDisable(endIndex >= favoriteProducts.size());
     }
 
     private HBox createRow() {
@@ -115,37 +137,37 @@ public class ProductCardController implements Initializable {
     }
 
     private VBox createProductCard(Produit product) {
-        VBox card = new VBox(12);
+        VBox card = new VBox(8);
         card.getStyleClass().add("product-card");
-        card.setPadding(new Insets(16, 16, 16, 16)); // Consistent padding
+        card.setPadding(new Insets(8));
 
-        HBox topBar = new HBox(10);
-        topBar.getStyleClass().add("top-bar"); // Added for CSS positioning
+        HBox topBar = new HBox(8);
+        topBar.getStyleClass().add("top-bar");
         topBar.setAlignment(Pos.CENTER_LEFT);
         Label discountBadge = new Label("10% OFF");
         discountBadge.getStyleClass().add("discount-badge");
         Button favoriteButton = createFavoriteButton(product);
         topBar.getChildren().addAll(discountBadge, favoriteButton);
-        HBox.setHgrow(favoriteButton, Priority.ALWAYS); // Push favorite to right
-        topBar.setAlignment(Pos.TOP_LEFT);
+        HBox.setHgrow(favoriteButton, Priority.ALWAYS);
 
-        ImageView imageView = createProductImage(product, 140, 140); // Slightly larger image
+        ImageView imageView = createProductImage(product, 120, 120);
         imageView.getStyleClass().add("product-image");
 
-        VBox detailsBox = new VBox(8); // Organized details with consistent spacing
         Label nameLabel = new Label(product.getNom() != null ? product.getNom() : "Unknown");
         nameLabel.getStyleClass().add("product-name");
+
         HBox ratingBox = createStarRating(getAverageRating(product.getCommentaires()));
-        HBox priceBox = new HBox(8);
+
+        HBox priceBox = new HBox(6);
         priceBox.setAlignment(Pos.CENTER_LEFT);
         Label priceLabel = new Label(String.format("$%.2f", product.getPrixUnitaire()));
         priceLabel.getStyleClass().add("product-price");
-        Label quantityLabel = new Label("Stock: " + product.getQuantite());
+        Label quantityLabel = new Label("Qty: " + product.getQuantite());
         quantityLabel.getStyleClass().add("product-quantity");
+        priceBox.getChildren().addAll(priceLabel, quantityLabel);
+
         Label categoryLabel = new Label(product.getCategory() != null ? product.getCategory().getNom() : "None");
         categoryLabel.getStyleClass().add("product-category");
-        priceBox.getChildren().addAll(priceLabel, quantityLabel);
-        detailsBox.getChildren().addAll(nameLabel, ratingBox, priceBox, categoryLabel);
 
         Button addToCartButton = new Button("Add to Cart");
         addToCartButton.getStyleClass().add("add-to-cart-button");
@@ -156,7 +178,7 @@ public class ProductCardController implements Initializable {
 
         card.setOnMouseClicked(e -> showProductDialog(product));
 
-        card.getChildren().addAll(topBar, imageView, detailsBox, addToCartButton);
+        card.getChildren().addAll(topBar, imageView, nameLabel, ratingBox, priceBox, categoryLabel, addToCartButton);
         return card;
     }
 
@@ -188,6 +210,8 @@ public class ProductCardController implements Initializable {
                 FavoriteDAO.removeFavorite(userId, product.getId());
                 updateFavoriteButtonStyle(favoriteButton, false);
                 showAlert(Alert.AlertType.INFORMATION, "Favorite Removed", product.getNom() + " removed from favorites.");
+                loadFavoriteProducts();
+                updatePage();
             } else {
                 FavoriteDAO.addFavorite(userId, product.getId());
                 updateFavoriteButtonStyle(favoriteButton, true);
@@ -216,21 +240,31 @@ public class ProductCardController implements Initializable {
         Image image = null;
         if (imageUrl != null) {
             try {
+                System.out.println("Attempting to load image for product '" + product.getNom() + "' from URL: " + imageUrl);
                 image = new Image(imageUrl, width, height, true, true, true);
                 if (image.isError()) {
-                    System.err.println("Failed to load product image from URL: " + imageUrl);
+                    System.err.println("Failed to load product image from URL: " + imageUrl + ", Error: " + image.getException());
                     image = null;
+                } else {
+                    System.out.println("Successfully loaded image for product '" + product.getNom() + "'.");
                 }
             } catch (Exception e) {
-                System.err.println("Error loading product image from URL: " + imageUrl + ", Error: " + e.getMessage());
+                System.err.println("Error loading product image for '" + product.getNom() + "' from URL: " + imageUrl + ", Error: " + e.getMessage());
+                e.printStackTrace();
             }
+        } else {
+            System.out.println("No image URL provided for product '" + product.getNom() + "'. Falling back to default image.");
         }
         if (image == null) {
             var defaultResource = getClass().getResource("/images/default.png");
             if (defaultResource != null) {
+                System.out.println("Loading default image from: " + defaultResource.toExternalForm());
                 image = new Image(defaultResource.toExternalForm(), width, height, true, true);
+                if (image.isError()) {
+                    System.err.println("Failed to load default image: " + image.getException());
+                }
             } else {
-                System.err.println("Warning: default.png not found at /images/default.png");
+                System.err.println("Warning: default.png not found at /images/default.png. No image will be displayed.");
             }
         }
         imageView.setImage(image);
@@ -291,10 +325,13 @@ public class ProductCardController implements Initializable {
         detailsBox.getChildren().addAll(titleBar, ratingBox, priceLabel, quantityLabel, categoryLabel, actionBox, addToCartButton);
         leftBox.getChildren().addAll(imageView, detailsBox);
 
-        // Right Section: Description, Reviews, Add Review
         VBox rightBox = new VBox(10);
         rightBox.setPrefWidth(465);
         rightBox.setAlignment(Pos.TOP_LEFT);
+
+        HBox descriptionHeader = new HBox(8);
+        Label descriptionLabel = new Label("Description:");
+        descriptionLabel.getStyleClass().add("dialog-description-label");
 
         Text descriptionText = new Text(product.getDescription() != null ? product.getDescription() : "No description available.");
         descriptionText.getStyleClass().add("dialog-description");
@@ -327,7 +364,7 @@ public class ProductCardController implements Initializable {
         commentTextArea.getStyleClass().add("input-textarea");
         addReviewBox.getChildren().addAll(addReviewLabel, ratingCombo, commentTextArea);
 
-        rightBox.getChildren().addAll(descriptionText, reviewsScroll, addReviewBox);
+        rightBox.getChildren().addAll(descriptionHeader, descriptionText, reviewsScroll, addReviewBox);
         content.getChildren().addAll(leftBox, rightBox);
         dialog.getDialogPane().setContent(content);
 
@@ -355,6 +392,45 @@ public class ProductCardController implements Initializable {
                 }
             }
         });
+    }
+
+    private String generateProductDescription(String productName, String category) {
+        try {
+            String prompt = "Generate an attractive description in English, with a maximum of 200 characters, for an agricultural product named '" + productName + "' in the category '" + category + "' intended for a farmers' market.";
+            String jsonBody = """
+                {
+                  "messages": [
+                    {
+                      "role": "user",
+                      "content": "%s"
+                    }
+                  ],
+                  "model": "llama3-8b-8192",
+                  "temperature": 1,
+                  "max_tokens": 100
+                }
+                """.formatted(prompt);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(GROQ_API_URL))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + GROQ_API_KEY)
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                    .build();
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                JSONObject jsonResponse = new JSONObject(response.body());
+                String description = jsonResponse.getJSONArray("choices")
+                        .getJSONObject(0)
+                        .getJSONObject("message")
+                        .getString("content");
+                return description.length() > 200 ? description.substring(0, 200) : description;
+            } else {
+                showAlert(Alert.AlertType.ERROR, "API Error", "Failed to generate description: HTTP " + response.statusCode());
+            }
+        } catch (Exception e) {
+            showAlert(Alert.AlertType.ERROR, "API Error", "Failed to generate description: " + e.getMessage());
+        }
+        return "";
     }
 
     private void populateComments(VBox reviewsBox, List<Commentaire> commentaires) {

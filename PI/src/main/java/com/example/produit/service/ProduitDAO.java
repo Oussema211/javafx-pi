@@ -5,14 +5,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-
-
-
-import com.example.produit.model.Produit;
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class ProduitDAO {
     private static final String URL = "jdbc:mysql://localhost:3306/pidevv";
@@ -65,8 +58,7 @@ public class ProduitDAO {
         }
         return products;
     }
-    /* ------------------------------------------------------------------ */
-    /** Récupère UN produit par son UUID (null si non trouvé) */
+
     public static Produit getProduitById(String id) {
         String query = "SELECT id, nom, description, prix_unitaire, quantite, " +
                 "date_creation, image_name, categorie_id " +
@@ -89,7 +81,6 @@ public class ProduitDAO {
                             : null);
                     p.setImageName(rs.getString("image_name"));
 
-                    // Catégorie (si nécessaire)
                     String catId = rs.getString("categorie_id");
                     if (catId != null && !catId.isBlank()) {
                         p.setCategory(CategorieDAO.getCategoryById(java.util.UUID.fromString(catId)));
@@ -162,6 +153,30 @@ public class ProduitDAO {
             System.err.println("SQL Error in deleteProduct: " + e.getMessage());
             e.printStackTrace();
             throw new RuntimeException("Failed to delete product: " + e.getMessage());
+        }
+    }
+
+    public static void deleteProducts(List<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            System.out.println("deleteProducts: No IDs provided, skipping deletion");
+            return;
+        }
+
+        String query = "DELETE FROM produit WHERE id IN (" + ids.stream().map(id -> "?").collect(Collectors.joining(",")) + ")";
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+
+            // Set parameters for each ID
+            for (int i = 0; i < ids.size(); i++) {
+                pstmt.setString(i + 1, ids.get(i).toString());
+            }
+
+            int rowsAffected = pstmt.executeUpdate();
+            System.out.println("deleteProducts: Deleted " + rowsAffected + " products with IDs " + ids);
+        } catch (SQLException e) {
+            System.err.println("SQL Error in deleteProducts: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to delete products: " + e.getMessage());
         }
     }
 }
