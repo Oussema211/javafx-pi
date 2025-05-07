@@ -28,6 +28,7 @@ public class DashboardFrontController {
     @FXML private Hyperlink productButton;
     @FXML private Hyperlink categoryButton;
     @FXML private Hyperlink settings;
+    @FXML private Hyperlink eventButton;
     @FXML private Hyperlink logoutButton;
     @FXML private Hyperlink reclamationButton;
     @FXML private Hyperlink topRatedButton; // New Hyperlink for Top Rated Products
@@ -95,6 +96,7 @@ public class DashboardFrontController {
         categoryButton.setOnAction(event -> loadContent("/com/example/frontPages/pages/categories.fxml"));
         reclamationButton.setOnAction(event -> loadContent("/com/example/reclamation/Reclamation.fxml"));
         profileButton.setOnAction(event -> loadContent("/com/example/auth/profile.fxml"));
+        eventButton.setOnAction(event -> loadContent("/com/example/Evenement/events.fxml"));
         settings.setOnAction(event -> loadContent("/com/example/frontPages/pages/settings.fxml"));
         topRatedButton.setOnAction(event -> loadContent("/com/example/frontPages/pages/top_rated_products.fxml")); // New action for Top Rated Products
 
