@@ -9,18 +9,20 @@ public class TransactionBlockchain {
     private String description;
     private LocalDateTime timestamp;
     private String hash;
+    private String previousHash; // ✅ Nouveau champ
 
-    // ✅ Constructeur
-    public TransactionBlockchain(double montant, String description) {
+    // ✅ Nouveau constructeur avec previousHash
+    public TransactionBlockchain(double montant, String description, String previousHash) {
         this.montant = montant;
         this.description = description;
         this.timestamp = LocalDateTime.now();
+        this.previousHash = previousHash;
         this.hash = genererHash();
     }
 
-    // ✅ Générer un hash SHA-256 basé sur montant + description + timestamp
+    // ✅ Générer un hash SHA-256 basé sur tous les champs + previousHash
     private String genererHash() {
-        String data = montant + description + timestamp.toString();
+        String data = montant + description + timestamp.toString() + previousHash;
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hashBytes = digest.digest(data.getBytes());
@@ -49,5 +51,9 @@ public class TransactionBlockchain {
 
     public String getHash() {
         return hash;
+    }
+
+    public String getPreviousHash() {
+        return previousHash;
     }
 }
