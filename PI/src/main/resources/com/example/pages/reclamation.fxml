@@ -1,19 +1,48 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<VBox spacing="10" styleClass="main-vbox" stylesheets="@../css/produits.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1"  fx:controller="com.example.reclamation.controller.ReclamationDashboardController">
-    <Text text="Reclamations Dashboard" style="-fx-font: bold 28px 'Arial'; -fx-fill: #1e3a8a; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 5, 0, 0, 2);"/>
-    
-    
-   <HBox spacing="10">
-    <TextField fx:id="searchField" promptText="Search reclamations..." />
-    <Button fx:id="clearSearchButton" text="Clear" onAction="#clearSearch" />
-    <Button fx:id="retrainButton" text="Retrain Model"/>
-</HBox>
-    <ScrollPane fitToWidth="true" style="-fx-background-color: transparent; -fx-border-color: transparent;">
-        <FlowPane fx:id="reclamationsFlowPane" hgap="20" vgap="20" alignment="TOP_CENTER" style="-fx-padding: 20;"/>
-    </ScrollPane>
-    
-</VBox>
+<GridPane alignment="CENTER" hgap="20" vgap="20" style="-fx-background-color: linear-gradient(to bottom, #e0f2fe, #f8fafc); -fx-padding: 30;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.reclamation.controller.ReclamationDashboardController">
+    <columnConstraints>
+        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" percentWidth="100.0" />
+    </columnConstraints>
+    <rowConstraints>
+        <RowConstraints vgrow="SOMETIMES" />
+        <RowConstraints vgrow="SOMETIMES" />
+        <RowConstraints vgrow="SOMETIMES" />
+        <RowConstraints vgrow="SOMETIMES" />
+        <RowConstraints vgrow="SOMETIMES" />
+    </rowConstraints>
+
+    <!-- Title -->
+    <Text GridPane.rowIndex="0" text="Reclamations Dashboard" style="-fx-font: bold 34px 'System'; -fx-fill: #1e3a8a; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 10, 0, 0, 4);">
+        <GridPane.margin>
+            <Insets bottom="12" />
+        </GridPane.margin>
+    </Text>
+
+    <!-- Search Bar and Buttons -->
+    <HBox GridPane.rowIndex="2" spacing="15" alignment="CENTER">
+        <TextField fx:id="searchField" promptText="Search reclamations..." style="-fx-pref-width: 320; -fx-background-color: #ffffff; -fx-border-color: #bfdbfe; -fx-border-radius: 12; -fx-background-radius: 12; -fx-padding: 12; -fx-font-size: 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);" />
+        <Button fx:id="clearSearchButton" text="Clear" onAction="#clearSearch" style="-fx-background-color: #64748b; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 12; -fx-padding: 12 24; -fx-font-size: 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);" />
+        <Button fx:id="retrainButton" text="Retrain Model" style="-fx-background-color: #f59e0b; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 12; -fx-padding: 12 24; -fx-font-size: 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);" />
+        <padding>
+            <Insets bottom="20" />
+        </padding>
+    </HBox>
+
+    <!-- Reclamations ListView -->
+    <ListView fx:id="reclamationsListView" GridPane.rowIndex="3" style="-fx-background-color: transparent; -fx-padding: 15;" />
+
+    <!-- Pagination Controls -->
+    <HBox GridPane.rowIndex="4" spacing="15" alignment="CENTER">
+        <Button fx:id="prevPageButton" text="Previous" onAction="#previousPage" style="-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 10 20; -fx-font-size: 14; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);" />
+        <Label fx:id="pageInfoLabel" text="Page 1 of 1" style="-fx-font: normal 15px 'System'; -fx-text-fill: #1e293b; -fx-background-color: #f1f5f9; -fx-padding: 8; -fx-background-radius: 8;" />
+        <Button fx:id="nextPageButton" text="Next" onAction="#nextPage" style="-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 10 20; -fx-font-size: 14; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);" />
+        <padding>
+            <Insets top="15" />
+        </padding>
+    </HBox>
+</GridPane>

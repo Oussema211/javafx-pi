@@ -9,13 +9,6 @@
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.image.Image?>
 <VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.produit.controller.ProductCardController" styleClass="main-content" spacing="0" stylesheets="@products.css" VBox.vgrow="ALWAYS">
-    <!-- Title -->
-    <HBox alignment="CENTER" styleClass="title-container">
-        <padding>
-            <Insets top="2" right="10" bottom="2" left="10"/>
-        </padding>
-        <Label text="Explore Our Products" styleClass="content-title"/>
-    </HBox>
 
     <!-- Fast Buy Button -->
     <HBox fx:id="fastBuyContainer" alignment="CENTER_RIGHT">

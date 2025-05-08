@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+<?import javafx.scene.image.ImageView?>
+
+<ScrollPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.example.Stock.Controller.Description3DController"
+            fitToWidth="true" fitToHeight="true" style="-fx-background-color: #ffffff;">
+    <VBox spacing="20" alignment="CENTER" style="-fx-padding: 30; -fx-border-color: #e0e0e0; -fx-border-width: 1;">
+        <Label text="Description 3D de l'Entrepôt"
+               style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #333333; -fx-padding: 0 0 10 0;"/>
+        <VBox spacing="15" style="-fx-background-color: #f9f9f9; -fx-padding: 20; -fx-border-radius: 8; -fx-background-radius: 8;"
+              prefWidth="600" maxWidth="800">
+            <Label text="Dimensions (L x l x H)" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #444444;"/>
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <TextField fx:id="lengthField" promptText="Longueur (m)" style="-fx-pref-width: 100; -fx-background-radius: 5; -fx-border-radius: 5;">
+                    <tooltip>
+                        <Tooltip text="Entrez la longueur en mètres" />
+                    </tooltip>
+                </TextField>
+                <Label text="x" style="-fx-font-size: 14px;"/>
+                <TextField fx:id="widthField" promptText="Largeur (m)" style="-fx-pref-width: 100; -fx-background-radius: 5; -fx-border-radius: 5;">
+                    <tooltip>
+                        <Tooltip text="Entrez la largeur en mètres" />
+                    </tooltip>
+                </TextField>
+                <Label text="x" style="-fx-font-size: 14px;"/>
+                <TextField fx:id="heightField" promptText="Hauteur (m)" style="-fx-pref-width: 100; -fx-background-radius: 5; -fx-border-radius: 5;">
+                    <tooltip>
+                        <Tooltip text="Entrez la hauteur en mètres" />
+                    </tooltip>
+                </TextField>
+            </HBox>
+            <HBox spacing="20" alignment="CENTER_LEFT">
+                <VBox spacing="5">
+                    <Label text="Nombre d'allées" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+                    <TextField fx:id="aislesField" promptText="Nombre" style="-fx-pref-width: 120; -fx-background-radius: 5; -fx-border-radius: 5;">
+                        <tooltip>
+                            <Tooltip text="Entrez le nombre d'allées" />
+                        </tooltip>
+                    </TextField>
+                </VBox>
+                <VBox spacing="5">
+                    <Label text="Type de stockage" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+                    <ComboBox fx:id="storageTypeCombo" promptText="Sélectionnez..." style="-fx-pref-width: 200; -fx-background-radius: 5; -fx-border-radius: 5;"/>
+                </VBox>
+            </HBox>
+            <!-- Premium Feature Checkboxes -->
+            <HBox spacing="20" alignment="CENTER_LEFT">
+                <CheckBox fx:id="lightingCheckBox" text="Éclairage Premium" style="-fx-font-size: 14px;" disable="true">
+                    <tooltip>
+                        <Tooltip text="Activer l'éclairage premium (disponible avec type Premium)" />
+                    </tooltip>
+                </CheckBox>
+                <CheckBox fx:id="transparencyCheckBox" text="Transparence" style="-fx-font-size: 14px;" disable="true">
+                    <tooltip>
+                        <Tooltip text="Rendre les murs transparents (disponible avec type Premium)" />
+                    </tooltip>
+                </CheckBox>
+                <CheckBox fx:id="animationCheckBox" text="Animation" style="-fx-font-size: 14px;" disable="true">
+                    <tooltip>
+                        <Tooltip text="Activer l'animation du chariot (disponible avec type Premium)" />
+                    </tooltip>
+                </CheckBox>
+            </HBox>
+            <Label text="Description détaillée" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+            <TextArea fx:id="freeDescriptionArea" promptText="Décrivez votre entrepôt en détail (ex. matériaux, disposition...)"
+                      wrapText="true" prefHeight="120" style="-fx-background-radius: 5; -fx-border-radius: 5;">
+                <tooltip>
+                    <Tooltip text="Ajoutez des détails spécifiques pour améliorer la visualisation 3D" />
+                </tooltip>
+            </TextArea>
+        </VBox>
+        <HBox spacing="10" alignment="CENTER">
+            <Button fx:id="generateButton" text="Générer la Vue 3D" onAction="#generate3DView"
+                    style="-fx-background-color: linear-gradient(to bottom, #4CAF50, #388E3C); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-background-radius: 8;">
+                <tooltip>
+                    <Tooltip text="Générer une visualisation 3D basée sur les données fournies" />
+                </tooltip>
+            </Button>
+            <Button fx:id="exportImageButton" text="Exporter Image" onAction="#exportImage"
+                    style="-fx-background-color: linear-gradient(to bottom, #FF9800, #F57C00); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-background-radius: 8;">
+                <tooltip>
+                    <Tooltip text="Exporter la vue 3D en image PNG" />
+                </tooltip>
+            </Button>
+            <Button fx:id="resetButton" text="Réinitialiser" onAction="#resetForm"
+                    style="-fx-background-color: linear-gradient(to bottom, #2196F3, #1976D2); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-background-radius: 8;">
+            </Button>
+        </HBox>
+        <StackPane fx:id="view3DContainer" prefWidth="800" prefHeight="400" minWidth="600" minHeight="300" maxWidth="1000" maxHeight="600"
+                   style="-fx-border-color: #cccccc; -fx-border-width: 1; -fx-background-color: #f0f0f0;">
+            <VBox alignment="CENTER" spacing="10">
+                <Label text="Visualisation 3D" style="-fx-font-size: 16px;"/>
+                <Label text="Entrez les données et cliquez sur Générer"/>
+            </VBox>
+            <ProgressBar fx:id="loadingProgressBar" visible="false" style="-fx-pref-width: 200; -fx-progress-color: #6f42c1;"/>
+            <Label fx:id="loadingLabel" text="Chargement..." visible="false" style="-fx-font-size: 14px; -fx-text-fill: #333333;"/>
+        </StackPane>
+        <!-- Camera Controls -->
+        <VBox spacing="10" alignment="CENTER">
+            <Label text="Contrôles de la Caméra" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #444444;"/>
+            <Slider fx:id="cameraSlider" min="0" max="360" value="180" prefWidth="300" style="-fx-background-radius: 5; -fx-border-radius: 5;">
+                <tooltip>
+                    <Tooltip text="Ajuster l'angle de la caméra (rotation horizontale)" />
+                </tooltip>
+            </Slider>
+            <HBox spacing="10" alignment="CENTER">
+                <Button fx:id="rotateLeftButton" text="← Tourner Gauche"
+                        style="-fx-background-color: linear-gradient(to bottom, #2196F3, #1976D2); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 8;">
+                    <tooltip>
+                        <Tooltip text="Tourner la caméra vers la gauche" />
+                    </tooltip>
+                </Button>
+                <Button fx:id="rotateRightButton" text="Tourner Droite →"
+                        style="-fx-background-color: linear-gradient(to bottom, #2196F3, #1976D2); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 8;">
+                    <tooltip>
+                        <Tooltip text="Tourner la caméra vers la droite" />
+                    </tooltip>
+                </Button>
+                <Button fx:id="zoomInButton" text="Zoom +"
+                        style="-fx-background-color: linear-gradient(to bottom, #4CAF50, #388E3C); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 8;">
+                    <tooltip>
+                        <Tooltip text="Zoomer vers l'entrepôt" />
+                    </tooltip>
+                </Button>
+                <Button fx:id="zoomOutButton" text="Zoom -"
+                        style="-fx-background-color: linear-gradient(to bottom, #4CAF50, #388E3C); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 8;">
+                    <tooltip>
+                        <Tooltip text="Dézoomer de l'entrepôt" />
+                    </tooltip>
+                </Button>
+            </HBox>
+        </VBox>
+        <!-- Premium Features Toolbar -->
+        <VBox spacing="10" alignment="CENTER">
+            <Label text="Fonctionnalités Premium" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #444444;"/>
+            <HBox spacing="10" alignment="CENTER">
+                <Button fx:id="toggleGridButton" text="Grille" onAction="#toggleGrid"
+                        style="-fx-background-color: linear-gradient(to bottom, #9C27B0, #7B1FA2); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 8;">
+                    <tooltip>
+                        <Tooltip text="Afficher/Masquer la grille au sol" />
+                    </tooltip>
+                </Button>
+                <Button fx:id="toggleMeasureButton" text="Mesurer" onAction="#toggleMeasureMode"
+                        style="-fx-background-color: linear-gradient(to bottom, #9C27B0, #7B1FA2); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 8;">
+                    <tooltip>
+                        <Tooltip text="Activer/Désactiver le mode de mesure (cliquez sur deux points)" />
+                    </tooltip>
+                </Button>
+                <Button fx:id="toggleSectionButton" text="Coupe" onAction="#toggleSection"
+                        style="-fx-background-color: linear-gradient(to bottom, #9C27B0, #7B1FA2); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 8;">
+                    <tooltip>
+                        <Tooltip text="Afficher/Masquer une coupe transversale" />
+                    </tooltip>
+                </Button>
+                <Button fx:id="toggleWireframeButton" text="Filaire" onAction="#toggleWireframe"
+                        style="-fx-background-color: linear-gradient(to bottom, #9C27B0, #7B1FA2); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 8;">
+                    <tooltip>
+                        <Tooltip text="Basculer en mode filaire" />
+                    </tooltip>
+                </Button>
+            </HBox>
+            <HBox spacing="10" alignment="CENTER">
+                <Label text="Couleur des murs:" style="-fx-font-size: 14px;"/>
+                <ColorPicker fx:id="wallColorPicker" style="-fx-pref-width: 120;" disable="true"/>
+                <Label text="Couleur du sol:" style="-fx-font-size: 14px;"/>
+                <ColorPicker fx:id="floorColorPicker" style="-fx-pref-width: 120;" disable="true"/>
+            </HBox>
+            <HBox spacing="10" alignment="CENTER">
+                <TextField fx:id="annotationField" promptText="Texte de l'annotation" style="-fx-pref-width: 200;" disable="true"/>
+                <Button fx:id="addAnnotationButton" text="Ajouter Annotation" onAction="#addAnnotation"
+                        style="-fx-background-color: linear-gradient(to bottom, #9C27B0, #7B1FA2); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 8;"
+                        disable="true">
+                    <tooltip>
+                        <Tooltip text="Ajouter une annotation à l'objet sélectionné" />
+                    </tooltip>
+                </Button>
+            </HBox>
+
+            <Label fx:id="measurementLabel" text="Mesure: 0 m" visible="false" style="-fx-font-size: 14px; -fx-text-fill: #333333;"/>
+        </VBox>
+        <!-- Statistics Panel -->
+        <VBox spacing="5" alignment="CENTER" style="-fx-background-color: #f0f0f0; -fx-padding: 10; -fx-border-color: #cccccc; -fx-border-width: 1;">
+            <Label text="Statistiques de l'Entrepôt" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+            <Label fx:id="volumeLabel" text="Volume total: 0 m³" style="-fx-font-size: 14px;"/>
+            <Label fx:id="spaceUsedLabel" text="Espace utilisé: 0%" style="-fx-font-size: 14px;" visible="false"/>
+        </VBox>
+        <VBox fx:id="previewContainer" spacing="10" alignment="CENTER" visible="false">
+            <Label fx:id="previewLabel" text="Prévisualisation de l'Image" style="-fx-font-size: 16px; -fx-font-weight: bold;" visible="false"/>
+            <ScrollPane fx:id="previewScrollPane" fitToWidth="true" fitToHeight="true" prefWidth="800" prefHeight="400" style="-fx-border-color: #cccccc; -fx-border-width: 1;">
+                <ImageView fx:id="previewImageView" fitWidth="800" fitHeight="400" preserveRatio="true" visible="false"/>
+            </ScrollPane>
+        </VBox>
+        <Button text="Retour" onAction="#goBack"
+                style="-fx-background-color: linear-gradient(to bottom, #f44336, #d32f2f); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 8;">
+        </Button>
+    </VBox>
+</ScrollPane>

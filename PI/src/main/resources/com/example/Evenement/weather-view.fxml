@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.geometry.*?>
+
+<AnchorPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.example.Evenement.Controller.WeatherViewController"
+            prefWidth="400" prefHeight="500"
+            style="-fx-background-color: linear-gradient(to bottom, #1e88e5, #64b5f6);">
+
+    <VBox spacing="20" alignment="TOP_CENTER" AnchorPane.topAnchor="0" 
+          AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" 
+          AnchorPane.rightAnchor="0" style="-fx-padding: 20;">
+
+        <!-- En-tête -->
+        <Label text="Prévisions Météorologiques" 
+               style="-fx-font-size: 24; -fx-font-weight: bold; -fx-text-fill: white;"/>
+
+        <!-- Ville et Date -->
+        <VBox alignment="CENTER" spacing="5">
+            <Label fx:id="cityLabel" 
+                   style="-fx-font-size: 20; -fx-font-weight: bold; -fx-text-fill: white;"/>
+            <Label fx:id="dateLabel" 
+                   style="-fx-font-size: 16; -fx-text-fill: white;"/>
+        </VBox>
+
+        <!-- Carte Météo -->
+        <VBox alignment="CENTER" spacing="15" 
+              style="-fx-background-color: rgba(255,255,255,0.2); -fx-background-radius: 15; 
+                     -fx-padding: 20; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 10, 0, 0, 3);">
+
+            <!-- Icône météo -->
+            <ImageView fx:id="weatherIcon" fitWidth="100" fitHeight="100" preserveRatio="true"/>
+
+            <!-- Température -->
+            <HBox alignment="CENTER" spacing="5">
+                <Label fx:id="temperatureLabel" 
+                       style="-fx-font-size: 48; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                <Label text="°C" 
+                       style="-fx-font-size: 24; -fx-font-weight: bold; -fx-text-fill: white;"/>
+            </HBox>
+
+            <!-- Description -->
+            <Label fx:id="descriptionLabel" 
+                   style="-fx-font-size: 18; -fx-text-fill: white;"/>
+
+            <!-- Détails -->
+            <GridPane hgap="20" vgap="10" alignment="CENTER">
+                <padding>
+                    <Insets top="20"/>
+                </padding>
+
+                <!-- Humidité -->
+                <VBox alignment="CENTER" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <ImageView fitWidth="32" fitHeight="32">
+                        <Image url="@images/humidity.png"/>
+                    </ImageView>
+                    <Label text="Humidité" 
+                           style="-fx-font-size: 14; -fx-text-fill: white;"/>
+                    <Label fx:id="humidityLabel" 
+                           style="-fx-font-size: 16; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                </VBox>
+
+                <!-- Vent -->
+                <VBox alignment="CENTER" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                    <ImageView fitWidth="32" fitHeight="32">
+                        <Image url="@images/wind.png"/>
+                    </ImageView>
+                    <Label text="Vent" 
+                           style="-fx-font-size: 14; -fx-text-fill: white;"/>
+                    <Label fx:id="windLabel" 
+                           style="-fx-font-size: 16; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                </VBox>
+
+                <!-- Pression -->
+                <VBox alignment="CENTER" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                    <ImageView fitWidth="32" fitHeight="32">
+                        <Image url="@images/pressure.png"/>
+                    </ImageView>
+                    <Label text="Pression" 
+                           style="-fx-font-size: 14; -fx-text-fill: white;"/>
+                    <Label fx:id="pressureLabel" 
+                           style="-fx-font-size: 16; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                </VBox>
+
+                <!-- Visibilité -->
+                <VBox alignment="CENTER" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                    <ImageView fitWidth="32" fitHeight="32">
+                        <Image url="@images/visibility.png"/>
+                    </ImageView>
+                    <Label text="Visibilité" 
+                           style="-fx-font-size: 14; -fx-text-fill: white;"/>
+                    <Label fx:id="visibilityLabel" 
+                           style="-fx-font-size: 16; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                </VBox>
+            </GridPane>
+        </VBox>
+
+        <!-- Bouton Fermer -->
+        <Button text="Fermer" onAction="#handleClose"
+                style="-fx-background-color: white; -fx-text-fill: #1e88e5; 
+                       -fx-font-weight: bold; -fx-padding: 10 20; -fx-background-radius: 20;"/>
+    </VBox>
+</AnchorPane> 

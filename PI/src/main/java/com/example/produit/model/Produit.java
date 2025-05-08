@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import com.example.auth.utils.SessionManager;
+import com.example.produit.service.FavoriteDAO;
 
 public class Produit {
     private double prix;
@@ -39,6 +41,17 @@ public class Produit {
         setRate(rate);
         setImageName(imageName);
         this.commentaires.set(javafx.collections.FXCollections.observableArrayList());
+    }
+
+    // Check if the product is favorited by the current user
+    public boolean isFavoritedByCurrentUser() {
+        UUID currentUserId = SessionManager.getInstance().getLoggedInUser() != null
+                ? SessionManager.getInstance().getLoggedInUser().getId()
+                : null;
+        if (currentUserId == null || getId() == null) {
+            return false;
+        }
+        return FavoriteDAO.isFavorite(currentUserId, getId());
     }
 
     // Getters and Setters
@@ -94,6 +107,7 @@ public class Produit {
             this.commentaires.add(commentaire);
         }
     }
+
     public double getPrix() {
         return prix;
     }

@@ -30,6 +30,11 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.FileChooser;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONException;
@@ -41,9 +46,6 @@ import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -86,12 +88,12 @@ public class ProductController {
     private ObservableList<Produit> productList = FXCollections.observableArrayList();
     private ObservableList<Categorie> categoryList = FXCollections.observableArrayList();
     private FilteredList<Produit> filteredList;
-    private static final String GROQ_API_KEY = "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";
+    private static final String GROQ_API_KEY = "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";
     private static final String GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
     private static final String FLUX_API_URL = "https://queue.fal.run/fal-ai/flux-pro/v1.1-ultra";
-    private static final String FLUX_AUTHORIZATION_KEY = "Key c88fe40b-4bd3-4a09-b842-a64b991e47d9:06c56c71f8b74bc0474236f60c7bf51e";
+    private static final String FLUX_AUTHORIZATION_KEY = "Key 3939b927-68c8-4ade-8095-d70b7c000476:db8c23f6d7f3d18803a231eddb8a6a8c";
     private final HttpClient client = HttpClient.newHttpClient();
-    private static final String IMAGE_DIR = "images/"; // Directory to save images
+    private static final String IMAGE_DIR = "images/";
 
     @FXML
     public void initialize() {
@@ -107,7 +109,6 @@ public class ProductController {
             setupSearchListeners();
             setupInputValidation();
             setupSelectionListener();
-            System.out.println("ProductController initialized successfully");
         } catch (Exception e) {
             System.err.println("Error in initialize: " + e.getMessage());
             e.printStackTrace();
@@ -117,12 +118,7 @@ public class ProductController {
     private void createImagesDirectory() {
         File dir = new File(IMAGE_DIR);
         if (!dir.exists()) {
-            boolean created = dir.mkdirs();
-            if (created) {
-                System.out.println("Created images directory: " + IMAGE_DIR);
-            } else {
-                System.err.println("Failed to create images directory: " + IMAGE_DIR);
-            }
+            dir.mkdirs();
         }
     }
 
@@ -130,7 +126,6 @@ public class ProductController {
         selectColumn.setCellValueFactory(new PropertyValueFactory<>("selected"));
         selectColumn.setCellFactory(CheckBoxTableCell.forTableColumn(selectColumn));
         selectColumn.setEditable(true);
-        System.out.println("selectColumn configured with CheckBoxTableCell");
 
         productColumn.setCellValueFactory(new PropertyValueFactory<>("nom"));
         descriptionColumn.setCellValueFactory(new PropertyValueFactory<>("description"));
@@ -143,7 +138,7 @@ public class ProductController {
         quantityColumn.setCellValueFactory(new PropertyValueFactory<>("quantite"));
         dateCreationColumn.setCellValueFactory(new PropertyValueFactory<>("dateCreation"));
 
-        imagePreviewColumn.setCellFactory(param -> new TableCell<Produit, String>() {
+        imagePreviewColumn.setCellFactory(param -> new TableCell<>() {
             private final ImageView imageView = new ImageView();
 
             {
@@ -153,13 +148,13 @@ public class ProductController {
             }
 
             @Override
-            protected void updateItem(String imagePath, boolean empty) {
-                super.updateItem(imagePath, empty);
-                if (empty || imagePath == null || imagePath.isEmpty()) {
+            protected void updateItem(String imageUrl, boolean empty) {
+                super.updateItem(imageUrl, empty);
+                if (empty || imageUrl == null || imageUrl.isEmpty()) {
                     setGraphic(null);
                 } else {
                     try {
-                        Image image = new Image(new File(imagePath).toURI().toString());
+                        Image image = new Image(imageUrl);
                         imageView.setImage(image);
                         setGraphic(imageView);
                     } catch (Exception ex) {
@@ -284,38 +279,41 @@ public class ProductController {
     }
 
     private void setupSelectionListener() {
-        productList.forEach(product -> {
-            product.selectedProperty().addListener((obs, oldVal, newVal) -> {
-                System.out.println("Checkbox for " + product.getNom() + " changed to " + newVal);
-                updateBulkButtons();
-            });
+        productList.forEach(this::addSelectionListener);
+        productList.addListener((javafx.collections.ListChangeListener<Produit>) c -> {
+            while (c.next()) {
+                if (c.wasAdded()) {
+                    c.getAddedSubList().forEach(this::addSelectionListener);
+                }
+            }
+            updateBulkButtons();
         });
         filteredList.addListener((javafx.collections.ListChangeListener<Produit>) c -> updateBulkButtons());
+    }
+
+    private void addSelectionListener(Produit product) {
+        product.selectedProperty().addListener((obs, oldVal, newVal) -> updateBulkButtons());
     }
 
     private void updateBulkButtons() {
         boolean hasSelection = productList.stream().anyMatch(Produit::isSelected);
         deleteSelectedButton.setDisable(!hasSelection);
         exportSelectedButton.setDisable(!hasSelection);
-        System.out.println("Bulk buttons updated. Has selection: " + hasSelection);
     }
 
     @FXML
     private void handleResearch() {
         filteredList.setPredicate(product -> {
             boolean match = true;
-
             String searchText = searchField.getText() != null ? searchField.getText().toLowerCase().trim() : "";
             if (!searchText.isEmpty()) {
                 match &= product.getNom().toLowerCase().contains(searchText) ||
                         product.getDescription().toLowerCase().contains(searchText);
             }
-
             String category = categoryComboBox.getValue();
             if (category != null && !category.equals("All")) {
                 match &= product.getCategory() != null && product.getCategory().getNom().equals(category);
             }
-
             try {
                 if (!minPriceField.getText().isEmpty()) {
                     float minPrice = Float.parseFloat(minPriceField.getText());
@@ -325,10 +323,8 @@ public class ProductController {
                     float maxPrice = Float.parseFloat(maxPriceField.getText());
                     match &= product.getPrixUnitaire() <= maxPrice;
                 }
-            } catch (NumberFormatException e) {
-                // Invalid input; skip price filter
+            } catch (NumberFormatException ignored) {
             }
-
             try {
                 if (!minQuantityField.getText().isEmpty()) {
                     int minQuantity = Integer.parseInt(minQuantityField.getText());
@@ -338,25 +334,23 @@ public class ProductController {
                     int maxQuantity = Integer.parseInt(maxQuantityField.getText());
                     match &= product.getQuantite() <= maxQuantity;
                 }
-            } catch (NumberFormatException e) {
-                // Invalid input; skip quantity filter
+            } catch (NumberFormatException ignored) {
             }
-
             String rateFilter = rateComboBox.getValue();
             if (rateFilter != null && !rateFilter.equals("All")) {
                 float minRate = Float.parseFloat(rateFilter.replace("+", ""));
                 match &= product.getRate() != null && product.getRate() >= minRate;
             }
-
             LocalDate selectedDate = datePicker.getValue();
             if (selectedDate != null) {
                 LocalDateTime startOfDay = selectedDate.atStartOfDay();
-                match &= product.getDateCreation() != null && !product.getDateCreation().isBefore(startOfDay);
+                LocalDateTime endOfDay = selectedDate.plusDays(1).atStartOfDay();
+                match &= product.getDateCreation() != null &&
+                        !product.getDateCreation().isBefore(startOfDay) &&
+                        product.getDateCreation().isBefore(endOfDay);
             }
-
             return match;
         });
-
         productTableView.refresh();
         updateResultsCount();
     }
@@ -366,17 +360,14 @@ public class ProductController {
         List<Produit> selectedProducts = productList.stream()
                 .filter(Produit::isSelected)
                 .collect(Collectors.toList());
-
         if (selectedProducts.isEmpty()) {
             return;
         }
-
         Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
         confirmation.setTitle("Delete Selected Products");
         confirmation.setHeaderText("Delete " + selectedProducts.size() + " Product(s)");
         confirmation.setContentText("Are you sure you want to delete the selected products?");
         Optional<ButtonType> result = confirmation.showAndWait();
-
         if (result.isPresent() && result.get() == ButtonType.OK) {
             selectedProducts.forEach(product -> {
                 ProduitDAO.deleteProduct(product.getId());
@@ -391,7 +382,6 @@ public class ProductController {
         List<Produit> selectedProducts = productList.stream()
                 .filter(Produit::isSelected)
                 .collect(Collectors.toList());
-
         if (selectedProducts.isEmpty()) {
             Alert alert = new Alert(Alert.AlertType.WARNING);
             alert.setTitle("No Selection");
@@ -400,170 +390,116 @@ public class ProductController {
             alert.showAndWait();
             return;
         }
-
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Save PDF File");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF Files", "*.pdf"));
         File file = fileChooser.showSaveDialog(productTableView.getScene().getWindow());
-
         if (file != null) {
             try {
                 PdfWriter writer = new PdfWriter(file);
                 PdfDocument pdf = new PdfDocument(writer);
                 Document document = new Document(pdf);
-
-                // Load Inter font
-                PdfFont font;
-                try {
-                    font = PdfFontFactory.createFont(getClass().getResource("/com/example/fonts/Inter-Regular.ttf").toExternalForm());
-                } catch (Exception e) {
-                    System.err.println("Inter font not found, falling back to Helvetica");
-                    font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
-                }
-
-                PdfFont boldFont;
-                try {
-                    boldFont = PdfFontFactory.createFont(getClass().getResource("/com/example/fonts/Inter-Bold.ttf").toExternalForm());
-                } catch (Exception e) {
-                    boldFont = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
-                }
-
-                // Title
-                Paragraph title = new Paragraph("Selected Products Report")
+                PdfFont font = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+                PdfFont boldFont = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
+                Paragraph title = new Paragraph("Products Report")
                         .setFont(boldFont)
-                        .setFontSize(18)
-                        .setFontColor(new com.itextpdf.kernel.colors.DeviceRgb(99, 102, 241)) // #6366f1
+                        .setFontSize(20)
+                        .setFontColor(new com.itextpdf.kernel.colors.DeviceRgb(33, 150, 243))
                         .setTextAlignment(TextAlignment.CENTER)
-                        .setMarginBottom(10);
+                        .setMarginBottom(10)
+                        .setPadding(10)
+                        .setBackgroundColor(new com.itextpdf.kernel.colors.DeviceRgb(240, 248, 255));
                 document.add(title);
-
-                // Timestamp
-                Paragraph timestamp = new Paragraph("Generated on " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                Paragraph timestamp = new Paragraph("Generated on " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMMM dd, yyyy HH:mm")))
                         .setFont(font)
                         .setFontSize(10)
+                        .setFontColor(new com.itextpdf.kernel.colors.DeviceRgb(100, 100, 100))
                         .setTextAlignment(TextAlignment.CENTER)
                         .setMarginBottom(20);
                 document.add(timestamp);
-
-                // Table
-                float[] columnWidths = {80, 100, 150, 80, 60, 60, 100, 50, 100};
+                float[] columnWidths = {150, 200, 100, 80, 80, 100};
                 Table table = new Table(UnitValue.createPointArray(columnWidths));
                 table.setWidth(UnitValue.createPercentValue(100));
-
-                // Headers
-                String[] headers = {"ID", "Name", "Description", "Category", "Price", "Quantity", "Date Created", "Rate", "Image Name"};
+                table.setMarginTop(10);
+                String[] headers = {"Name", "Description", "Category", "Price", "Qte", "Date Created"};
                 for (String header : headers) {
                     table.addHeaderCell(new com.itextpdf.layout.element.Cell()
                             .add(new Paragraph(header)
                                     .setFont(boldFont)
-                                    .setFontSize(10)
+                                    .setFontSize(11)
                                     .setFontColor(new com.itextpdf.kernel.colors.DeviceRgb(255, 255, 255)))
-                            .setBackgroundColor(new com.itextpdf.kernel.colors.DeviceRgb(99, 102, 241)) // #6366f1
+                            .setBackgroundColor(new com.itextpdf.kernel.colors.DeviceRgb(33, 150, 243))
                             .setTextAlignment(TextAlignment.CENTER)
+                            .setPadding(8)
                             .setBorder(new com.itextpdf.layout.borders.SolidBorder(
-                                    new com.itextpdf.kernel.colors.DeviceRgb(226, 232, 240), 1)) // #e2e8f0
-                    );
+                                    new com.itextpdf.kernel.colors.DeviceRgb(200, 200, 200), 1)));
                 }
-
-                // Rows
                 boolean alternate = false;
                 for (Produit product : selectedProducts) {
                     table.addCell(new com.itextpdf.layout.element.Cell()
-                            .add(new Paragraph(product.getId().toString())
-                                    .setFont(font)
-                                    .setFontSize(9))
-                            .setBackgroundColor(alternate ?
-                                    new com.itextpdf.kernel.colors.DeviceRgb(248, 250, 252) : // #f8fafc
-                                    new com.itextpdf.kernel.colors.DeviceRgb(255, 255, 255)) // #ffffff
-                            .setBorder(new com.itextpdf.layout.borders.SolidBorder(
-                                    new com.itextpdf.kernel.colors.DeviceRgb(226, 232, 240), 1))
-                    );
-                    table.addCell(new com.itextpdf.layout.element.Cell()
                             .add(new Paragraph(product.getNom())
                                     .setFont(font)
-                                    .setFontSize(9))
+                                    .setFontSize(10))
                             .setBackgroundColor(alternate ?
-                                    new com.itextpdf.kernel.colors.DeviceRgb(248, 250, 252) :
+                                    new com.itextpdf.kernel.colors.DeviceRgb(245, 245, 245) :
                                     new com.itextpdf.kernel.colors.DeviceRgb(255, 255, 255))
+                            .setPadding(6)
                             .setBorder(new com.itextpdf.layout.borders.SolidBorder(
-                                    new com.itextpdf.kernel.colors.DeviceRgb(226, 232, 240), 1))
-                    );
+                                    new com.itextpdf.kernel.colors.DeviceRgb(200, 200, 200), 1)));
                     table.addCell(new com.itextpdf.layout.element.Cell()
                             .add(new Paragraph(product.getDescription())
                                     .setFont(font)
-                                    .setFontSize(9))
+                                    .setFontSize(10))
                             .setBackgroundColor(alternate ?
-                                    new com.itextpdf.kernel.colors.DeviceRgb(248, 250, 252) :
+                                    new com.itextpdf.kernel.colors.DeviceRgb(245, 245, 245) :
                                     new com.itextpdf.kernel.colors.DeviceRgb(255, 255, 255))
+                            .setPadding(6)
                             .setBorder(new com.itextpdf.layout.borders.SolidBorder(
-                                    new com.itextpdf.kernel.colors.DeviceRgb(226, 232, 240), 1))
-                    );
+                                    new com.itextpdf.kernel.colors.DeviceRgb(200, 200, 200), 1)));
                     table.addCell(new com.itextpdf.layout.element.Cell()
                             .add(new Paragraph(product.getCategory() != null ? product.getCategory().getNom() : "No Category")
                                     .setFont(font)
-                                    .setFontSize(9))
+                                    .setFontSize(10))
                             .setBackgroundColor(alternate ?
-                                    new com.itextpdf.kernel.colors.DeviceRgb(248, 250, 252) :
+                                    new com.itextpdf.kernel.colors.DeviceRgb(245, 245, 245) :
                                     new com.itextpdf.kernel.colors.DeviceRgb(255, 255, 255))
+                            .setPadding(6)
                             .setBorder(new com.itextpdf.layout.borders.SolidBorder(
-                                    new com.itextpdf.kernel.colors.DeviceRgb(226, 232, 240), 1))
-                    );
+                                    new com.itextpdf.kernel.colors.DeviceRgb(200, 200, 200), 1)));
                     table.addCell(new com.itextpdf.layout.element.Cell()
                             .add(new Paragraph(String.format("%.2f", product.getPrixUnitaire()))
                                     .setFont(font)
-                                    .setFontSize(9))
+                                    .setFontSize(10))
                             .setBackgroundColor(alternate ?
-                                    new com.itextpdf.kernel.colors.DeviceRgb(248, 250, 252) :
+                                    new com.itextpdf.kernel.colors.DeviceRgb(245, 245, 245) :
                                     new com.itextpdf.kernel.colors.DeviceRgb(255, 255, 255))
+                            .setPadding(6)
                             .setBorder(new com.itextpdf.layout.borders.SolidBorder(
-                                    new com.itextpdf.kernel.colors.DeviceRgb(226, 232, 240), 1))
-                    );
+                                    new com.itextpdf.kernel.colors.DeviceRgb(200, 200, 200), 1)));
                     table.addCell(new com.itextpdf.layout.element.Cell()
                             .add(new Paragraph(String.valueOf(product.getQuantite()))
                                     .setFont(font)
-                                    .setFontSize(9))
+                                    .setFontSize(10))
                             .setBackgroundColor(alternate ?
-                                    new com.itextpdf.kernel.colors.DeviceRgb(248, 250, 252) :
+                                    new com.itextpdf.kernel.colors.DeviceRgb(245, 245, 245) :
                                     new com.itextpdf.kernel.colors.DeviceRgb(255, 255, 255))
+                            .setPadding(6)
                             .setBorder(new com.itextpdf.layout.borders.SolidBorder(
-                                    new com.itextpdf.kernel.colors.DeviceRgb(226, 232, 240), 1))
-                    );
+                                    new com.itextpdf.kernel.colors.DeviceRgb(200, 200, 200), 1)));
                     table.addCell(new com.itextpdf.layout.element.Cell()
                             .add(new Paragraph(product.getDateCreation().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")))
                                     .setFont(font)
-                                    .setFontSize(9))
+                                    .setFontSize(10))
                             .setBackgroundColor(alternate ?
-                                    new com.itextpdf.kernel.colors.DeviceRgb(248, 250, 252) :
+                                    new com.itextpdf.kernel.colors.DeviceRgb(245, 245, 245) :
                                     new com.itextpdf.kernel.colors.DeviceRgb(255, 255, 255))
+                            .setPadding(6)
                             .setBorder(new com.itextpdf.layout.borders.SolidBorder(
-                                    new com.itextpdf.kernel.colors.DeviceRgb(226, 232, 240), 1))
-                    );
-                    table.addCell(new com.itextpdf.layout.element.Cell()
-                            .add(new Paragraph(product.getRate() != null ? String.format("%.1f", product.getRate()) : "")
-                                    .setFont(font)
-                                    .setFontSize(9))
-                            .setBackgroundColor(alternate ?
-                                    new com.itextpdf.kernel.colors.DeviceRgb(248, 250, 252) :
-                                    new com.itextpdf.kernel.colors.DeviceRgb(255, 255, 255))
-                            .setBorder(new com.itextpdf.layout.borders.SolidBorder(
-                                    new com.itextpdf.kernel.colors.DeviceRgb(226, 232, 240), 1))
-                    );
-                    table.addCell(new com.itextpdf.layout.element.Cell()
-                            .add(new Paragraph(product.getImageName() != null ? product.getImageName() : "")
-                                    .setFont(font)
-                                    .setFontSize(9))
-                            .setBackgroundColor(alternate ?
-                                    new com.itextpdf.kernel.colors.DeviceRgb(248, 250, 252) :
-                                    new com.itextpdf.kernel.colors.DeviceRgb(255, 255, 255))
-                            .setBorder(new com.itextpdf.layout.borders.SolidBorder(
-                                    new com.itextpdf.kernel.colors.DeviceRgb(226, 232, 240), 1))
-                    );
+                                    new com.itextpdf.kernel.colors.DeviceRgb(200, 200, 200), 1)));
                     alternate = !alternate;
                 }
-
                 document.add(table);
                 document.close();
-
                 Alert success = new Alert(Alert.AlertType.INFORMATION);
                 success.setTitle("Export Successful");
                 success.setHeaderText(null);
@@ -581,29 +517,38 @@ public class ProductController {
     }
 
     private void setupActionsColumn() {
-        actionsColumn.setCellFactory(param -> new TableCell<Produit, Void>() {
+        actionsColumn.setCellFactory(param -> new TableCell<>() {
             private final Button editButton = new Button();
             private final Button deleteButton = new Button();
             private final HBox hbox = new HBox(10);
 
             {
-                Image editImage = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/edit.png")));
-                Image deleteImage = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icons/delete.png")));
-                editButton.setGraphic(new ImageView(editImage));
-                deleteButton.setGraphic(new ImageView(deleteImage));
+                InputStream editStream = getClass().getResourceAsStream("/icons/edit.png");
+                InputStream deleteStream = getClass().getResourceAsStream("/icons/delete.png");
+                if (editStream != null) {
+                    Image editImage = new Image(editStream);
+                    editButton.setGraphic(new ImageView(editImage));
+                } else {
+                    System.err.println("Resource /icons/edit.png not found in classpath.");
+                    editButton.setText("Edit");
+                }
+                if (deleteStream != null) {
+                    Image deleteImage = new Image(deleteStream);
+                    deleteButton.setGraphic(new ImageView(deleteImage));
+                } else {
+                    System.err.println("Resource /icons/delete.png not found in classpath.");
+                    deleteButton.setText("Delete");
+                }
                 editButton.getStyleClass().add("action-button");
                 deleteButton.getStyleClass().add("action-button");
-
                 editButton.setOnAction(event -> {
                     Produit product = getTableView().getItems().get(getIndex());
                     handleEditProduct(product);
                 });
-
                 deleteButton.setOnAction(event -> {
                     Produit product = getTableView().getItems().get(getIndex());
                     handleDeleteProduct(product);
                 });
-
                 hbox.getChildren().addAll(editButton, deleteButton);
             }
 
@@ -658,8 +603,7 @@ public class ProductController {
 
     private String generateProductDescription(String brand, String category, String name) {
         try {
-            String prompt = "Génère une description attrayante en français de 200 caractères maximum pour un produit agricole nommé '" + name + "' dans la catégorie '" + category + "' destiné à un marché fermier.";
-
+            String prompt = "Generate an attractive description in English, with a maximum of 200 characters, for an agricultural product named '" + name + "' in the category '" + category + "' intended for a farmers' market.";
             String jsonBody = """
                 {
                   "messages": [
@@ -673,25 +617,21 @@ public class ProductController {
                   "max_tokens": 100
                 }
                 """.formatted(prompt);
-
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(GROQ_API_URL))
                     .header("Content-Type", "application/json")
                     .header("Authorization", "Bearer " + GROQ_API_KEY)
                     .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                     .build();
-
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            System.out.println("Groq API Response: " + response.body());
             if (response.statusCode() == 200) {
                 JSONObject jsonResponse = new JSONObject(response.body());
                 String description = jsonResponse.getJSONArray("choices")
                         .getJSONObject(0)
                         .getJSONObject("message")
                         .getString("content");
-                return description.length() > 250 ? description.substring(0, 250) : description;
+                return description.length() > 200 ? description.substring(0, 200) : description;
             } else {
-                System.err.println("Groq API Error: " + response.statusCode() + " - " + response.body());
                 Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setTitle("API Error");
                 alert.setHeaderText(null);
@@ -699,7 +639,6 @@ public class ProductController {
                 alert.showAndWait();
             }
         } catch (Exception e) {
-            e.printStackTrace();
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("API Error");
             alert.setHeaderText(null);
@@ -709,15 +648,35 @@ public class ProductController {
         return "";
     }
 
-    private void generateProductImage(String productName, TextField imagePathField, ImageView imagePreview, Label statusLabel) {
+    private String uploadImageToCloud(File imageFile) throws Exception {
+        String cloudApiUrl = "https://image-uploader-jade.vercel.app/api/server";
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            HttpPost uploadFile = new HttpPost(cloudApiUrl);
+            MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+            builder.addBinaryBody("source", imageFile, org.apache.http.entity.ContentType.create("image/jpeg"), imageFile.getName());
+            uploadFile.setEntity(builder.build());
+            org.apache.http.HttpResponse response = httpClient.execute(uploadFile);
+            int statusCode = response.getStatusLine().getStatusCode();
+            String responseBody = EntityUtils.toString(response.getEntity());
+            if (statusCode == 200) {
+                JSONObject jsonResponse = new JSONObject(responseBody);
+                if (jsonResponse.getBoolean("success")) {
+                    return jsonResponse.getString("image_url");
+                } else {
+                    throw new Exception("Cloud upload failed: " + responseBody);
+                }
+            } else {
+                throw new Exception("Cloud upload failed with status: " + statusCode);
+            }
+        }
+    }
+
+    private void generateProductImage(String productName, TextField imageUrlField, ImageView imagePreview, Label statusLabel) {
         statusLabel.setText("Generating image...");
         new Thread(() -> {
             try {
-                // Sanitize product name for filename
                 String sanitizedName = productName.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase();
                 String imagePath = IMAGE_DIR + sanitizedName + ".jpg";
-
-                // Initial POST request to FLUX API
                 String requestBody = """
                     {
                         "prompt": "%s, simple style",
@@ -729,20 +688,17 @@ public class ProductController {
                         "safety_tolerance": 2
                     }
                     """.formatted(productName);
-
                 HttpRequest request = HttpRequest.newBuilder()
                         .uri(URI.create(FLUX_API_URL))
                         .header("Authorization", FLUX_AUTHORIZATION_KEY)
                         .header("Content-Type", "application/json")
                         .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                         .build();
-
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
                 if (response.statusCode() != 200) {
                     updateStatus(statusLabel, "POST Error: " + response.statusCode() + " - " + response.body());
                     return;
                 }
-
                 JSONObject jsonResponse;
                 try {
                     jsonResponse = new JSONObject(response.body());
@@ -750,31 +706,23 @@ public class ProductController {
                     updateStatus(statusLabel, "JSON Parsing Error (Initial Response): " + e.getMessage());
                     return;
                 }
-
-                // Check if result is already available (synchronous)
                 if (jsonResponse.has("images")) {
                     String imageUrl = jsonResponse.getJSONArray("images").getJSONObject(0).getString("url");
-                    downloadAndSaveImage(imageUrl, imagePath, imagePathField, imagePreview, statusLabel);
+                    downloadAndSaveImage(imageUrl, imagePath, imageUrlField, imagePreview, statusLabel);
                     return;
                 }
-
-                // Handle queued response
                 String status = jsonResponse.optString("status", "UNKNOWN");
                 String statusUrl = jsonResponse.optString("status_url", "");
                 String responseUrl = jsonResponse.optString("response_url", "");
-
                 if (statusUrl.isEmpty() || responseUrl.isEmpty()) {
                     updateStatus(statusLabel, "Error: Missing status_url or response_url in initial response.");
                     return;
                 }
-
                 if (!status.equals("IN_QUEUE") && !status.equals("IN_PROGRESS")) {
                     updateStatus(statusLabel, "Unexpected status: " + status);
                     return;
                 }
-
-                // Poll status
-                int maxAttempts = 10; // Max 20 seconds
+                int maxAttempts = 10;
                 int attempt = 0;
                 do {
                     Thread.sleep(2000);
@@ -784,7 +732,6 @@ public class ProductController {
                             .header("Content-Type", "application/json")
                             .GET()
                             .build();
-
                     HttpResponse<String> statusResponse = client.send(statusRequest, HttpResponse.BodyHandlers.ofString());
                     JSONObject statusJson;
                     try {
@@ -797,26 +744,21 @@ public class ProductController {
                     updateStatus(statusLabel, "Status Check [" + attempt + "]: " + status);
                     attempt++;
                 } while ((status.equals("IN_QUEUE") || status.equals("IN_PROGRESS")) && attempt < maxAttempts);
-
                 if (!status.equals("COMPLETED")) {
                     updateStatus(statusLabel, "Task failed or timed out. Status: " + status);
                     return;
                 }
-
-                // Fetch result
                 HttpRequest resultRequest = HttpRequest.newBuilder()
                         .uri(URI.create(responseUrl))
                         .header("Authorization", FLUX_AUTHORIZATION_KEY)
                         .header("Content-Type", "application/json")
                         .GET()
                         .build();
-
                 HttpResponse<String> resultResponse = client.send(resultRequest, HttpResponse.BodyHandlers.ofString());
                 if (resultResponse.statusCode() != 200) {
                     updateStatus(statusLabel, "GET Result Error: " + resultResponse.statusCode() + " - " + resultResponse.body());
                     return;
                 }
-
                 JSONObject resultJson;
                 try {
                     resultJson = new JSONObject(resultResponse.body());
@@ -824,42 +766,32 @@ public class ProductController {
                     updateStatus(statusLabel, "JSON Parsing Error (Result Response): " + e.getMessage());
                     return;
                 }
-
                 if (!resultJson.has("images")) {
                     updateStatus(statusLabel, "Error: No images in final result.");
                     return;
                 }
-
                 String imageUrl = resultJson.getJSONArray("images").getJSONObject(0).getString("url");
-                downloadAndSaveImage(imageUrl, imagePath, imagePathField, imagePreview, statusLabel);
-
+                downloadAndSaveImage(imageUrl, imagePath, imageUrlField, imagePreview, statusLabel);
             } catch (Exception ex) {
-                String errorMsg = "Exception: " + ex.getMessage();
-                if (ex.getCause() != null) {
-                    errorMsg += "\nCause: " + ex.getCause().getMessage();
-                }
-                updateStatus(statusLabel, errorMsg);
+                updateStatus(statusLabel, "Exception: " + ex.getMessage());
                 ex.printStackTrace();
             }
         }).start();
     }
 
-    private void downloadAndSaveImage(String imageUrl, String imagePath, TextField imagePathField, ImageView imagePreview, Label statusLabel) {
+    private void downloadAndSaveImage(String imageUrl, String imagePath, TextField imageUrlField, ImageView imagePreview, Label statusLabel) {
         try {
             HttpRequest imageRequest = HttpRequest.newBuilder()
                     .uri(URI.create(imageUrl))
                     .GET()
                     .build();
-
             HttpResponse<InputStream> imageResponse = client.send(imageRequest, HttpResponse.BodyHandlers.ofInputStream());
             if (imageResponse.statusCode() != 200) {
                 updateStatus(statusLabel, "Image Download Error: " + imageResponse.statusCode());
                 return;
             }
-
-            // Save the image to the local file
-            File imageFile = new File(imagePath);
-            try (FileOutputStream fos = new FileOutputStream(imageFile)) {
+            File tempFile = new File(imagePath);
+            try (FileOutputStream fos = new FileOutputStream(tempFile)) {
                 byte[] buffer = new byte[1024];
                 int bytesRead;
                 InputStream inputStream = imageResponse.body();
@@ -867,21 +799,20 @@ public class ProductController {
                     fos.write(buffer, 0, bytesRead);
                 }
             }
-
-            // Update UI on JavaFX thread
+            String cloudImageUrl = uploadImageToCloud(tempFile);
+            tempFile.delete();
             Platform.runLater(() -> {
-                imagePathField.setText(imagePath);
+                imageUrlField.setText(cloudImageUrl);
                 try {
-                    Image image = new Image(imageFile.toURI().toString());
+                    Image image = new Image(cloudImageUrl);
                     imagePreview.setImage(image);
-                    updateStatus(statusLabel, "Image generated and saved successfully at: " + imagePath);
+                    updateStatus(statusLabel, "Image generated and uploaded successfully to: " + cloudImageUrl);
                 } catch (Exception e) {
                     updateStatus(statusLabel, "Error loading image preview: " + e.getMessage());
                 }
             });
-
         } catch (Exception e) {
-            updateStatus(statusLabel, "Error downloading image: " + e.getMessage());
+            updateStatus(statusLabel, "Error processing image: " + e.getMessage());
         }
     }
 
@@ -892,17 +823,14 @@ public class ProductController {
     private void showProductDialog(Produit product) {
         Dialog<Produit> dialog = new Dialog<>();
         dialog.setTitle(product == null ? "New Product" : "Edit Product");
-
         DialogPane dialogPane = dialog.getDialogPane();
         URL cssUrl = getClass().getResource("/com/example/css/produitdialog.css");
         if (cssUrl != null) {
             dialogPane.getStylesheets().add(cssUrl.toExternalForm());
         } else {
-            System.err.println("Warning: CSS file /com/example/css/produitdialog.css not found. Using default styles.");
             dialogPane.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-padding: 10;");
         }
         dialogPane.getStyleClass().add("dialog-pane");
-
         TextField nameField = new TextField();
         TextArea descriptionField = new TextArea();
         ComboBox<String> categoryCombo = new ComboBox<>(FXCollections.observableArrayList(
@@ -910,8 +838,8 @@ public class ProductController {
         ));
         TextField priceField = new TextField();
         TextField quantityField = new TextField();
-        TextField imagePathField = new TextField();
-        imagePathField.setEditable(false);
+        TextField imageUrlField = new TextField();
+        imageUrlField.setEditable(false);
         Button chooseImageButton = new Button("Choose Image");
         Button generateImageButton = new Button("Generate Image");
         Button generateDescriptionButton = new Button("Generate Description");
@@ -923,7 +851,6 @@ public class ProductController {
         imagePreview.setPreserveRatio(true);
         Label imageStatusLabel = new Label();
         imageStatusLabel.setStyle("-fx-font-size: 10px;");
-
         Label nameError = new Label();
         Label descriptionError = new Label();
         Label categoryError = new Label();
@@ -934,26 +861,27 @@ public class ProductController {
         categoryError.setStyle("-fx-text-fill: red; -fx-font-size: 10px;");
         priceError.setStyle("-fx-text-fill: red; -fx-font-size: 10px;");
         quantityError.setStyle("-fx-text-fill: red; -fx-font-size: 10px;");
-
         FileChooser fileChooser = new FileChooser();
         fileChooser.getExtensionFilters().addAll(
                 new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg")
         );
-
         chooseImageButton.setOnAction(e -> {
             File file = fileChooser.showOpenDialog(dialog.getOwner());
             if (file != null) {
-                imagePathField.setText(file.getAbsolutePath());
                 try {
-                    Image image = new Image(file.toURI().toString());
+                    imageStatusLabel.setText("Uploading image...");
+                    String cloudImageUrl = uploadImageToCloud(file);
+                    imageUrlField.setText(cloudImageUrl);
+                    Image image = new Image(cloudImageUrl);
                     imagePreview.setImage(image);
+                    imageStatusLabel.setText("Image uploaded successfully");
                 } catch (Exception ex) {
-                    Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to load image.");
+                    imageStatusLabel.setText("Failed to upload image: " + ex.getMessage());
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to upload image: " + ex.getMessage());
                     alert.showAndWait();
                 }
             }
         });
-
         generateImageButton.setOnAction(e -> {
             String productName = nameField.getText().trim();
             if (productName.isEmpty()) {
@@ -964,9 +892,8 @@ public class ProductController {
                 alert.showAndWait();
                 return;
             }
-            generateProductImage(productName, imagePathField, imagePreview, imageStatusLabel);
+            generateProductImage(productName, imageUrlField, imagePreview, imageStatusLabel);
         });
-
         generateDescriptionButton.setOnAction(e -> {
             String name = nameField.getText().trim();
             String category = categoryCombo.getValue();
@@ -978,33 +905,30 @@ public class ProductController {
                 alert.showAndWait();
                 return;
             }
-            String description = generateProductDescription(name, category, name);
+            String description = generateProductDescription("", category, name);
             if (!description.isEmpty()) {
                 descriptionField.setText(description);
             }
         });
-
         if (product != null) {
             nameField.setText(product.getNom());
             descriptionField.setText(product.getDescription());
             categoryCombo.getSelectionModel().select(product.getCategory() != null ? product.getCategory().getNom() : null);
             priceField.setText(String.valueOf(product.getPrixUnitaire()));
             quantityField.setText(String.valueOf(product.getQuantite()));
-            imagePathField.setText(product.getImageName() != null ? product.getImageName() : "");
+            imageUrlField.setText(product.getImageName() != null ? product.getImageName() : "");
             if (product.getImageName() != null && !product.getImageName().isEmpty()) {
                 try {
-                    Image image = new Image(new File(product.getImageName()).toURI().toString());
+                    Image image = new Image(product.getImageName());
                     imagePreview.setImage(image);
                 } catch (Exception ex) {
                     imagePreview.setImage(null);
                 }
             }
         }
-
         Pattern namePattern = Pattern.compile("^[a-zA-Z0-9\\s-]{3,50}$");
         Pattern pricePattern = Pattern.compile("^\\d*\\.?\\d+$");
         Pattern quantityPattern = Pattern.compile("^[0-9]+$");
-
         nameField.textProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal.trim().isEmpty()) {
                 nameError.setText("Name cannot be empty");
@@ -1017,12 +941,11 @@ public class ProductController {
                 nameField.setStyle("");
             }
         });
-
         descriptionField.textProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal.trim().isEmpty()) {
                 descriptionError.setText("Description cannot be empty");
                 descriptionField.setStyle("-fx-border-color: red;");
-            } else if (newVal.length() > 300) {
+            } else if (newVal.length() > 200) {
                 descriptionError.setText("Max 200 characters");
                 descriptionField.setStyle("-fx-border-color: red;");
             } else {
@@ -1030,7 +953,6 @@ public class ProductController {
                 descriptionField.setStyle("");
             }
         });
-
         categoryCombo.valueProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal == null) {
                 categoryError.setText("Select a category");
@@ -1040,7 +962,6 @@ public class ProductController {
                 categoryCombo.setStyle("");
             }
         });
-
         priceField.textProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal.trim().isEmpty()) {
                 priceError.setText("Price cannot be empty");
@@ -1067,7 +988,6 @@ public class ProductController {
                 }
             }
         });
-
         quantityField.textProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal.trim().isEmpty()) {
                 quantityError.setText("Quantity cannot be empty");
@@ -1094,7 +1014,6 @@ public class ProductController {
                 }
             }
         });
-
         GridPane grid = new GridPane();
         grid.setHgap(10);
         grid.setVgap(5);
@@ -1109,23 +1028,17 @@ public class ProductController {
         grid.add(priceError, 1, 8);
         grid.addRow(9, new Label("Quantity:"), quantityField);
         grid.add(quantityError, 1, 10);
-        grid.addRow(11, new Label("Image:"), imagePathField);
-
+        grid.addRow(11, new Label("Image URL:"), imageUrlField);
         HBox imageButtons = new HBox(10);
         imageButtons.getChildren().addAll(chooseImageButton, generateImageButton);
         grid.addRow(12, new Label(""), imageButtons);
-
         grid.addRow(13, new Label(""), imageStatusLabel);
         grid.addRow(14, new Label("Preview:"), imagePreview);
-
         dialog.getDialogPane().setContent(grid);
-
         ButtonType saveButtonType = new ButtonType("Save", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
-
         Button saveButton = (Button) dialog.getDialogPane().lookupButton(saveButtonType);
         saveButton.setDisable(true);
-
         Runnable validateForm = () -> {
             boolean isValid =
                     !nameField.getText().trim().isEmpty() &&
@@ -1143,31 +1056,26 @@ public class ProductController {
                             Integer.parseInt(quantityField.getText()) <= 10000;
             saveButton.setDisable(!isValid);
         };
-
         nameField.textProperty().addListener((obs, old, newVal) -> validateForm.run());
         descriptionField.textProperty().addListener((obs, old, newVal) -> validateForm.run());
         categoryCombo.valueProperty().addListener((obs, old, newVal) -> validateForm.run());
         priceField.textProperty().addListener((obs, old, newVal) -> validateForm.run());
         quantityField.textProperty().addListener((obs, old, newVal) -> validateForm.run());
-
         dialog.setResultConverter(buttonType -> {
             if (buttonType == saveButtonType) {
                 try {
                     Produit newProduct = product != null ? product : new Produit();
                     newProduct.setNom(nameField.getText().trim());
                     newProduct.setDescription(descriptionField.getText().trim());
-
                     String selectedCategoryName = categoryCombo.getValue();
                     Categorie selectedCategory = categoryList.stream()
                             .filter(c -> c.getNom().equals(selectedCategoryName))
                             .findFirst()
                             .orElse(null);
-
                     newProduct.setCategory(selectedCategory);
                     newProduct.setPrixUnitaire(Float.parseFloat(priceField.getText()));
                     newProduct.setQuantite(Integer.parseInt(quantityField.getText()));
-                    newProduct.setImageName(imagePathField.getText());
-
+                    newProduct.setImageName(imageUrlField.getText());
                     User currentUser = sessionManager.getLoggedInUser();
                     if (product == null) {
                         newProduct.setId(UUID.randomUUID());
@@ -1189,47 +1097,38 @@ public class ProductController {
             }
             return null;
         });
-
         dialog.showAndWait();
     }
 
     private void showScriptDialog() {
         Dialog<Void> dialog = new Dialog<>();
         dialog.setTitle("Add Products via Script");
-
         DialogPane dialogPane = dialog.getDialogPane();
         URL cssUrl = getClass().getResource("/com/example/css/produitdialog.css");
         if (cssUrl != null) {
             dialogPane.getStylesheets().add(cssUrl.toExternalForm());
         } else {
-            System.err.println("Warning: CSS file /com/example/css/produitdialog.css not found. Using default styles.");
             dialogPane.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-padding: 10;");
         }
         dialogPane.getStyleClass().add("dialog-pane");
-
         TextArea scriptField = new TextArea();
         scriptField.setPromptText("Enter JSON array of products, e.g., [{\"nom\": \"Apple\", \"description\": \"Fresh apples\", \"category\": \"Fruits\", \"prixUnitaire\": 2.99, \"quantite\": 100, \"imageName\": \"path/to/apple.png\"}, ...]");
         scriptField.setPrefRowCount(10);
         scriptField.setPrefColumnCount(50);
-
         Label scriptError = new Label();
         scriptError.setStyle("-fx-text-fill: red; -fx-font-size: 10px;");
-
         Button clearButton = new Button("Clear");
         clearButton.getStyleClass().add("secondary-button");
         clearButton.setOnAction(e -> scriptField.clear());
-
         Pattern namePattern = Pattern.compile("^[a-zA-Z0-9\\s-]{3,50}$");
         Pattern pricePattern = Pattern.compile("^\\d*\\.?\\d+$");
         Pattern quantityPattern = Pattern.compile("^[0-9]+$");
-
         scriptField.textProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal.trim().isEmpty()) {
                 scriptError.setText("Script cannot be empty");
                 scriptField.setStyle("-fx-border-color: red;");
                 return;
             }
-
             try {
                 new JSONArray(newVal);
                 scriptError.setText("");
@@ -1239,23 +1138,18 @@ public class ProductController {
                 scriptField.setStyle("-fx-border-color: red;");
             }
         });
-
         GridPane grid = new GridPane();
         grid.setHgap(10);
         grid.setVgap(5);
         grid.addRow(0, new Label("JSON Script:"), scriptField);
         grid.add(scriptError, 1, 1);
         grid.addRow(2, new Label(""), clearButton);
-
         dialog.getDialogPane().setContent(grid);
-
         ButtonType saveButtonType = new ButtonType("Parse and Save", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
-
         Button saveButton = (Button) dialog.getDialogPane().lookupButton(saveButtonType);
         saveButton.setDisable(true);
         saveButton.getStyleClass().add("primary-button");
-
         scriptField.textProperty().addListener((obs, old, newVal) -> {
             boolean isValid = !newVal.trim().isEmpty();
             try {
@@ -1265,7 +1159,6 @@ public class ProductController {
                 saveButton.setDisable(true);
             }
         });
-
         dialog.setResultConverter(buttonType -> {
             if (buttonType == saveButtonType) {
                 try {
@@ -1278,11 +1171,9 @@ public class ProductController {
                         alert.showAndWait();
                         return null;
                     }
-
                     User currentUser = sessionManager.getLoggedInUser();
                     int successCount = 0;
                     StringBuilder errorMessages = new StringBuilder();
-
                     for (int i = 0; i < jsonArray.length(); i++) {
                         JSONObject json = jsonArray.getJSONObject(i);
                         String nom = json.optString("nom", "").trim();
@@ -1291,8 +1182,6 @@ public class ProductController {
                         float prixUnitaire = json.optFloat("prixUnitaire", -1);
                         int quantite = json.optInt("quantite", -1);
                         String imageName = json.optString("imageName", "").trim();
-
-                        // Validate fields
                         if (nom.isEmpty() || !namePattern.matcher(nom).matches()) {
                             errorMessages.append(String.format("Product %d: Invalid name (3-50 chars, letters, numbers, spaces, hyphens)\n", i + 1));
                             continue;
@@ -1317,8 +1206,6 @@ public class ProductController {
                             errorMessages.append(String.format("Product %d: Invalid quantity (0 < quantity <= 10,000)\n", i + 1));
                             continue;
                         }
-
-                        // Create and save product
                         Produit newProduct = new Produit();
                         newProduct.setId(UUID.randomUUID());
                         newProduct.setNom(nom);
@@ -1329,14 +1216,11 @@ public class ProductController {
                         newProduct.setImageName(imageName.isEmpty() ? null : imageName);
                         newProduct.setDateCreation(LocalDateTime.now());
                         newProduct.setUserId(currentUser != null ? currentUser.getId() : null);
-
                         ProduitDAO.saveProduct(newProduct);
                         productList.add(newProduct);
                         successCount++;
                     }
-
                     handleResearch();
-
                     if (successCount == jsonArray.length()) {
                         Alert success = new Alert(Alert.AlertType.INFORMATION);
                         success.setTitle("Success");
@@ -1360,7 +1244,6 @@ public class ProductController {
             }
             return null;
         });
-
         dialog.showAndWait();
     }
 
@@ -1368,17 +1251,14 @@ public class ProductController {
         ContextMenu contextMenu = new ContextMenu();
         MenuItem editItem = new MenuItem("Edit");
         MenuItem deleteItem = new MenuItem("Delete");
-
         editItem.setOnAction(event -> {
             Produit selected = productTableView.getSelectionModel().getSelectedItem();
             handleEditProduct(selected);
         });
-
         deleteItem.setOnAction(event -> {
             Produit selected = productTableView.getSelectionModel().getSelectedItem();
             handleDeleteProduct(selected);
         });
-
         contextMenu.getItems().addAll(editItem, deleteItem);
         productTableView.setContextMenu(contextMenu);
     }

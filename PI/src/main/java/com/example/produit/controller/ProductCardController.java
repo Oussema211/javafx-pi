@@ -5,6 +5,7 @@ import com.example.cart.CartManager;
 import com.example.produit.model.Commentaire;
 import com.example.produit.model.Produit;
 import com.example.produit.service.CommentaireDAO;
+import com.example.produit.service.FavoriteDAO;
 import com.example.produit.service.ProduitDAO;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -14,14 +15,15 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 
-import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.UUID;
 
 public class ProductCardController implements Initializable {
 
@@ -113,39 +115,38 @@ public class ProductCardController implements Initializable {
     }
 
     private VBox createProductCard(Produit product) {
-        VBox card = new VBox(8);
+        VBox card = new VBox(12);
         card.getStyleClass().add("product-card");
-        card.setPadding(new Insets(8));
+        card.setPadding(new Insets(16, 16, 16, 16)); // Consistent padding
 
-        // Discount Badge
+        HBox topBar = new HBox(10);
+        topBar.getStyleClass().add("top-bar"); // Added for CSS positioning
+        topBar.setAlignment(Pos.CENTER_LEFT);
         Label discountBadge = new Label("10% OFF");
         discountBadge.getStyleClass().add("discount-badge");
+        Button favoriteButton = createFavoriteButton(product);
+        topBar.getChildren().addAll(discountBadge, favoriteButton);
+        HBox.setHgrow(favoriteButton, Priority.ALWAYS); // Push favorite to right
+        topBar.setAlignment(Pos.TOP_LEFT);
 
-        // Image
-        ImageView imageView = createProductImage(product, 120, 120);
+        ImageView imageView = createProductImage(product, 140, 140); // Slightly larger image
         imageView.getStyleClass().add("product-image");
 
-        // Name
+        VBox detailsBox = new VBox(8); // Organized details with consistent spacing
         Label nameLabel = new Label(product.getNom() != null ? product.getNom() : "Unknown");
         nameLabel.getStyleClass().add("product-name");
-
-        // Rating
         HBox ratingBox = createStarRating(getAverageRating(product.getCommentaires()));
-
-        // Price and Quantity
-        HBox priceBox = new HBox(6);
+        HBox priceBox = new HBox(8);
         priceBox.setAlignment(Pos.CENTER_LEFT);
         Label priceLabel = new Label(String.format("$%.2f", product.getPrixUnitaire()));
         priceLabel.getStyleClass().add("product-price");
-        Label quantityLabel = new Label("Qty: " + product.getQuantite());
+        Label quantityLabel = new Label("Stock: " + product.getQuantite());
         quantityLabel.getStyleClass().add("product-quantity");
-        priceBox.getChildren().addAll(priceLabel, quantityLabel);
-
-        // Category
         Label categoryLabel = new Label(product.getCategory() != null ? product.getCategory().getNom() : "None");
         categoryLabel.getStyleClass().add("product-category");
+        priceBox.getChildren().addAll(priceLabel, quantityLabel);
+        detailsBox.getChildren().addAll(nameLabel, ratingBox, priceBox, categoryLabel);
 
-        // Add to Cart Button
         Button addToCartButton = new Button("Add to Cart");
         addToCartButton.getStyleClass().add("add-to-cart-button");
         addToCartButton.setOnAction(e -> {
@@ -153,19 +154,85 @@ public class ProductCardController implements Initializable {
             showAddedNotification(product.getNom());
         });
 
-        // Card click shows product dialog
         card.setOnMouseClicked(e -> showProductDialog(product));
 
-        card.getChildren().addAll(discountBadge, imageView, nameLabel, ratingBox, priceBox, categoryLabel, addToCartButton);
+        card.getChildren().addAll(topBar, imageView, detailsBox, addToCartButton);
         return card;
+    }
+
+    private Button createFavoriteButton(Produit product) {
+        Button favoriteButton = new Button();
+        favoriteButton.getStyleClass().add("favorite-button");
+
+        var imageUrl = getClass().getResource("/com/example/frontPages/icons/heart.png");
+        if (imageUrl != null) {
+            ImageView heartIcon = new ImageView(new Image(imageUrl.toExternalForm(), 28, 28, true, true));
+            heartIcon.getStyleClass().add("heart-icon");
+            favoriteButton.setGraphic(heartIcon);
+        } else {
+            System.err.println("Warning: heart.png not found at /com/example/frontPages/icons/heart.png");
+            Label heartLabel = new Label("♥");
+            heartLabel.getStyleClass().add("favorite-fallback");
+            favoriteButton.setGraphic(heartLabel);
+        }
+
+        updateFavoriteButtonStyle(favoriteButton, product.isFavoritedByCurrentUser());
+
+        favoriteButton.setOnAction(e -> {
+            UUID userId = sessionManager.getLoggedInUser() != null ? sessionManager.getLoggedInUser().getId() : null;
+            if (userId == null) {
+                showAlert(Alert.AlertType.WARNING, "Login Required", "Please log in to add favorites.");
+                return;
+            }
+            if (product.isFavoritedByCurrentUser()) {
+                FavoriteDAO.removeFavorite(userId, product.getId());
+                updateFavoriteButtonStyle(favoriteButton, false);
+                showAlert(Alert.AlertType.INFORMATION, "Favorite Removed", product.getNom() + " removed from favorites.");
+            } else {
+                FavoriteDAO.addFavorite(userId, product.getId());
+                updateFavoriteButtonStyle(favoriteButton, true);
+                showAlert(Alert.AlertType.INFORMATION, "Favorite Added", product.getNom() + " added to favorites.");
+            }
+        });
+
+        return favoriteButton;
+    }
+
+    private void updateFavoriteButtonStyle(Button favoriteButton, boolean isFavorited) {
+        if (isFavorited) {
+            favoriteButton.getStyleClass().remove("favorite-empty");
+            favoriteButton.getStyleClass().add("favorite-filled");
+        } else {
+            favoriteButton.getStyleClass().remove("favorite-filled");
+            favoriteButton.getStyleClass().add("favorite-empty");
+        }
     }
 
     private ImageView createProductImage(Produit product, double width, double height) {
         ImageView imageView = new ImageView();
-        String imagePath = product.getImageName() != null && !product.getImageName().isEmpty()
-                ? new File(product.getImageName()).toURI().toString()
-                : "file:src/main/resources/images/default.png";
-        Image image = new Image(imagePath, width, height, true, true, true);
+        String imageUrl = product.getImageName() != null && !product.getImageName().isEmpty()
+                ? product.getImageName()
+                : null;
+        Image image = null;
+        if (imageUrl != null) {
+            try {
+                image = new Image(imageUrl, width, height, true, true, true);
+                if (image.isError()) {
+                    System.err.println("Failed to load product image from URL: " + imageUrl);
+                    image = null;
+                }
+            } catch (Exception e) {
+                System.err.println("Error loading product image from URL: " + imageUrl + ", Error: " + e.getMessage());
+            }
+        }
+        if (image == null) {
+            var defaultResource = getClass().getResource("/images/default.png");
+            if (defaultResource != null) {
+                image = new Image(defaultResource.toExternalForm(), width, height, true, true);
+            } else {
+                System.err.println("Warning: default.png not found at /images/default.png");
+            }
+        }
         imageView.setImage(image);
         imageView.setFitWidth(width);
         imageView.setFitHeight(height);
@@ -190,14 +257,16 @@ public class ProductCardController implements Initializable {
         leftBox.setPrefWidth(320);
         leftBox.setAlignment(Pos.TOP_CENTER);
 
-        // Image
         ImageView imageView = createProductImage(product, 200, 200);
         imageView.getStyleClass().add("dialog-image");
 
-        // Details
         VBox detailsBox = new VBox(8);
+        HBox titleBar = new HBox(8);
         Label nameLabel = new Label(product.getNom());
         nameLabel.getStyleClass().add("dialog-title");
+        Button favoriteButton = createFavoriteButton(product);
+        titleBar.getChildren().addAll(nameLabel, favoriteButton);
+
         HBox ratingBox = createStarRating(getAverageRating(product.getCommentaires()));
         Label priceLabel = new Label(String.format("$%.2f", product.getPrixUnitaire()));
         priceLabel.getStyleClass().add("dialog-price");
@@ -219,7 +288,7 @@ public class ProductCardController implements Initializable {
             showAddedNotification(product.getNom());
         });
 
-        detailsBox.getChildren().addAll(nameLabel, ratingBox, priceLabel, quantityLabel, categoryLabel, actionBox, addToCartButton);
+        detailsBox.getChildren().addAll(titleBar, ratingBox, priceLabel, quantityLabel, categoryLabel, actionBox, addToCartButton);
         leftBox.getChildren().addAll(imageView, detailsBox);
 
         // Right Section: Description, Reviews, Add Review
@@ -227,12 +296,10 @@ public class ProductCardController implements Initializable {
         rightBox.setPrefWidth(465);
         rightBox.setAlignment(Pos.TOP_LEFT);
 
-        // Description
         Text descriptionText = new Text(product.getDescription() != null ? product.getDescription() : "No description available.");
         descriptionText.getStyleClass().add("dialog-description");
         descriptionText.setWrappingWidth(400);
 
-        // Reviews with ScrollPane
         ScrollPane reviewsScroll = new ScrollPane();
         reviewsScroll.getStyleClass().add("reviews-scroll");
         reviewsScroll.setPrefHeight(200);
@@ -245,7 +312,6 @@ public class ProductCardController implements Initializable {
         populateComments(reviewsBox, commentaires != null ? commentaires : new ArrayList<>());
         reviewsScroll.setContent(reviewsBox);
 
-        // Add Review
         VBox addReviewBox = new VBox(8);
         addReviewBox.getStyleClass().add("add-review-box");
         Label addReviewLabel = new Label("Add Review");
@@ -265,7 +331,6 @@ public class ProductCardController implements Initializable {
         content.getChildren().addAll(leftBox, rightBox);
         dialog.getDialogPane().setContent(content);
 
-        // Validation
         Button submitButton = (Button) dialog.getDialogPane().lookupButton(submitButtonType);
         submitButton.setDisable(true);
         commentTextArea.textProperty().addListener((obs, old, newValue) ->

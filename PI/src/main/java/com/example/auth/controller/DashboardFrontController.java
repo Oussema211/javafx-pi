@@ -21,38 +21,25 @@ import com.example.reclamation.model.Reclamation;
 public class DashboardFrontController {
     private final SessionManager sessionManager = SessionManager.getInstance();
 
-    @FXML
-    private BorderPane borderPane;
-    @FXML
-    private VBox sidebar;
-    @FXML
-    private Hyperlink dashboardButton;
-    @FXML
-    private Hyperlink achat;
-    @FXML
-    private Hyperlink productButton;
-    @FXML
-    private Hyperlink categoryButton;
-    @FXML
-    private Hyperlink settings;
-    @FXML
-    private Hyperlink logoutButton;
-    @FXML
-    private Hyperlink reclamationButton;
-    @FXML
-    private Label welcomeLabel;
-    @FXML
-    private Label emailLabel;
+    @FXML private BorderPane borderPane;
+    @FXML private VBox sidebar;
+    @FXML private Hyperlink dashboardButton;
+    @FXML private Hyperlink achat;
+    @FXML private Hyperlink productButton;
+    @FXML private Hyperlink categoryButton;
+    @FXML private Hyperlink settings;
+    @FXML private Hyperlink eventButton; // Added Hyperlink for Events
+    @FXML private Hyperlink logoutButton;
+    @FXML private Hyperlink reclamationButton;
+    @FXML private Hyperlink topRatedButton; // Hyperlink for Top Rated Products
+    @FXML private Label welcomeLabel;
+    @FXML private Label emailLabel;
+    @FXML private Hyperlink profileButton;
 
     private Stage primaryStage;
-    @FXML private Hyperlink profileButton;
     private static NavbarController navbarController;
 
-
-
-
     public void loadContent(String fxmlPath) {
-
         try {
             System.out.println("Loading FXML: " + getClass().getResource(fxmlPath));
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
@@ -67,6 +54,7 @@ public class DashboardFrontController {
             e.printStackTrace();
         }
     }
+
     public void loadReclamationMessages(Reclamation reclamation) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/reclamation/ReclamationMessages.fxml"));
@@ -89,10 +77,9 @@ public class DashboardFrontController {
         try {
             FXMLLoader navbarLoader = new FXMLLoader(getClass().getResource("/com/example/frontPages/Navbar.fxml"));
             Parent navbar = navbarLoader.load();
-            navbarController = navbarLoader.getController(); // récupère le controller
+            navbarController = navbarLoader.getController();
             navbarController.setDashboardFrontController(this);
-
-            borderPane.setTop(navbar); // insère la navbar en haut
+            borderPane.setTop(navbar);
         } catch (IOException e) {
             e.printStackTrace();
             System.err.println("Failed to load Navbar.fxml: " + e.getMessage());
@@ -102,14 +89,16 @@ public class DashboardFrontController {
         System.out.println("dashboardButton: " + dashboardButton);
         System.out.println("logoutButton: " + logoutButton);
 
+        // Configure navigation actions
         dashboardButton.setOnAction(event -> loadContent("/com/example/frontPages/pages/dashboard.fxml"));
         achat.setOnAction(event -> loadContent("/com/example/frontPages/pages/cart.fxml"));
-
         productButton.setOnAction(event -> loadContent("/com/example/frontPages/pages/products.fxml"));
-        categoryButton.setOnAction(event -> loadContent("/com/example/frontPages/pages/categories.fxml"));
+        categoryButton.setOnAction(event -> loadContent("/com/example/frontPages/pages/favorites.fxml"));
         reclamationButton.setOnAction(event -> loadContent("/com/example/reclamation/Reclamation.fxml"));
         profileButton.setOnAction(event -> loadContent("/com/example/auth/profile.fxml"));
+        eventButton.setOnAction(event -> loadContent("/com/example/Evenement/events.fxml")); // Added action for Events
         settings.setOnAction(event -> loadContent("/com/example/frontPages/pages/settings.fxml"));
+        topRatedButton.setOnAction(event -> loadContent("/com/example/frontPages/pages/top_rated_products.fxml")); // Action for Top Rated Products
 
         logoutButton.setOnAction(event -> {
             try {
@@ -149,6 +138,7 @@ public class DashboardFrontController {
     public void setPrimaryStage(Stage stage) {
         this.primaryStage = stage;
     }
+
     public static NavbarController getNavbarController() {
         return navbarController;
     }
@@ -156,7 +146,6 @@ public class DashboardFrontController {
     public BorderPane getBorderPane() {
         return borderPane;
     }
-
 
     @FXML
     private void handleProfileClick() {

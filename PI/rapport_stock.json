@@ -1,0 +1,227 @@
+{
+    "alertes": [
+        {
+            "produit_id": "04e34ca4-8548-43dc-b11b-f616da085eed",
+            "entrepot_id": "5055fab6-a338-468c-9882-3263da233712",
+            "jours_avant_rupture": -1.6138110160827637,
+            "quantite_actuelle": 0.47577910243597843
+        },
+        {
+            "produit_id": "3d8804ff-eb99-4455-a9d2-f8c2ec76541b",
+            "entrepot_id": "aa67385e-3f67-4b23-8ff2-7d4beaa826ea",
+            "jours_avant_rupture": -0.8869006037712097,
+            "quantite_actuelle": 0.3838411116270937
+        },
+        {
+            "produit_id": "89dcbfb3-d784-41ea-83b3-b35dc8c8fff2",
+            "entrepot_id": "e1f0ae27-899c-4a9a-95c2-85a6cd278ffc",
+            "jours_avant_rupture": -2.335740804672241,
+            "quantite_actuelle": 0.5677170932448632
+        },
+        {
+            "produit_id": "bde4da41-a775-436b-8a69-0edfd0bff3bf",
+            "entrepot_id": "44bb1616-ee21-456f-8cc6-5c2f0a8879e8",
+            "jours_avant_rupture": -1.171340823173523,
+            "quantite_actuelle": 0.291903120818209
+        },
+        {
+            "produit_id": "f31ab9ff-a035-40bc-87a0-f88ccae1fdc9",
+            "entrepot_id": "4fc36eca-7a8a-45e3-9954-ec37f9b23530",
+            "jours_avant_rupture": 5.883540630340576,
+            "quantite_actuelle": -2.42026760804389
+        },
+        {
+            "produit_id": "ea177648-69cf-4f17-a3ee-313dc50a4073",
+            "entrepot_id": "88f43500-67b8-4451-9116-d4d83b2ac2db",
+            "jours_avant_rupture": -2.5503110885620117,
+            "quantite_actuelle": 0.3838411116270937
+        },
+        {
+            "produit_id": "3e7db20a-ac7d-45d3-ab65-3157834223c9",
+            "entrepot_id": "478e6905-0580-4d19-a31c-da3b20908a79",
+            "jours_avant_rupture": 3.245244026184082,
+            "quantite_actuelle": -1.133135736719504
+        },
+        {
+            "produit_id": "47371c74-fa5c-472f-b227-495bfdb03893",
+            "entrepot_id": "d0b24908-5928-4f88-acc2-9fc530e647de",
+            "jours_avant_rupture": 3.9926536083221436,
+            "quantite_actuelle": -1.5468566953594853
+        },
+        {
+            "produit_id": "1febfcd7-a810-4849-b55c-34f58872872c",
+            "entrepot_id": "e540ad1d-a9d0-4700-8f37-1c965e2a8c7c",
+            "jours_avant_rupture": 4.986265182495117,
+            "quantite_actuelle": -1.500887699955043
+        },
+        {
+            "produit_id": "24b88e19-93fa-47fc-9ff8-7d0cdb77f21f",
+            "entrepot_id": "4d0b59c7-64f9-426e-8071-0be01619cc28",
+            "jours_avant_rupture": 0.7959633469581604,
+            "quantite_actuelle": -0.3056938194395416
+        },
+        {
+            "produit_id": "dc9368ff-8e1d-40f9-aa85-b1ce7ead09b1",
+            "entrepot_id": "d9647a7e-f531-4bcb-9e2f-08407d1682d8",
+            "jours_avant_rupture": 2.107396125793457,
+            "quantite_actuelle": -0.8573217642928499
+        },
+        {
+            "produit_id": "0c8eec8e-961a-48f8-87cd-a0911d143ee9",
+            "entrepot_id": "e7bbb5e9-22d9-4120-82e7-a0bce2b2618a",
+            "jours_avant_rupture": 0.5175092816352844,
+            "quantite_actuelle": -0.2137558286306569
+        },
+        {
+            "produit_id": "913f53b2-74b2-415c-8404-39e5a1f9cc75",
+            "entrepot_id": "c37dba31-cdce-4742-89ea-6dd482a23283",
+            "jours_avant_rupture": 0.18809916079044342,
+            "quantite_actuelle": 0.7515930748626326
+        },
+        {
+            "produit_id": "ec08f528-7ca4-488f-8fcc-df65711110a0",
+            "entrepot_id": "a9190410-87ab-4654-9733-9300feb1c200",
+            "jours_avant_rupture": -0.25283899903297424,
+            "quantite_actuelle": 0.1080271392004396
+        },
+        {
+            "produit_id": "eda5d316-c982-40a9-8bc9-9782caba872b",
+            "entrepot_id": "9269a4ad-6b3e-486d-8ae0-39b9053864c3",
+            "jours_avant_rupture": -9.8279390335083,
+            "quantite_actuelle": 1.441128005929268
+        },
+        {
+            "produit_id": "4a627176-b365-4385-96cd-934158e97e77",
+            "entrepot_id": "32f423f1-7f9e-46ab-b980-216da5b3832c",
+            "jours_avant_rupture": 0.2618888318538666,
+            "quantite_actuelle": 0.3838411116270937
+        },
+        {
+            "produit_id": "4c45e520-d52b-42dd-b2e4-e605aa813ba8",
+            "entrepot_id": "4ec61afd-d611-4a9b-8d9b-752ed90a2241",
+            "jours_avant_rupture": -6.314339637756348,
+            "quantite_actuelle": 1.441128005929268
+        },
+        {
+            "produit_id": "1d5f7b1b-1074-49fc-9346-eee1c0e3deb2",
+            "entrepot_id": "97d016ff-026d-4e2e-9124-dbb322562508",
+            "jours_avant_rupture": -1.680251121520996,
+            "quantite_actuelle": 0.6136860886493055
+        },
+        {
+            "produit_id": "9af046cc-2803-4552-9c56-3e5716446d47",
+            "entrepot_id": "0ff6e7ef-6cb5-4bb7-8dc5-9dc32cc31817",
+            "jours_avant_rupture": -0.2153298258781433,
+            "quantite_actuelle": 0.06205814379599724
+        }
+    ],
+    "recommandations_saison": [
+        {
+            "produit_id": "04e34ca4-8548-43dc-b11b-f616da085eed",
+            "mois_prochain": "June 2025",
+            "quantite_recommandee": 0
+        },
+        {
+            "produit_id": "e1af882d-8388-4deb-a784-a666a3096b6e",
+            "mois_prochain": "June 2025",
+            "quantite_recommandee": 0
+        },
+        {
+            "produit_id": "3d8804ff-eb99-4455-a9d2-f8c2ec76541b",
+            "mois_prochain": "June 2025",
+            "quantite_recommandee": 0
+        },
+        {
+            "produit_id": "89dcbfb3-d784-41ea-83b3-b35dc8c8fff2",
+            "mois_prochain": "June 2025",
+            "quantite_recommandee": 0
+        },
+        {
+            "produit_id": "bde4da41-a775-436b-8a69-0edfd0bff3bf",
+            "mois_prochain": "June 2025",
+            "quantite_recommandee": 0
+        },
+        {
+            "produit_id": "f31ab9ff-a035-40bc-87a0-f88ccae1fdc9",
+            "mois_prochain": "June 2025",
+            "quantite_recommandee": 0
+        },
+        {
+            "produit_id": "ea177648-69cf-4f17-a3ee-313dc50a4073",
+            "mois_prochain": "June 2025",
+            "quantite_recommandee": 0
+        },
+        {
+            "produit_id": "3e7db20a-ac7d-45d3-ab65-3157834223c9",
+            "mois_prochain": "June 2025",
+            "quantite_recommandee": 0
+        },
+        {
+            "produit_id": "47371c74-fa5c-472f-b227-495bfdb03893",
+            "mois_prochain": "June 2025",
+            "quantite_recommandee": 0
+        },
+        {
+            "produit_id": "1febfcd7-a810-4849-b55c-34f58872872c",
+            "mois_prochain": "June 2025",
+            "quantite_recommandee": 0
+        },
+        {
+            "produit_id": "24b88e19-93fa-47fc-9ff8-7d0cdb77f21f",
+            "mois_prochain": "June 2025",
+            "quantite_recommandee": 0
+        },
+        {
+            "produit_id": "dc9368ff-8e1d-40f9-aa85-b1ce7ead09b1",
+            "mois_prochain": "June 2025",
+            "quantite_recommandee": 0
+        },
+        {
+            "produit_id": "0c8eec8e-961a-48f8-87cd-a0911d143ee9",
+            "mois_prochain": "June 2025",
+            "quantite_recommandee": 0
+        },
+        {
+            "produit_id": "913f53b2-74b2-415c-8404-39e5a1f9cc75",
+            "mois_prochain": "June 2025",
+            "quantite_recommandee": 0
+        },
+        {
+            "produit_id": "ec08f528-7ca4-488f-8fcc-df65711110a0",
+            "mois_prochain": "June 2025",
+            "quantite_recommandee": 0
+        },
+        {
+            "produit_id": "eda5d316-c982-40a9-8bc9-9782caba872b",
+            "mois_prochain": "June 2025",
+            "quantite_recommandee": 0
+        },
+        {
+            "produit_id": "4a627176-b365-4385-96cd-934158e97e77",
+            "mois_prochain": "June 2025",
+            "quantite_recommandee": 0
+        },
+        {
+            "produit_id": "4c45e520-d52b-42dd-b2e4-e605aa813ba8",
+            "mois_prochain": "June 2025",
+            "quantite_recommandee": 0
+        },
+        {
+            "produit_id": "1d5f7b1b-1074-49fc-9346-eee1c0e3deb2",
+            "mois_prochain": "June 2025",
+            "quantite_recommandee": 0
+        },
+        {
+            "produit_id": "9af046cc-2803-4552-9c56-3e5716446d47",
+            "mois_prochain": "June 2025",
+            "quantite_recommandee": 0
+        }
+    ],
+    "produit_plus_demande": {
+        "produit_id": "89dcbfb3-d784-41ea-83b3-b35dc8c8fff2",
+        "quantite_totale": 49.0
+    },
+    "total_produits": 20,
+    "total_entrepots": 20,
+    "produits_stock_faible": 19
+}

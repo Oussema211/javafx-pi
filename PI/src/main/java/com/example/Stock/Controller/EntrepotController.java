@@ -10,6 +10,7 @@ import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
@@ -26,6 +27,7 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -37,6 +39,7 @@ public class EntrepotController {
     @FXML private ComboBox<String> espaceFilter;
     @FXML private Button resetBtn;
     @FXML private Button ajouterBtn;
+    @FXML private Button describe3DButton;
     @FXML private Button excelBtn;
     @FXML private Button pdfBtn;
     @FXML private ListView<Entrepot> entrepotList;
@@ -175,7 +178,16 @@ public class EntrepotController {
                 });
 
                 setGraphic(mainContainer);
+
+
+                if (entrepot.getLatitude() != null && entrepot.getLongitude() != null) {
+                    Label gpsLabel = new Label("🌍 " + entrepot.getLatitude() + ", " + entrepot.getLongitude());
+                    gpsLabel.getStyleClass().add("entrepot-detail");
+                    detailsBox.getChildren().add(gpsLabel);
+                }
+
             }
+
         });
         entrepotList.setItems(entrepotData);
         entrepotList.getStyleClass().add("stock-list");
@@ -359,4 +371,6 @@ public class EntrepotController {
                 .collect(Collectors.toList());
         entrepotList.setItems(FXCollections.observableArrayList(sortedList));
     }
+
+
 }

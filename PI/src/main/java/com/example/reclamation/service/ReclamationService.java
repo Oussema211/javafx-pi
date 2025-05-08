@@ -13,8 +13,10 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.sql.*;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -48,36 +50,29 @@ public class ReclamationService {
             System.err.println("Error initializing reclamations table: " + e.getMessage());
         }
     }
-        public String assignTagToReclamation(UUID id) throws Exception {
-        // Step 1: Retrieve the reclamation by ID
+
+    public String assignTagToReclamation(UUID id) throws Exception {
         Reclamation reclamation = getReclamationById(id);
         if (reclamation == null) {
             return null;
         }
-
-        // Step 2: Fetch all tags
         List<Tag> tags = tagService.getAllTags();
         if (tags.isEmpty()) {
             System.err.println("No tags found in the database.");
             return null;
         }
 
-        // Step 3: Create a comma-separated string of tag names
         String formattedTags = tags.stream()
                 .map(Tag::getName)
                 .collect(Collectors.joining(", "));
 
-        // Step 4: Build the prompt for the Gemini API
         String description = reclamation.getDescription();
         String prompt = "answer with only one of those tags: " + formattedTags + " to this reclamation " + description;
-
-        // Step 5: Get the Gemini API key from environment variables
         String apiKey = "AIzaSyBaRoGkT-edsd9WToHHsSjEaCfaNzLcYM4";
         if (apiKey == null || apiKey.isEmpty()) {
             throw new RuntimeException("Gemini API key is not set in the environment.");
         }
 
-        // Step 6: Call the Gemini API
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(new URI("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=" + apiKey))
                 .header("Content-Type", "application/json")
@@ -96,19 +91,15 @@ public class ReclamationService {
             return null;
         }
 
-        // Step 7: Parse the response
         ObjectNode root = objectMapper.readValue(response.body(), ObjectNode.class);
         String responseText = root.path("candidates").get(0).path("content").path("parts").get(0).path("text").asText("").trim();
         System.out.println("Gemini response: " + responseText);
-
-        // Step 8: Find the tag by name
         Tag tag = tagService.getTagByName(responseText);
         if (tag == null) {
             System.err.println("Tag not found: " + responseText);
             return null;
         }
 
-        // Step 9: Assign the tag to the reclamation and update the database
         reclamation.setTagId(tag.getId());
         boolean updated = updateReclamation(reclamation);
         if (!updated) {
@@ -136,6 +127,23 @@ public class ReclamationService {
             int rowsAffected = pstmt.executeUpdate();
     
             if (rowsAffected > 0) {
+                Map<String, Object> payload = new HashMap<>();
+                payload.put("id", id.toString());
+                payload.put("userId", userId.toString());
+                payload.put("title", title);
+                payload.put("description", description);
+                payload.put("status", statut.getDisplayName());
+                payload.put("date", Instant.ofEpochMilli(dateReclamation.getTime()).toString());
+    
+                System.out.println("Attempting to trigger Pusher event on channel 'admins' with event 'new-reclamation'");
+                try {
+                    PusherClient.get().trigger("admins", "new-reclamation", payload);
+                    System.out.println("Successfully triggered Pusher event for reclamation ID: " + id);
+                } catch (Exception e) {
+                    System.err.println("Failed to trigger Pusher event: " + e.getMessage());
+                    e.printStackTrace();
+                }
+    
                 // Call assignTagToReclamation to automatically assign a tag
                 try {
                     String assignedTag = assignTagToReclamation(id);
@@ -170,6 +178,7 @@ public class ReclamationService {
             return false;
         }
     }
+
     public Reclamation getReclamationById(UUID id) {
         String sql = "SELECT * FROM reclamations WHERE id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -184,7 +193,7 @@ public class ReclamationService {
                         rs.getInt("rate"),
                         rs.getString("title"),
                         rs.getString("description"),
-                        Status.fromString(rs.getString("statut")) // Convert DB string to enum
+                        Status.fromString(rs.getString("statut"))
                 );
             }
         } catch (SQLException e) {
@@ -192,7 +201,6 @@ public class ReclamationService {
         }
         return null;
     }
-    
 
     public List<Reclamation> getAllReclamations() {
         List<Reclamation> reclamations = new ArrayList<>();
@@ -208,11 +216,35 @@ public class ReclamationService {
                         rs.getInt("rate"),
                         rs.getString("title"),
                         rs.getString("description"),
-                        Status.fromString(rs.getString("statut")) // Convert DB string to enum
+                        Status.fromString(rs.getString("statut"))
                 ));
             }
         } catch (SQLException e) {
             System.err.println("Error fetching all reclamations: " + e.getMessage());
+        }
+        return reclamations;
+    }
+
+    public List<Reclamation> getReclamationsByTag(UUID tagId) {
+        List<Reclamation> reclamations = new ArrayList<>();
+        String sql = "SELECT * FROM reclamations WHERE tag_id = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, tagId.toString());
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                reclamations.add(new Reclamation(
+                        UUID.fromString(rs.getString("id")),
+                        UUID.fromString(rs.getString("user_id")),
+                        rs.getString("tag_id") != null ? UUID.fromString(rs.getString("tag_id")) : null,
+                        rs.getTimestamp("date_reclamation"),
+                        rs.getInt("rate"),
+                        rs.getString("title"),
+                        rs.getString("description"),
+                        Status.fromString(rs.getString("statut"))
+                ));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching reclamations by tag ID: " + e.getMessage());
         }
         return reclamations;
     }
@@ -227,7 +259,7 @@ public class ReclamationService {
             pstmt.setInt(4, reclamation.getRate());
             pstmt.setString(5, reclamation.getTitle());
             pstmt.setString(6, reclamation.getDescription());
-            pstmt.setString(7, reclamation.getStatut().getDisplayName()); // Store enum's display name
+            pstmt.setString(7, reclamation.getStatut().getDisplayName());
             pstmt.setString(8, reclamation.getId().toString());
             int rowsAffected = pstmt.executeUpdate();
             return rowsAffected > 0;
@@ -236,6 +268,7 @@ public class ReclamationService {
             return false;
         }
     }
+
     public boolean deleteReclamation(UUID id) {
         String sql = "DELETE FROM reclamations WHERE id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -247,5 +280,4 @@ public class ReclamationService {
             return false;
         }
     }
-    
 }
