@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Entrepôt 3D Premium</title>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/postprocessing/UnrealBloomPass.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+        }
+        #container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+        }
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            z-index: 100;
+            text-align: center;
+        }
+        #ui-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.9);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10;
+            max-width: 300px;
+        }
+        #toolbar {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.8);
+            padding: 10px 15px;
+            border-radius: 8px;
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+        }
+        button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            background: #4a6baf;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #3a5a9f;
+        }
+        #context-menu {
+            position: absolute;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            display: none;
+            z-index: 100;
+        }
+        #context-menu ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        #context-menu li {
+            padding: 8px 15px;
+            cursor: pointer;
+        }
+        #context-menu li:hover {
+            background: #f0f0f0;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #ddd;
+            margin-top: 10px;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .progress {
+            height: 100%;
+            background: #4a6baf;
+            width: 0%;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+<div id="container">
+    <div id="loading">
+        <div>Chargement de l'entrepôt 3D...</div>
+        <div class="progress-bar">
+            <div class="progress" id="load-progress"></div>
+        </div>
+    </div>
+
+    <div id="ui-panel">
+        <h2>Entrepôt 3D Premium</h2>
+        <div id="warehouse-stats">
+            <p><strong>Dimensions:</strong> <span id="dimensions-display">20m x 15m x 8m</span></p>
+            <p><strong>Allées:</strong> <span id="aisles-display">4</span></p>
+            <p><strong>Espace utilisé:</strong> <span id="space-used">35%</span></p>
+        </div>
+        <div id="measurement-result" style="display: none; margin-top: 10px;">
+            <p><strong>Mesure:</strong> <span id="measure-value">0m</span></p>
+        </div>
+    </div>
+
+    <div id="toolbar">
+        <button id="toggle-grid">Grille</button>
+        <button id="toggle-measure">Mesurer</button>
+        <button id="toggle-sections">Coupes</button>
+        <button id="toggle-wireframe">Filaire</button>
+        <button id="export-btn">Exporter</button>
+    </div>
+
+    <div id="context-menu">
+        <ul>
+            <li data-action="measure">Mesurer depuis ici</li>
+            <li data-action="highlight">Surligner</li>
+            <li data-action="info">Informations</li>
+            <li data-action="delete">Supprimer</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+    // Variables globales
+    let scene, camera, renderer, controls, composer;
+    let warehouseGroup, selectedObjects = [];
+    let isMeasuring = false, measurePoints = [], measureLine = null;
+    let raycaster = new THREE.Raycaster();
+    let mouse = new THREE.Vector2();
+    let currentSection = null;
+
+    // Paramètres de l'entrepôt
+    const warehouseParams = {
+        length: 20,
+        width: 15,
+        height: 8,
+        aisles: 4,
+        storageType: 'Rayonnages métalliques',
+        description: 'Entrepôt premium avec fonctionnalités avancées'
+    };
+
+    // Initialisation
+    function init() {
+        // Création de la scène
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xf0f5ff);
+        scene.fog = new THREE.FogExp2(0xf0f5ff, 0.001);
+
+        // Configuration de la caméra
+        const aspect = window.innerWidth / window.innerHeight;
+        camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
+        camera.position.set(25, 30, 25);
+
+        // Configuration du rendu
+        renderer = new THREE.WebGLRenderer({
+            antialias: true,
+            powerPreference: "high-performance"
+        });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.getElementById('container').appendChild(renderer.domElement);
+
+        // Contrôles
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.minDistance = 5;
+        controls.maxDistance = 100;
+        controls.maxPolarAngle = Math.PI * 0.9;
+
+        // Post-processing
+        setupPostProcessing();
+
+        // Éclairage
+        setupPremiumLighting();
+
+        // Environnement
+        createEnvironment();
+
+        // Création de l'entrepôt
+        createWarehouse();
+
+        // Événements
+        setupEventListeners();
+
+        // Animation
+        animate();
+
+        // Mise à jour UI
+        updateUI();
+    }
+
+    // Post-processing
+    function setupPostProcessing() {
+        composer = new EffectComposer(renderer);
+        composer.addPass(new RenderPass(scene, camera));
+
+        const bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight),
+            1.5, 0.4, 0.85
+        );
+        composer.addPass(bloomPass);
+    }
+
+    // Éclairage premium
+    function setupPremiumLighting() {
+        // Lumière directionnelle principale (soleil)
+        const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        sunLight.position.set(10, 20, 10);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
+        sunLight.shadow.camera.near = 0.1;
+        sunLight.shadow.camera.far = 100;
+        sunLight.shadow.camera.left = -20;
+        sunLight.shadow.camera.right = 20;
+        sunLight.shadow.camera.top = 20;
+        sunLight.shadow.camera.bottom = -20;
+        scene.add(sunLight);
+
+        // Lumière ambiante
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+        scene.add(ambientLight);
+
+        // Lumière d'appoint
+        const fillLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        fillLight.position.set(-10, 10, -10);
+        scene.add(fillLight);
+
+        // Projecteurs
+        const spotLight1 = new THREE.SpotLight(0xfffae5, 0.7, 30, Math.PI/6, 0.5);
+        spotLight1.position.set(0, warehouseParams.height - 1, 0);
+        spotLight1.castShadow = true;
+        scene.add(spotLight1);
+    }
+
+    // Environnement
+    function createEnvironment() {
+        // Grille
+        const gridHelper = new THREE.GridHelper(50, 50, 0x555555, 0x555555);
+        gridHelper.position.y = 0.01;
+        scene.add(gridHelper);
+
+        // Axes
+        const axesHelper = new THREE.AxesHelper(15);
+        scene.add(axesHelper);
+    }
+
+    // Création de l'entrepôt
+    function createWarehouse() {
+        warehouseGroup = new THREE.Group();
+
+        // Sol
+        const floorGeometry = new THREE.PlaneGeometry(
+            warehouseParams.length,
+            warehouseParams.width
+        );
+        const floorMaterial = new THREE.MeshStandardMaterial({
+            color: 0xcccccc,
+            roughness: 0.7,
+            metalness: 0.1
+        });
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        warehouseGroup.add(floor);
+
+        // Murs
+        createWalls();
+
+        // Étagères
+        createShelves();
+
+        // Objets divers
+        createWarehouseObjects();
+
+        scene.add(warehouseGroup);
+        updateLoadProgress(100);
+    }
+
+    function createWalls() {
+        const wallMaterial = new THREE.MeshStandardMaterial({
+            color: 0xaaaaaa,
+            roughness: 0.6,
+            metalness: 0.2
+        });
+
+        // Murs longitudinaux
+        createWall(
+            warehouseParams.length, warehouseParams.height,
+            0, warehouseParams.width/2, 0, wallMaterial
+        );
+        createWall(
+            warehouseParams.length, warehouseParams.height,
+            0, -warehouseParams.width/2, 0, wallMaterial
+        );
+
+        // Murs latéraux
+        createWall(
+            warehouseParams.width, warehouseParams.height,
+            warehouseParams.length/2, 0, Math.PI/2, wallMaterial
+        );
+        createWall(
+            warehouseParams.width, warehouseParams.height,
+            -warehouseParams.length/2, 0, Math.PI/2, wallMaterial
+        );
+
+        // Portes
+        createDoors();
+    }
+
+    function createWall(length, height, x, y, rotationY, material) {
+        const geometry = new THREE.BoxGeometry(length, height, 0.3);
+        const wall = new THREE.Mesh(geometry, material);
+        wall.position.set(x, y, height/2);
+        wall.rotation.y = rotationY;
+        wall.castShadow = true;
+        wall.receiveShadow = true;
+        wall.userData = { type: 'wall', dimensions: `${length}m x ${height}m` };
+        warehouseGroup.add(wall);
+    }
+
+    function createDoors() {
+        const doorMaterial = new THREE.MeshStandardMaterial({
+            color: 0x8B4513,
+            roughness: 0.6,
+            metalness: 0.2
+        });
+
+        // Porte principale
+        const doorGeometry = new THREE.BoxGeometry(3, 0.2, 4);
+        const door = new THREE.Mesh(doorGeometry, doorMaterial);
+        door.position.set(0, -warehouseParams.width/2 + 0.1, 2);
+        door.userData = { type: 'door', dimensions: '3m x 4m' };
+        warehouseGroup.add(door);
+    }
+
+    function createShelves() {
+        const shelfSpacing = warehouseParams.length / (warehouseParams.aisles + 1);
+
+        for (let i = 0; i < warehouseParams.aisles; i++) {
+            const x = -warehouseParams.length/2 + (i + 1) * shelfSpacing;
+            createShelf(x, warehouseParams.width, warehouseParams.height);
+        }
+    }
+
+    function createShelf(x, width, height) {
+        const shelfGroup = new THREE.Group();
+        shelfGroup.position.set(x, 0, 0);
+
+        const shelfWidth = width * 0.7;
+        const shelfDepth = 0.8;
+        const shelfHeight = 0.05;
+        const levels = 4;
+
+        // Matériau métallique
+        const shelfMaterial = new THREE.MeshStandardMaterial({
+            color: 0xC0C0C0,
+            roughness: 0.2,
+            metalness: 0.9
+        });
+
+        // Support vertical
+        const supportGeometry = new THREE.CylinderGeometry(0.05, 0.05, height, 8);
+        const supportMaterial = new THREE.MeshStandardMaterial({
+            color: 0x555555,
+            metalness: 0.8,
+            roughness: 0.3
+        });
+
+        // Supports gauche et droit
+        const leftSupport = new THREE.Mesh(supportGeometry, supportMaterial);
+        leftSupport.position.set(0, -shelfWidth/2 + 0.1, height/2);
+        leftSupport.rotation.x = Math.PI/2;
+        leftSupport.castShadow = true;
+        shelfGroup.add(leftSupport);
+
+        const rightSupport = new THREE.Mesh(supportGeometry, supportMaterial);
+        rightSupport.position.set(0, shelfWidth/2 - 0.1, height/2);
+        rightSupport.rotation.x = Math.PI/2;
+        rightSupport.castShadow = true;
+        shelfGroup.add(rightSupport);
+
+        // Plateformes
+        for (let level = 0; level < levels; level++) {
+            const z = (level + 1) * height / (levels + 1);
+
+            const shelfGeometry = new THREE.BoxGeometry(shelfDepth, shelfWidth, shelfHeight);
+            const shelf = new THREE.Mesh(shelfGeometry, shelfMaterial);
+            shelf.position.set(0, 0, z);
+            shelf.castShadow = true;
+            shelf.receiveShadow = true;
+            shelf.userData = {
+                type: 'shelf',
+                level: level+1,
+                dimensions: `${shelfWidth}m x ${shelfDepth}m`,
+                capacity: `${shelfWidth * shelfDepth * 0.8} m²`
+            };
+            shelfGroup.add(shelf);
+        }
+
+        shelfGroup.userData = { type: 'shelf-system', aisles: warehouseParams.aisles };
+        warehouseGroup.add(shelfGroup);
+    }
+
+    function createWarehouseObjects() {
+        // Palettes
+        for (let i = 0; i < 10; i++) {
+            createPalette(
+                THREE.MathUtils.randFloatSpread(warehouseParams.length * 0.8),
+                THREE.MathUtils.randFloatSpread(warehouseParams.width * 0.8),
+                0.1
+            );
+        }
+
+        // Chariots élévateurs
+        createForklift(-warehouseParams.length/3, -warehouseParams.width/3, 0);
+        createForklift(warehouseParams.length/3, warehouseParams.width/3, 0);
+    }
+
+    function createPalette(x, y, z) {
+        const paletteGroup = new THREE.Group();
+
+        // Base en bois
+        const baseGeometry = new THREE.BoxGeometry(1.2, 1.0, 0.1);
+        const baseMaterial = new THREE.MeshStandardMaterial({
+            color: 0xA0522D,
+            roughness: 0.7
+        });
+        const base = new THREE.Mesh(baseGeometry, baseMaterial);
+        base.position.set(0, 0, 0.05);
+        base.castShadow = true;
+        base.receiveShadow = true;
+        paletteGroup.add(base);
+
+        // Blocs de support
+        const blockGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.15);
+        for (let i = 0; i < 4; i++) {
+            const block = new THREE.Mesh(blockGeometry, baseMaterial);
+            const posX = i % 2 === 0 ? -0.5 : 0.5;
+            const posY = i < 2 ? -0.4 : 0.4;
+            block.position.set(posX, posY, -0.05);
+            block.castShadow = true;
+            paletteGroup.add(block);
+        }
+
+        paletteGroup.position.set(x, y, z);
+        paletteGroup.userData = { type: 'palette', dimensions: '1.2m x 1.0m' };
+        warehouseGroup.add(paletteGroup);
+    }
+
+    function createForklift(x, y, z) {
+        const forkliftGroup = new THREE.Group();
+
+        // Base
+        const baseGeometry = new THREE.BoxGeometry(1.5, 0.8, 0.8);
+        const baseMaterial = new THREE.MeshStandardMaterial({
+            color: 0xFF4500,
+            roughness: 0.5
+        });
+        const base = new THREE.Mesh(baseGeometry, baseMaterial);
+        base.position.set(0, 0, 0.4);
+        base.castShadow = true;
+        forkliftGroup.add(base);
+
+        // Cabine
+        const cabinGeometry = new THREE.BoxGeometry(0.8, 0.7, 0.7);
+        const cabinMaterial = new THREE.MeshStandardMaterial({
+            color: 0x4682B4,
+            roughness: 0.3,
+            metalness: 0.4
+        });
+        const cabin = new THREE.Mesh(cabinGeometry, cabinMaterial);
+        cabin.position.set(0.3, 0, 0.9);
+        forkliftGroup.add(cabin);
+
+        // Fourche
+        const forkGeometry = new THREE.BoxGeometry(0.1, 0.6, 0.2);
+        const forkMaterial = new THREE.MeshStandardMaterial({
+            color: 0xC0C0C0,
+            metalness: 0.8
+        });
+        const fork1 = new THREE.Mesh(forkGeometry, forkMaterial);
+        fork1.position.set(-0.5, 0, 0.3);
+        forkliftGroup.add(fork1);
+
+        const fork2 = new THREE.Mesh(forkGeometry, forkMaterial);
+        fork2.position.set(-0.5, 0, 0.1);
+        forkliftGroup.add(fork2);
+
+        // Mât
+        const mastGeometry = new THREE.BoxGeometry(0.1, 0.1, 1.5);
+        const mast = new THREE.Mesh(mastGeometry, forkMaterial);
+        mast.position.set(-0.5, 0, 1.1);
+        forkliftGroup.add(mast);
+
+        forkliftGroup.position.set(x, y, z);
+        forkliftGroup.userData = { type: 'forklift', dimensions: '1.5m x 0.8m' };
+        warehouseGroup.add(forkliftGroup);
+    }
+
+    // Gestion des événements
+    function setupEventListeners() {
+        // Redimensionnement
+        window.addEventListener('resize', onWindowResize);
+
+        // Clic souris
+        window.addEventListener('click', onMouseClick);
+
+        // Mouvement souris
+        window.addEventListener('mousemove', onMouseMove);
+
+        // Boutons UI
+        document.getElementById('toggle-grid').addEventListener('click', toggleGrid);
+        document.getElementById('toggle-measure').addEventListener('click', toggleMeasureMode);
+        document.getElementById('toggle-sections').addEventListener('click', toggleSections);
+        document.getElementById('toggle-wireframe').addEventListener('click', toggleWireframe);
+        document.getElementById('export-btn').addEventListener('click', exportScene);
+    }
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        composer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function onMouseClick(event) {
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(warehouseGroup.children, true);
+
+        if (intersects.length > 0) {
+            const object = intersects[0].object;
+
+            if (isMeasuring) {
+                handleMeasurement(object);
+            } else {
+                showContextMenu(event, object);
+            }
+        } else {
+            hideContextMenu();
+        }
+    }
+
+    function onMouseMove(event) {
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    }
+
+    function showContextMenu(event, object) {
+        const contextMenu = document.getElementById('context-menu');
+        contextMenu.style.display = 'block';
+        contextMenu.style.left = `${event.clientX}px`;
+        contextMenu.style.top = `${event.clientY}px`;
+
+        // Stocker l'objet sélectionné
+        selectedObjects = [object];
+
+        // Gérer les clics sur le menu contextuel
+        const items = contextMenu.querySelectorAll('li');
+        items.forEach(item => {
+            item.addEventListener('click', () => {
+                const action = item.getAttribute('data-action');
+                handleContextAction(action);
+                contextMenu.style.display = 'none';
+            });
+        });
+    }
+
+    function hideContextMenu() {
+        document.getElementById('context-menu').style.display = 'none';
+    }
+
+    function handleContextAction(action) {
+        if (selectedObjects.length === 0) return;
+
+        const object = selectedObjects[0];
+
+        switch(action) {
+            case 'measure':
+                startMeasurement(object);
+                break;
+            case 'highlight':
+                highlightObject(object);
+                break;
+            case 'info':
+                showObjectInfo(object);
+                break;
+            case 'delete':
+                removeObject(object);
+                break;
+        }
+    }
+
+    // Fonctionnalités avancées
+    function toggleGrid() {
+        const grid = scene.children.find(child => child instanceof THREE.GridHelper);
+        if (grid) grid.visible = !grid.visible;
+    }
+
+    function toggleMeasureMode() {
+        isMeasuring = !isMeasuring;
+        const btn = document.getElementById('toggle-measure');
+
+        if (isMeasuring) {
+            btn.style.backgroundColor = '#4CAF50';
+            document.getElementById('measurement-result').style.display = 'block';
+        } else {
+            btn.style.backgroundColor = '#4a6baf';
+            document.getElementById('measurement-result').style.display = 'none';
+            resetMeasurement();
+        }
+    }
+
+    function startMeasurement(object) {
+        isMeasuring = true;
+        measurePoints = [object.position.clone()];
+        document.getElementById('toggle-measure').style.backgroundColor = '#4CAF50';
+        document.getElementById('measurement-result').style.display = 'block';
+    }
+
+    function handleMeasurement(object) {
+        if (!isMeasuring) return;
+
+        measurePoints.push(object.position.clone());
+
+        if (measurePoints.length === 2) {
+            createMeasurementLine();
+            calculateDistance();
+        }
+    }
+
+    function createMeasurementLine() {
+        // Supprimer la ligne existante
+        if (measureLine) {
+            scene.remove(measureLine);
+        }
+
+        const geometry = new THREE.BufferGeometry().setFromPoints(measurePoints);
+        const material = new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 2 });
+        measureLine = new THREE.Line(geometry, material);
+        scene.add(measureLine);
+    }
+
+    function calculateDistance() {
+        if (measurePoints.length < 2) return;
+
+        const distance = measurePoints[0].distanceTo(measurePoints[1]);
+        document.getElementById('measure-value').textContent = `${distance.toFixed(2)} m`;
+    }
+
+    function resetMeasurement() {
+        if (measureLine) {
+            scene.remove(measureLine);
+            measureLine = null;
+        }
+        measurePoints = [];
+        document.getElementById('measure-value').textContent = '0m';
+    }
+
+    function toggleSections() {
+        if (currentSection) {
+            scene.remove(currentSection);
+            currentSection = null;
+            return;
+        }
+
+        // Créer un plan de coupe
+        const sectionGeometry = new THREE.PlaneGeometry(30, 30);
+        const sectionMaterial = new THREE.MeshBasicMaterial({
+            color: 0x00ffff,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.3
+        });
+        currentSection = new THREE.Mesh(sectionGeometry, sectionMaterial);
+        currentSection.rotation.x = Math.PI / 2;
+        currentSection.position.z = warehouseParams.height / 2;
+        scene.add(currentSection);
+    }
+
+    function toggleWireframe() {
+        warehouseGroup.traverse(child => {
+            if (child.isMesh) {
+                child.material.wireframe = !child.material.wireframe;
+            }
+        });
+    }
+
+    function highlightObject(object) {
+        // Réinitialiser les surbrillances précédentes
+        warehouseGroup.traverse(child => {
+            if (child.isMesh && child.userData.originalColor) {
+                child.material.color.setHex(child.userData.originalColor);
+                delete child.userData.originalColor;
+            }
+        });
+
+        // Appliquer la surbrillance
+        if (object.isMesh) {
+            object.userData.originalColor = object.material.color.getHex();
+            object.material.color.setHex(0x00ff00);
+        }
+    }
+
+    function showObjectInfo(object) {
+        const infoPanel = document.getElementById('ui-panel');
+        let infoHTML = `<h3>${object.userData.type || 'Objet'}</h3>`;
+
+        if (object.userData.dimensions) {
+            infoHTML += `<p><strong>Dimensions:</strong> ${object.userData.dimensions}</p>`;
+        }
+
+        if (object.userData.capacity) {
+            infoHTML += `<p><strong>Capacité:</strong> ${object.userData.capacity}</p>`;
+        }
+
+        infoPanel.innerHTML = infoHTML + infoPanel.innerHTML;
+    }
+
+    function removeObject(object) {
+        if (object.parent) {
+            object.parent.remove(object);
+        }
+    }
+
+    function exportScene() {
+        // Créer une image de la scène
+        renderer.render(scene, camera);
+        const imageData = renderer.domElement.toDataURL('image/png');
+
+        // Créer un lien de téléchargement
+        const link = document.createElement('a');
+        link.href = imageData;
+        link.download = 'entrepot-3d.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function updateUI() {
+        document.getElementById('dimensions-display').textContent =
+            `${warehouseParams.length}m x ${warehouseParams.width}m x ${warehouseParams.height}m`;
+        document.getElementById('aisles-display').textContent = warehouseParams.aisles;
+    }
+
+    function updateLoadProgress(percent) {
+        document.getElementById('load-progress').style.width = `${percent}%`;
+        if (percent >= 100) {
+            setTimeout(() => {
+                document.getElementById('loading').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('loading').style.display = 'none';
+                }, 300);
+            }, 500);
+        }
+    }
+
+    // Animation
+    function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        composer.render();
+    }
+
+    // Démarrer l'application
+    window.onload = init;
+</script>
+</body>
+</html>

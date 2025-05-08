@@ -2,139 +2,272 @@ package com.example.Stock.Controller;
 
 import com.example.Stock.Model.Entrepot;
 import com.example.Stock.service.EntrepotService;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.concurrent.Worker;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.StackPane;
-import javafx.util.Duration;
-import javafx.util.converter.NumberStringConverter;
-import okhttp3.*;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Text;
+import javafx.stage.Stage;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URLEncoder;
+import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-
-import static javafx.util.Duration.seconds;
-
-
+import java.util.Locale;
+import java.util.UUID;
+import java.util.regex.Pattern;
 
 public class AddEntrepotController {
+    // Champs du formulaire
     @FXML private TextField nomField;
     @FXML private TextField adresseField;
     @FXML private TextField villeField;
     @FXML private TextField espaceField;
     @FXML private TextField latitudeField;
     @FXML private TextField longitudeField;
+
+    // Éléments UI
     @FXML private Button searchLocationBtn;
     @FXML private StackPane mapContainer;
     @FXML private MapView mapView;
     @FXML private ComboBox<String> mapTypeSelector;
+    @FXML private Button zoomMaxButton;
+    @FXML private Button saveBtn;  // Correspond à fx:id="saveBtn" dans FXML
+    @FXML private Button cancelBtn; // Correspond à fx:id="cancelBtn" dans FXML
+    @FXML private Text errorText;
+    @FXML private Button describe3DButton;
 
-
-    private EntrepotController parentController;
-    private EntrepotService entrepotService = new EntrepotService();
-    private final OkHttpClient httpClient = new OkHttpClient();
+    // Services
+    private final EntrepotService entrepotService = new EntrepotService();
     private final BooleanProperty mapReady = new SimpleBooleanProperty(false);
 
+    private EntrepotController parentController;
+
+    // États
+    private boolean isUpdatingFields = false;
+    private boolean isUpdatingMap = false;
+
+    // Patterns de validation
+    private static final Pattern DOUBLE_PATTERN = Pattern.compile("-?\\d+(\\.\\d+)?");
+    private static final Pattern NAME_PATTERN = Pattern.compile("^[a-zA-ZÀ-ÿ0-9\\s\\-']+$");
+    private static final Pattern ADDRESS_PATTERN = Pattern.compile("^[a-zA-ZÀ-ÿ0-9\\s\\-',.]+$");
 
     @FXML
     public void initialize() {
-        configureMapContainer();
-        setupMapBindings();
-        setupMapListeners();
-        setupMapResizing();
+        // Configuration du WebView pour éviter les conflirs
+        System.setProperty("javafx.webview.userDataDir",
+                System.getProperty("java.io.tmpdir") + "/webview_" + System.currentTimeMillis());
 
+        if (mapView == null) {
+            showError("Erreur: MapView n'est pas initialisée correctement!");
+            return;
+        }
+
+        configureMap();
+        setupBindings();
+        setupListeners();
+        setupValidations();
+    }
+
+    private void configureMap() {
         mapTypeSelector.getItems().addAll("OpenStreetMap", "Satellite", "Terrain");
         mapTypeSelector.getSelectionModel().selectFirst();
         mapView.setMapType("OpenStreetMap");
+    }
 
+    private void setupBindings() {
+        // Liaison des champs latitude/longitude avec la carte
+        latitudeField.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (!isUpdatingFields && !newVal.isEmpty() && isValidDouble(newVal)) {
+                try {
+                    double lat = Double.parseDouble(newVal);
+                    if (isValidLatitude(lat)) {
+                        isUpdatingMap = true;
+                        mapView.setLocation(lat, mapView.getLongitude());
+                        isUpdatingMap = false;
+                        clearError();
+                    } else {
+                        showError("Latitude doit être entre -90 et 90");
+                    }
+                } catch (NumberFormatException ignored) {
+                    showError("Format de latitude invalide");
+                }
+            }
+        });
 
-        mapContainer.setVisible(true);
-        mapContainer.setManaged(true);
+        longitudeField.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (!isUpdatingFields && !newVal.isEmpty() && isValidDouble(newVal)) {
+                try {
+                    double lng = Double.parseDouble(newVal);
+                    if (isValidLongitude(lng)) {
+                        isUpdatingMap = true;
+                        mapView.setLocation(mapView.getLatitude(), lng);
+                        isUpdatingMap = false;
+                        clearError();
+                    } else {
+                        showError("Longitude doit être entre -180 et 180");
+                    }
+                } catch (NumberFormatException ignored) {
+                    showError("Format de longitude invalide");
+                }
+            }
+        });
 
-        mapTypeSelector.setVisible(false);
-        setupMapResizing();
+        // Mise à jour des champs depuis la carte
+        mapView.latitudeProperty().addListener((obs, oldVal, newVal) -> {
+            if (!isUpdatingFields && newVal != null) {
+                isUpdatingFields = true;
+                latitudeField.setText(String.format(Locale.US, "%.6f", newVal));
+                isUpdatingFields = false;
+            }
+        });
 
-        // Écouteur pour le changement de type de carte
+        mapView.longitudeProperty().addListener((obs, oldVal, newVal) -> {
+            if (!isUpdatingFields && newVal != null) {
+                isUpdatingFields = true;
+                longitudeField.setText(String.format(Locale.US, "%.6f", newVal));
+                isUpdatingFields = false;
+            }
+        });
+    }
+
+    private void setupListeners() {
+        // Changement de type de carte
         mapTypeSelector.valueProperty().addListener((obs, oldVal, newVal) -> {
             if (mapView != null) {
                 mapView.setMapType(newVal);
             }
         });
 
-        // Écouteur pour le chargement de la carte
-        mapView.mapReadyProperty().addListener((obs, oldVal, ready) -> {
-            if (ready) {
-                PauseTransition pt = new PauseTransition(Duration.millis(500));
-                pt.setOnFinished(e -> {
-                    mapView.setMapType("OpenStreetMap");
-                    mapView.scheduleResize();
-                });
-                pt.play();
+        // Prêt de la carte
+        mapView.mapReadyProperty().addListener((obs, oldVal, isReady) -> {
+            if (isReady) {
+                Platform.runLater(() -> mapContainer.setVisible(true));
             }
         });
 
-        // Lier les champs de texte à la carte
-        setupLocationBindings();
-
+        // Boutons
         searchLocationBtn.setOnAction(e -> searchLocation());
-        double lat = mapView.getLatitude();
-        double lng = mapView.getLongitude();
-
-
+        zoomMaxButton.setOnAction(e -> mapView.setZoom(18));
+        saveBtn.setOnAction(e -> handleSave());
+        cancelBtn.setOnAction(e -> handleCancel());
     }
 
-    private void setupLocationBindings() {
-        // Quand la carte change, mettre à jour les champs
-        mapView.latitudeProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal.doubleValue() != 0.0) {
-                Platform.runLater(() -> {
-                    latitudeField.setText(String.format("%.6f", newVal));
-                });
+    private void setupValidations() {
+        // Validation en temps réel
+        nomField.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (!newVal.isEmpty() && !NAME_PATTERN.matcher(newVal).matches()) {
+                nomField.setStyle("-fx-border-color: red;");
+            } else {
+                nomField.setStyle("");
             }
         });
 
-        mapView.longitudeProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal.doubleValue() != 0.0) {
-                Platform.runLater(() -> {
-                    longitudeField.setText(String.format("%.6f", newVal));
-                });
+        adresseField.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (!newVal.isEmpty() && !ADDRESS_PATTERN.matcher(newVal).matches()) {
+                adresseField.setStyle("-fx-border-color: red;");
+            } else {
+                adresseField.setStyle("");
             }
         });
 
-        // Quand les champs changent manuellement, mettre à jour la carte
-        latitudeField.textProperty().addListener((obs, oldVal, newVal) -> {
-            try {
-                double lat = Double.parseDouble(newVal);
-                double lng = mapView.getLongitude();
-                if (mapView.getLatitude() != lat) {
-                    mapView.setLocation(lat, lng);
-                }
-            } catch (NumberFormatException ignored) {}
+        villeField.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (!newVal.isEmpty() && !NAME_PATTERN.matcher(newVal).matches()) {
+                villeField.setStyle("-fx-border-color: red;");
+            } else {
+                villeField.setStyle("");
+            }
         });
 
-        longitudeField.textProperty().addListener((obs, oldVal, newVal) -> {
-            try {
-                double lng = Double.parseDouble(newVal);
-                double lat = mapView.getLatitude();
-                if (mapView.getLongitude() != lng) {
-                    mapView.setLocation(lat, lng);
-                }
-            } catch (NumberFormatException ignored) {}
+        espaceField.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (!newVal.isEmpty() && !isValidDouble(newVal)) {
+                espaceField.setStyle("-fx-border-color: red;");
+            } else {
+                espaceField.setStyle("");
+            }
         });
+    }
+
+    // Méthodes de validation
+    private boolean isValidDouble(String value) {
+        return DOUBLE_PATTERN.matcher(value).matches();
+    }
+
+    private boolean isValidLatitude(double lat) {
+        return lat >= -90 && lat <= 90;
+    }
+
+    private boolean isValidLongitude(double lng) {
+        return lng >= -180 && lng <= 180;
+    }
+
+    private boolean validateAllFields() {
+        boolean isValid = true;
+
+        // Validation du nom
+        if (nomField.getText().isEmpty() || !NAME_PATTERN.matcher(nomField.getText()).matches()) {
+            nomField.setStyle("-fx-border-color: red;");
+            isValid = false;
+        }
+
+        // Validation de l'adresse
+        if (adresseField.getText().isEmpty() || !ADDRESS_PATTERN.matcher(adresseField.getText()).matches()) {
+            adresseField.setStyle("-fx-border-color: red;");
+            isValid = false;
+        }
+
+        // Validation de la ville
+        if (villeField.getText().isEmpty() || !NAME_PATTERN.matcher(villeField.getText()).matches()) {
+            villeField.setStyle("-fx-border-color: red;");
+            isValid = false;
+        }
+
+        // Validation de l'espace
+        if (espaceField.getText().isEmpty() || !isValidDouble(espaceField.getText())) {
+            espaceField.setStyle("-fx-border-color: red;");
+            isValid = false;
+        } else {
+            try {
+                double espace = Double.parseDouble(espaceField.getText());
+                if (espace <= 0) {
+                    espaceField.setStyle("-fx-border-color: red;");
+                    showError("L'espace doit être supérieur à 0");
+                    isValid = false;
+                }
+            } catch (NumberFormatException e) {
+                espaceField.setStyle("-fx-border-color: red;");
+                isValid = false;
+            }
+        }
+
+        // Validation optionnelle des coordonnées
+        if (!latitudeField.getText().isEmpty()) {
+            if (!isValidDouble(latitudeField.getText()) || !isValidLatitude(Double.parseDouble(latitudeField.getText()))) {
+                latitudeField.setStyle("-fx-border-color: red;");
+                isValid = false;
+            }
+        }
+
+        if (!longitudeField.getText().isEmpty()) {
+            if (!isValidDouble(longitudeField.getText()) || !isValidLongitude(Double.parseDouble(longitudeField.getText()))) {
+                longitudeField.setStyle("-fx-border-color: red;");
+                isValid = false;
+            }
+        }
+
+        return isValid;
     }
 
     @FXML
@@ -142,166 +275,84 @@ public class AddEntrepotController {
         String adresse = adresseField.getText().trim();
         String ville = villeField.getText().trim();
 
-        if(adresse.isEmpty() || ville.isEmpty()) {
+        if (adresse.isEmpty() || ville.isEmpty()) {
             showAlert("Erreur", "Veuillez remplir l'adresse et la ville", Alert.AlertType.ERROR);
             return;
         }
 
-        Platform.runLater(() -> {
-            mapContainer.setVisible(true);
-            PauseTransition pause = new PauseTransition(seconds(0.5));
-            pause.setOnFinished(e -> executeLocationSearch(adresse, ville));
-            pause.play();
-        });
-    }
+        if (!ADDRESS_PATTERN.matcher(adresse).matches()) {
+            showAlert("Erreur", "Adresse contient des caractères invalides", Alert.AlertType.ERROR);
+            return;
+        }
 
-    private void configureMapContainer() {
-        mapView.prefWidthProperty().bind(mapContainer.widthProperty());
-        mapView.prefHeightProperty().bind(mapContainer.heightProperty());
-    }
+        if (!NAME_PATTERN.matcher(ville).matches()) {
+            showAlert("Erreur", "Nom de ville invalide", Alert.AlertType.ERROR);
+            return;
+        }
 
-    private void setupMapBindings() {
-        latitudeField.textProperty().addListener((obs, oldVal, newVal) -> {
-            try {
-                double lat = Double.parseDouble(newVal);
-                if(mapView.getLatitude() != lat) {
-                    mapView.setLocation(lat, mapView.getLongitude());
-                }
-            } catch (NumberFormatException ignored) {}
-        });
-
-        longitudeField.textProperty().addListener((obs, oldVal, newVal) -> {
-            try {
-                double lng = Double.parseDouble(newVal);
-                if(mapView.getLongitude() != lng) {
-                    mapView.setLocation(mapView.getLatitude(), lng);
-                }
-            } catch (NumberFormatException ignored) {}
-        });
-    }
-    private void setupMapListeners() {
-        mapView.mapReadyProperty().addListener((obs, oldVal, isReady) -> {
-            if (isReady) {
-                PauseTransition pt = new PauseTransition(Duration.millis(300));
-                pt.setOnFinished(e -> {
-                    mapView.setStyle("-fx-opacity: 1;");
-                    mapView.setMapType("OpenStreetMap");
-                });
-                pt.play();
-            }
-        });
+        geocodeAddress(adresse, ville);
     }
 
     private void geocodeAddress(String address, String city) {
-        String query = URLEncoder.encode(address + ", " + city, StandardCharsets.UTF_8);
-        String url = "https://nominatim.openstreetmap.org/search?format=json&q=" + query;
-
-        // Implémentez la logique de géocodage ici
-    }
-    private void setupMapResizing() {
-        // La carte s'adapte automatiquement au conteneurse
-        mapView.prefWidthProperty().bind(mapContainer.widthProperty());
-        mapView.prefHeightProperty().bind(mapContainer.heightProperty());
-    }
-
-    private void executeLocationSearch(String adresse, String ville) {
         try {
-            String query = URLEncoder.encode(adresse + ", " + ville, StandardCharsets.UTF_8);
-            String url = "https://nominatim.openstreetmap.org/search?format=json&q=" + query;
+            String query = java.net.URLEncoder.encode(address + ", " + city, StandardCharsets.UTF_8);
+            String url = "https://nominatim.openstreetmap.org/search?format=json&q=" + query
+                    + "&countrycodes=tn&limit=1";
 
-            HttpClient.Builder builder = HttpClient.newBuilder();
-            HttpClient client = builder
-                    .build();
-
+            HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
-                    .header("User-Agent", "JavaFX Map Application")
+                    .header("User-Agent", "StockManagement/1.0")
                     .GET()
                     .build();
 
             client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenApply(HttpResponse::body)
-                    .thenAccept(responseBody -> {
-                        try {
-                            JSONArray results = new JSONArray(responseBody);
-                            if (results.length() > 0) {
-                                JSONObject result = results.getJSONObject(0);
-                                double lat = Double.parseDouble(result.getString("lat"));
-                                double lon = Double.parseDouble(result.getString("lon"));
-
-                                Platform.runLater(() -> {
-                                    mapView.setLocation(lat, lon);
-                                    mapView.setZoom(15);
-                                    // No need to set text fields as the bindings will handle it
-                                });
-                            } else {
-                                Platform.runLater(() ->
-                                        showAlert("Aucun résultat",
-                                                "Aucun emplacement trouvé pour cette adresse",
-                                                Alert.AlertType.INFORMATION)
-                                );
-                            }
-                        } catch (Exception e) {
-                            Platform.runLater(() ->
-                                    showAlert("Erreur",
-                                            "Erreur lors du traitement des résultats: " + e.getMessage(),
-                                            Alert.AlertType.ERROR)
-                            );
-                        }
-                    })
+                    .thenAccept(response -> processGeocodeResponse(response))
                     .exceptionally(e -> {
-                        Platform.runLater(() ->
-                                showAlert("Erreur",
-                                        "Impossible de se connecter au service de géocodage: " + e.getMessage(),
-                                        Alert.AlertType.ERROR)
-                        );
+                        Platform.runLater(() -> {
+                            showAlert("Erreur", "Échec de la recherche: " + e.getMessage(), Alert.AlertType.ERROR);
+                            showError("Erreur lors de la recherche de localisation");
+                        });
                         return null;
                     });
         } catch (Exception e) {
-            showAlert("Erreur", "Erreur lors de la recherche: " + e.getMessage(), Alert.AlertType.ERROR);
+            Platform.runLater(() -> {
+                showAlert("Erreur", "Erreur lors de la recherche: " + e.getMessage(), Alert.AlertType.ERROR);
+                showError("Erreur lors de la recherche de localisation");
+            });
         }
-
-
-
     }
 
-    @FXML
-    private void handleSave() {
+    private void processGeocodeResponse(String response) {
         try {
-            // Validation des champs obligatoires
-            if (nomField.getText().isEmpty() || adresseField.getText().isEmpty() ||
-                    villeField.getText().isEmpty() || espaceField.getText().isEmpty()) {
-                showAlert("Erreur", "Veuillez remplir tous les champs obligatoires", Alert.AlertType.ERROR);
-                return;
-            }
+            JSONArray results = new JSONArray(response);
+            if (results.length() > 0) {
+                JSONObject location = results.getJSONObject(0);
+                double lat = location.getDouble("lat");
+                double lon = location.getDouble("lon");
 
-            Entrepot newEntrepot = new Entrepot();
-            newEntrepot.setNom(nomField.getText());
-            newEntrepot.setAdresse(adresseField.getText());
-            newEntrepot.setVille(villeField.getText());
-            newEntrepot.setEspace(Double.parseDouble(espaceField.getText()));
+                Platform.runLater(() -> {
+                    isUpdatingFields = true;
+                    latitudeField.setText(String.format(Locale.US, "%.6f", lat));
+                    longitudeField.setText(String.format(Locale.US, "%.6f", lon));
+                    isUpdatingFields = false;
 
-            // Récupérer les coordonnées seulement si la carte est visible
-            if (mapContainer.isVisible()) {
-                try {
-                    newEntrepot.setLatitude(Double.parseDouble(latitudeField.getText()));
-                    newEntrepot.setLongitude(Double.parseDouble(longitudeField.getText()));
-                } catch (NumberFormatException e) {
-                    showAlert("Erreur", "Coordonnées GPS invalides", Alert.AlertType.ERROR);
-                    return;
-                }
-            }
-
-            if (entrepotService.saveEntrepot(newEntrepot)) {
-                if (parentController != null) {
-
-                }
-                closeWindow();
+                    mapView.setLocation(lat, lon);
+                    mapView.setZoom(15);
+                    clearError();
+                });
             } else {
-                showAlert("Erreur", "Échec de la sauvegarde", Alert.AlertType.ERROR);
+                Platform.runLater(() -> {
+                    showAlert("Erreur", "Aucun résultat trouvé pour l'adresse", Alert.AlertType.ERROR);
+                    showError("Aucun résultat trouvé pour l'adresse");
+                });
             }
-        } catch (NumberFormatException e) {
-            showAlert("Erreur", "Veuillez entrer une valeur valide pour l'espace", Alert.AlertType.ERROR);
+        } catch (Exception e) {
+            Platform.runLater(() -> {
+                showAlert("Erreur", "Erreur de traitement: " + e.getMessage(), Alert.AlertType.ERROR);
+                showError("Erreur lors du traitement des résultats");
+            });
         }
     }
 
@@ -310,20 +361,84 @@ public class AddEntrepotController {
     }
 
     @FXML
+    private void handleSave() {
+        if (validateAllFields()) {
+            Entrepot newEntrepot = new Entrepot();
+            newEntrepot.setId(UUID.randomUUID());
+            newEntrepot.setNom(nomField.getText());
+            newEntrepot.setAdresse(adresseField.getText());
+            newEntrepot.setVille(villeField.getText());
+            newEntrepot.setEspace(Double.parseDouble(espaceField.getText()));
+
+            if (!latitudeField.getText().isEmpty()) {
+                newEntrepot.setLatitude(Double.parseDouble(latitudeField.getText()));
+            }
+
+            if (!longitudeField.getText().isEmpty()) {
+                newEntrepot.setLongitude(Double.parseDouble(longitudeField.getText()));
+            }
+
+            boolean success = entrepotService.addEntrepot(newEntrepot);
+
+            if (success) {
+                if (parentController != null) {
+                    parentController.refreshEntrepotData();
+                }
+                closeWindow();
+            } else {
+                showAlert("Erreur", "Échec de l'ajout du nouvel entrepôt", Alert.AlertType.ERROR);
+            }
+        }
+    }
+    @FXML
+    private void navigateToDescriptionPage() {
+        try {
+            // Charge la nouvelle vue
+            Parent root = FXMLLoader.load(getClass().getResource("/com/example/Entrepot/view/Description3D.fxml"));
+
+            // Configure la nouvelle scène
+            Scene scene = new Scene(root);
+            Stage stage = (Stage) ((Node) describe3DButton).getScene().getWindow();
+            stage.setScene(scene);
+
+        } catch (IOException e) {
+            showAlert("Erreur", "Impossible d'ouvrir la page de description 3D", Alert.AlertType.ERROR);
+            e.printStackTrace();
+        }
+    }
+
+
+
+
+    @FXML
     private void handleCancel() {
         closeWindow();
     }
 
     private void showAlert(String title, String message, Alert.AlertType type) {
-        Alert alert = new Alert(type);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        Platform.runLater(() -> {
+            Alert alert = new Alert(type);
+            alert.setTitle(title);
+            alert.setHeaderText(null);
+            alert.setContentText(message);
+            alert.showAndWait();
+        });
+    }
+
+    private void showError(String message) {
+        errorText.setText(message);
+        errorText.setFill(Color.RED);
+        errorText.setVisible(true);
+    }
+
+    private void clearError() {
+        errorText.setText("");
+        errorText.setVisible(false);
     }
 
     private void closeWindow() {
         nomField.getScene().getWindow().hide();
     }
+
 
 }

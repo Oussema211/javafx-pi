@@ -9,15 +9,20 @@
 
 <?import com.example.Stock.Controller.*?>
 <VBox fx:controller="com.example.Stock.Controller.AddEntrepotController"
-      xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      xmlns="http://javafx.com/javafx/20" xmlns:fx="http://javafx.com/fxml/1"
       prefWidth="900" prefHeight="700" spacing="20"
-      style="-fx-background-color: #f8f9fa; -fx-padding: 25;"  stylesheets="@css/map.css">
+      style="-fx-background-color: #f8f9fa; -fx-padding: 25;" stylesheets="@css/map.css">
 
     <!-- En-tête avec icône Unicode -->
     <HBox alignment="CENTER_LEFT" spacing="10">
         <Label text="🏭" style="-fx-font-size: 30px;"/>
         <Label fx:id="titleLabel" text="Nouvel Entrepôt"
                style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: linear-gradient(to right, #2c3e50, #3498db);"/>
+    </HBox>
+    <HBox>
+        <Button fx:id="describe3DButton" text="📐 Décrire en 3D"
+                style="-fx-background-color: #6f42c1; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 25; -fx-background-radius: 8;"
+                onAction="#navigateToDescriptionPage"/>
     </HBox>
 
     <!-- Division en deux parties -->
@@ -105,14 +110,15 @@
                 </effect>
             </Rectangle>
 
-            <VBox spacing="10" alignment="TOP_RIGHT" stylesheets="css/map.css">
+            <VBox spacing="10" alignment="TOP_RIGHT">
                 <ComboBox fx:id="mapTypeSelector" style="-fx-background-color: white; -fx-pref-width: 150;"/>
+                <Button fx:id="zoomMaxButton" text="🔎 Zoomer au maximum"
+                        style="-fx-background-color: #007bff; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 8;"/>
             </VBox>
 
             <StackPane fx:id="mapContainer" styleClass="map-container">
-                <MapView fx:id="mapView" styleClass="map-webview" stylesheets="@css/map.css"/>
+                <MapView fx:id="mapView" styleClass="map-webview" prefWidth="400" prefHeight="400"/>
             </StackPane>
-
         </StackPane>
     </SplitPane>
 

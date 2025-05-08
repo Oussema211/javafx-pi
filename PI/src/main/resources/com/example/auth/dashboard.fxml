@@ -136,6 +136,9 @@
                     </ImageView>
                 </graphic>
             </Hyperlink>
+            <Hyperlink fx:id="dashboardStatiqtique" text="dashboardStatiqtique" graphicTextGap="10" styleClass="nav-link">
+
+            </Hyperlink>
 
             <VBox VBox.vgrow="ALWAYS"/>
 

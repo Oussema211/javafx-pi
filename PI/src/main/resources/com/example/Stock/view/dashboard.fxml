@@ -4,8 +4,9 @@
 <?import javafx.scene.image.ImageView?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.text.Font?>
-
 <?import java.net.URL?>
+<?import javafx.scene.web.WebView?>
+
 <VBox fx:controller="com.example.Stock.Controller.StockController"
       xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       prefHeight="700.0" prefWidth="1200.0" spacing="0"
@@ -20,47 +21,61 @@
         <Button fx:id="ajouterBtn" text="➕ Ajouter" onAction="#handleAjouter" styleClass="btn-primary" />
         <Button fx:id="excelBtn" text="📥 Exporter Excel" onAction="#handleExportExcel" styleClass="btn-success" />
         <Button fx:id="pdfBtn" text="📝 Exporter PDF" onAction="#handleExportPDF" styleClass="btn-danger" />
+        <Button text="Afficher la carte"
+                onAction="#showWarehouseMap"
+                fx:id="mapBtn"
+                style="-fx-background-color: #1e88e5; -fx-text-fill: white;" />
     </HBox>
 
     <!-- Main Content Area -->
     <HBox spacing="0" VBox.vgrow="ALWAYS">
-
-
         <!-- Main Content -->
-        <VBox spacing="20" style="-fx-padding: 30;" VBox.vgrow="ALWAYS">
-            <!-- Filters -->
-            <HBox fx:id="filters" alignment="CENTER_LEFT" spacing="15"
-                  style="-fx-background-color: #ffffff; -fx-background-radius: 15; -fx-border-color: #d1d9e0; -fx-border-width: 1; -fx-border-radius: 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 1);">
-                <padding><Insets top="15" right="20" bottom="15" left="20" /></padding>
-                <TextField fx:id="searchField" promptText="🔍 Rechercher un stock..." prefWidth="300.0" styleClass="input-field" />
-                <ComboBox fx:id="categorieFilter" promptText="Catégorie" prefWidth="200.0" styleClass="combo-box" />
-                <DatePicker fx:id="dateEntreeFilter" promptText="Date Entrée" styleClass="date-picker" />
-                <ComboBox fx:id="entrepotFilter" promptText="Entrepôt" prefWidth="200.0" styleClass="combo-box" />
-                <Button fx:id="resetBtn" text="♻ Réinitialiser" onAction="#resetFilters" styleClass="btn-secondary" />
-            </HBox>
-
-            <!-- Stock ListView (Card-based) -->
-            <ScrollPane fitToWidth="true" styleClass="scroll-pane">
-                <VBox styleClass="list-container">
-                    <!-- Sorting Header -->
-                    <HBox styleClass="sort-header" alignment="CENTER_LEFT" spacing="10">
-                        <Button fx:id="sortByNameBtn" text="Nom" styleClass="sort-button" />
-                        <Button fx:id="sortByQuantityBtn" text="Quantité" styleClass="sort-button" />
-                        <Button fx:id="sortByDateBtn" text="Date Entrée" styleClass="sort-button" />
+        <TabPane fx:id="mainTabPane" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+            <!-- Stock List Tab -->
+            <Tab text="Liste des Stocks">
+                <VBox spacing="20" style="-fx-padding: 30;" VBox.vgrow="ALWAYS">
+                    <!-- Filters -->
+                    <HBox fx:id="filters" alignment="CENTER_LEFT" spacing="15"
+                          style="-fx-background-color: #ffffff; -fx-background-radius: 15; -fx-border-color: #d1d9e0; -fx-border-width: 1; -fx-border-radius: 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 1);">
+                        <padding><Insets top="15" right="20" bottom="15" left="20" /></padding>
+                        <TextField fx:id="searchField" promptText="🔍 Rechercher un stock..." prefWidth="300.0" styleClass="input-field" />
+                        <ComboBox fx:id="categorieFilter" promptText="Catégorie" prefWidth="200.0" styleClass="combo-box" />
+                        <DatePicker fx:id="dateEntreeFilter" promptText="Date Entrée" styleClass="date-picker" />
+                        <ComboBox fx:id="entrepotFilter" promptText="Entrepôt" prefWidth="200.0" styleClass="combo-box" />
+                        <Button fx:id="resetBtn" text="♻ Réinitialiser" onAction="#resetFilters" styleClass="btn-secondary" />
                     </HBox>
-                    <!-- ListView -->
-                    <ListView fx:id="stockList" styleClass="stock-list">
-                        <placeholder>
-                            <VBox alignment="CENTER" spacing="15" styleClass="placeholder-container">
 
-                                <Label text="Aucun stock disponible" styleClass="placeholder-label" />
-                                <Button text="Ajouter un nouveau stock" onAction="#handleAjouter" styleClass="add-button" />
-                            </VBox>
-                        </placeholder>
-                    </ListView>
+                    <!-- Stock ListView (Card-based) -->
+                    <ScrollPane fitToWidth="true" styleClass="scroll-pane">
+                        <VBox styleClass="list-container">
+                            <!-- Sorting Header -->
+                            <HBox styleClass="sort-header" alignment="CENTER_LEFT" spacing="10">
+                                <Button fx:id="sortByNameBtn" text="Nom" styleClass="sort-button" />
+                                <Button fx:id="sortByQuantityBtn" text="Quantité" styleClass="sort-button" />
+                                <Button fx:id="sortByDateBtn" text="Date Entrée" styleClass="sort-button" />
+                            </HBox>
+                            <!-- ListView -->
+                            <ListView fx:id="stockList" styleClass="stock-list">
+                                <placeholder>
+                                    <VBox alignment="CENTER" spacing="15" styleClass="placeholder-container">
+                                        <Label text="Aucun stock disponible" styleClass="placeholder-label" />
+                                        <Button text="Ajouter un nouveau stock" onAction="#handleAjouter" styleClass="add-button" />
+                                    </VBox>
+                                </placeholder>
+                            </ListView>
+                        </VBox>
+                    </ScrollPane>
                 </VBox>
-            </ScrollPane>
-        </VBox>
+            </Tab>
+
+            <!-- Map Tab -->
+            <Tab text="Carte des Entrepôts">
+                <StackPane>
+                    <WebView fx:id="mapView" prefWidth="900.0" prefHeight="600.0"/>
+                    <ProgressIndicator fx:id="mapLoadingIndicator" visible="false" />
+                </StackPane>
+            </Tab>
+        </TabPane>
     </HBox>
 
     <stylesheets>

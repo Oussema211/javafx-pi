@@ -11,9 +11,13 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
+
         <javafx.version>17.0.9</javafx.version>
         <opencv.version>4.9.0-0</opencv.version>
         <jackson.version>2.17.2</jackson.version>
+
+
+
     </properties>
 
     <dependencies>
@@ -22,6 +26,21 @@
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
             <version>${javafx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jfree</groupId>
+            <artifactId>jfreechart</artifactId>
+            <version>1.5.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jfree</groupId>
+            <artifactId>jcommon</artifactId>
+            <version>1.0.24</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
+            <version>4.4</version>
         </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
@@ -70,6 +89,7 @@
             <version>0.4</version>
         </dependency>
 
+
         <!-- 📧 Mail -->
         <dependency>
             <groupId>com.sun.mail</groupId>
@@ -83,6 +103,7 @@
             <artifactId>json</artifactId>
             <version>20231013</version>
         </dependency>
+
 
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -98,6 +119,8 @@
         </dependency>
 
         <!-- PDF Libraries -->
+
+
         <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>itext7-core</artifactId>
@@ -114,6 +137,24 @@
             <artifactId>pdfbox</artifactId>
             <version>2.0.27</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
+        </dependency>
+
+
+
+
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.2</version>
+            <scope>test</scope>
+        </dependency>
+
 
         <!-- Apache POI -->
         <dependency>
@@ -169,6 +210,9 @@
                     <include>**/*.xml</include>
                     <include>**/*.env</include>
                     <include>**/*.json</include>
+
+                    <include>**/*</include>
+
                 </includes>
                 <filtering>false</filtering>
             </resource>

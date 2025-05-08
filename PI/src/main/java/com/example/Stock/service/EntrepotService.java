@@ -4,6 +4,7 @@ import com.example.Stock.Model.Entrepot;
 import com.example.auth.utils.MyDatabase;
 
 import java.sql.*;
+import java.sql.Date;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -85,6 +86,7 @@ public class EntrepotService {
 
         return null;
     }
+
 
     public boolean updateEntrepot(Entrepot entrepot) {
         String query = "UPDATE entrepot SET nom = ?, adresse = ?, ville = ?, espace = ?, " +
@@ -318,6 +320,54 @@ public class EntrepotService {
         // Sinon, c'est un nouvel entrepôt
         return addEntrepot(entrepot);
     }
+    public Map<Date, Integer> getNewWarehousesOverTime() {
+        Map<Date, Integer> result = new TreeMap<>();
+        String query = "SELECT DATE(created_at) as date, COUNT(*) as count " +
+                "FROM entrepot " +
+                "GROUP BY DATE(created_at) " +
+                "ORDER BY date";
+
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+
+            while (rs.next()) {
+                result.put(rs.getDate("date"), rs.getInt("count"));
+            }
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la récupération des statistiques entrepôts: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return result;
+    }
+
+    /**
+     * Récupère le nombre de nouveaux produits ajoutés dans les entrepôts par période
+     * @return Map des dates avec le nombre de produits ajoutés
+     */
+    public Map<Date, Integer> getNewProductsInWarehousesOverTime() {
+        Map<Date, Integer> result = new TreeMap<>();
+        String query = "SELECT DATE(se.created_at) as date, COUNT(*) as count " +
+                "FROM stock_entrepot se " +
+                "JOIN stock s ON se.stock_id = s.id " +
+                "WHERE s.type = 'PRODUIT' " +
+                "GROUP BY DATE(se.created_at) " +
+                "ORDER BY date";
+
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+
+            while (rs.next()) {
+                result.put(rs.getDate("date"), rs.getInt("count"));
+            }
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la récupération des statistiques produits: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return result;
+    }
+
 
 
 }

@@ -4,174 +4,336 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Leaflet Map</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            width: 100%;
-            overflow: hidden;
-        }
-
-        #map {
-            height: 100%;
-            width: 100%;
-            position: absolute;
+        html, body, #map {
+            position: absolute !important;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
+            z-index: 100;
+            background-color: #f8fafc;
+            transform: translateZ(0); /* Fix for hardware acceleration */
         }
-
-        /* Fix for tile rendering issues */
         .leaflet-container {
             background: #f8fafc !important;
         }
-
         .leaflet-tile-container {
             pointer-events: none;
             will-change: transform;
         }
-
+        .leaflet-container {
+            cursor: crosshair; /* Curseur en forme de croix pour mieux viser */
+        }
         .leaflet-tile {
             box-shadow: none !important;
             border: none !important;
             margin: 0 !important;
             padding: 0 !important;
+            image-rendering: pixelated;
+        }
+        .custom-marker {
+            background-color: #3388ff;
+            border: 3px solid white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        .custom-marker::after {
+            content: "";
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background-color: white;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .pulse-marker {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
         }
     </style>
 </head>
 <body>
 <div id="map"></div>
-
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-
 <script>
-    var marker;
-    var map;
-    var currentLayer;
-
-    var baseLayers = {
+    let map, marker, currentLayer;
+    const baseLayers = {
         "OpenStreetMap": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            keepBuffer: 8,
-            updateWhenIdle: false,
-            updateWhenZooming: false
-        }),
-        "Satellite": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            maxZoom: 19,
-            keepBuffer: 8,
-            updateWhenIdle: false,
-            updateWhenZooming: false
-        })
-    };
-
-    window.L_DISABLE_3D = true;
-
-    function initMap() {
-        if (window.mapInitialized) return;
-        window.mapInitialized = true;
-
-        // Désactiver les animations problématiques
-        L.DomEvent.TRANSITION = false;
-        L.Browser.any3d = false;
-
-        var map = L.map('map', {
-            preferCanvas: true,
-            zoomControl: false,
-            attributionControl: false,
-            fadeAnimation: false,
-            zoomAnimation: false,
-            markerZoomAnimation: false,
-            renderer: L.canvas(),
-            inertia: false
-        }).setView([36.8065, 10.1815], 13);
-
-        // Configuration spéciale pour les tuiles
-        L.TileLayer.include({
-            _update: function() {
-                if (!this._map) return;
-                L.GridLayer.prototype._update.call(this);
-            }
-        });
-
-        var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             minZoom: 3,
             keepBuffer: 10,
             updateWhenIdle: true,
             crossOrigin: true,
-            detectRetina: false
-        }).addTo(map);
+            detectRetina: false,
+            attribution: '© OpenStreetMap contributors'
+        }),
+        "Satellite": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19,
+            minZoom: 3,
+            keepBuffer: 10,
+            updateWhenIdle: true,
+            crossOrigin: true,
+            detectRetina: false,
+            attribution: '© Esri'
+        }),
+        "Terrain": L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            maxZoom: 17,
+            minZoom: 3,
+            keepBuffer: 10,
+            updateWhenIdle: true,
+            crossOrigin: true,
+            detectRetina: false,
+            attribution: '© OpenTopoMap'
+        })
+    };
 
-        // Forcer le redimensionnement initial
-        setTimeout(function() {
-            map.invalidateSize({animate: false, pan: false});
-            map._resetView(map.getCenter(), map.getZoom(), true);
-
-            // Notifier JavaFX que la carte est prête
-            if (window.javaBridge) {
-                window.javaBridge.onMapReady();
+    window.L_DISABLE_3D = true;
+    L.Browser.any3d = false;
+    L.DomEvent.TRANSITION = false;
+    let mapInitialized = false;
+    let mapReady = false;
+    // Nouvelle fonction de réinitialisation radicale
+    function hardResetMap(lat, lng, zoom = 15) {
+        // 1. Détruire complètement la carte existante
+        if (map) {
+            try {
+                map.remove();
+                map = null;
+                marker = null;
+            } catch(e) {
+                console.error("Error removing map:", e);
             }
-        }, 500);
-    }
+        }
 
-    // Appeler initMap avec plusieurs garanties
-    document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(initMap, 300);
-    });
-    window.onload = initMap;
-    setTimeout(initMap, 1000);
+        // 2. Vider le conteneur
+        const mapContainer = document.getElementById('map');
+        if (mapContainer) {
+            mapContainer.innerHTML = '';
+        }
 
-    function forceRedraw() {
-        const resizeAttempts = 3;
-        for(let i = 0; i < resizeAttempts; i++) {
+        // 3. Recréer tout depuis zéro
+        setTimeout(() => {
+            initMap();
+
+            // 4. Après initialisation, positionner la carte
             setTimeout(() => {
-                if(map) {
-                    map.invalidateSize({animate: false, pan: false});
-                    map._resetView(map.getCenter(), map.getZoom());
+                if (window.setMapView && lat && lng) {
+                    setMapView(lat, lng, zoom);
                 }
-            }, i * 150);
-        }
-    }
-    function setMapType(type) {
-        if (!map || !baseLayers[type]) return;
-
-        if (currentLayer) {
-            map.removeLayer(currentLayer);
-        }
-        currentLayer = baseLayers[type];
-        currentLayer.addTo(map);
-
-        setTimeout(function() {
-            map.invalidateSize();
+            }, 500);
         }, 100);
     }
 
-    function setMapView(lat, lng) {
-        if (!map || !marker) return;
-        map.setView([lat, lng], 15, {animate: false});
-        marker.setLatLng([lat, lng]);
-        updatePosition();
-    }
 
-    function updatePosition() {
-        var pos = marker.getLatLng();
-        if (window.javaBridge && typeof window.javaBridge.onLocationChanged === 'function') {
-            window.javaBridge.onLocationChanged(pos.lat, pos.lng);
+
+
+
+    function initMap() {
+        try {
+            // Configuration de base
+            map = L.map('map', {
+                preferCanvas: true,
+                zoomControl: false,
+                attributionControl: false
+            }).setView([36.8065, 10.1815], 13);
+
+            // Couche de base
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+
+            // Dans la fonction initMap()
+            marker = L.marker(map.getCenter(), {
+                draggable: true
+            }).addTo(map);
+            marker.on('moveend', function() {
+                window.javaBridge.forceUpdate();
+            });
+// Événement pendant le déplacement
+            marker.on('move', function(e) {
+                const pos = e.target.getLatLng();
+                console.log("Marqueur déplacé à:", pos.lat, pos.lng);
+
+                if (window.javaBridge) {
+                    try {
+                        window.javaBridge.onLocationChanged(pos.lat, pos.lng);
+                        console.log("Coordonnées envoyées à JavaFX");
+                    } catch (e) {
+                        console.error("Erreur d'envoi à JavaFX:", e);
+                    }
+                }
+            });
+
+// Événement quand on clique sur la carte
+            map.on('click', function(e) {
+                marker.setLatLng(e.latlng);
+                console.log("Clic sur la carte à:", e.latlng.lat, e.latlng.lng);
+            });
+            map.on('click', function(e) {
+                const clickedPos = e.latlng;
+                console.log("Clic sur la carte à:", clickedPos.lat, clickedPos.lng);
+
+                // Déplacer le marqueur à la position cliquée
+                if (marker) {
+                    marker.setLatLng(clickedPos);
+
+                    // Centrer la carte sur la position cliquée
+                    map.setView(clickedPos, map.getZoom(), {animate: true});
+
+                    // Envoyer les coordonnées à JavaFX
+                    if (window.javaBridge && typeof window.javaBridge.onLocationChanged === 'function') {
+                        window.javaBridge.onLocationChanged(clickedPos.lat, clickedPos.lng);
+                    }
+                }
+            });
+            // Forcer le redimensionnement initial
+            setTimeout(() => {
+                map.invalidateSize(true);
+            }, 300);
+
+        } catch (e) {
+            console.error("Map init error:", e);
+            setTimeout(initMap, 500);
         }
     }
 
-    // Initialize map when document is fully loaded
-    document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(initMap, 500);
-    });
 
-    // Backup initialization
-    window.onload = function() {
-        if (!map) setTimeout(initMap, 500);
-    };
+
+
+    function updatePosition(pos) {
+        if (!mapReady) {
+            console.warn("Map not ready for position update");
+            return;
+        }
+        if (window.javaBridge && typeof window.javaBridge.onLocationChanged === 'function') {
+            if (pos.lat >= -90 && pos.lat <= 90 && pos.lng >= -180 && pos.lng <= 180) {
+                console.log("Updating position: lat=" + pos.lat + ", lng=" + pos.lng);
+                window.javaBridge.onLocationChanged(pos.lat, pos.lng);
+            } else {
+                console.error("Invalid coordinates: lat=" + pos.lat + ", lng=" + pos.lng);
+            }
+        }
+    }
+
+    function setMapView(lat, lng, zoom = 15) {
+        if (!map || !marker) {
+            console.error("Map elements not initialized");
+            return false;
+        }
+
+        const newPos = L.latLng(lat, lng);
+
+        try {
+            // D'abord cacher pour forcer le redessin
+            map.getContainer().style.visibility = 'hidden';
+
+            // Mettre à jour la position
+            map.setView(newPos, zoom, {animate: false});
+            marker.setLatLng(newPos);
+
+            // Forcer le redessin
+            setTimeout(() => {
+                map.invalidateSize({animate: false});
+                map.getContainer().style.visibility = 'visible';
+
+                // Confirmer la mise à jour
+                if (window.javaBridge) {
+                    window.javaBridge.onLocationChanged(lat, lng);
+                }
+            }, 100);
+
+            return true;
+        } catch (e) {
+            console.error("Error setting map view:", e);
+            return false;
+        }
+    }
+
+
+    function setMapType(type) {
+        if (!map || !baseLayers[type]) {
+            console.warn("Invalid map type or map not initialized: " + type);
+            return;
+        }
+
+        try {
+            if (currentLayer) {
+                map.removeLayer(currentLayer);
+            }
+            currentLayer = baseLayers[type];
+            currentLayer.addTo(map);
+            marker.addTo(map);
+            forceRedraw();
+            console.log("Map type changed to: " + type);
+        } catch (e) {
+            console.error("Set map type error: " + e);
+        }
+    }
+
+    function setZoom(zoomLevel) {
+        if (!map || !mapReady) {
+            console.warn("Map not initialized for zoom");
+            return;
+        }
+
+        try {
+            map.setZoom(zoomLevel);
+            forceRedraw();
+            console.log("Zoom set to: " + zoomLevel);
+        } catch (e) {
+            console.error("Set zoom error: " + e);
+        }
+    }
+
+    function forceRedraw() {
+        if (!map || !mapReady) {
+            console.warn("Map not initialized for redraw");
+            return;
+        }
+
+        try {
+            map.invalidateSize({ animate: false, pan: false });
+            map._resetView(map.getCenter(), map.getZoom(), true);
+            console.log("Map redrawn");
+            // Force tile reload
+            if (currentLayer) {
+                currentLayer.redraw();
+            }
+        } catch (e) {
+            console.error("Redraw error: " + e);
+        }
+    }
+
+    function initializeWithRetry() {
+        let attempts = 0;
+        const maxAttempts = 3;
+        function tryInit() {
+            try {
+                initMap();
+            } catch (e) {
+                console.error("Initialization attempt " + (attempts + 1) + " failed: " + e);
+                if (attempts < maxAttempts) {
+                    attempts++;
+                    setTimeout(tryInit, 500);
+                }
+            }
+        }
+        tryInit();
+    }
+
+    document.addEventListener('DOMContentLoaded', initializeWithRetry);
+    window.onload = initializeWithRetry;
 </script>
 </body>
 </html>

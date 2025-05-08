@@ -23,7 +23,6 @@ public class MainApp extends Application {
     private final ReclamationService reclamationService = new ReclamationService();
     private final MessageReclamationService messageReclamationService = new MessageReclamationService();
 
-
     @Override
     public void start(Stage primaryStage) throws Exception {
         System.out.println("DEBUG: Starting MainApp");
@@ -34,9 +33,13 @@ public class MainApp extends Application {
         if (user == null) {
             fxmlFile = "/com/example/auth/login.fxml";
         } else {
-            fxmlFile = user.hasRole("ROLE_ADMIN")
-                    ? "/com/example/auth/dashboard.fxml"
-                    : "/com/example/frontPages/dashboard.fxml";
+            if (user.hasRole("ROLE_ADMIN")) {
+                fxmlFile = "/com/example/auth/dashboard.fxml";
+            } else if (user.hasRole("ROLE_STOCK_MANAGER")) {
+                fxmlFile = "/com/example/Stock/dashboardStatista1/dashboard.fxml";
+            } else {
+                fxmlFile = "/com/example/frontPages/dashboard.fxml";
+            }
         }
 
         System.out.println("DEBUG: Loading FXML: " + fxmlFile);
@@ -58,20 +61,35 @@ public class MainApp extends Application {
         Scene scene = new Scene(root, 1400, 740);
 
         // Load stylesheet
-        URL stylesheetUrl = getClass().getResource("/com/example/auth/styles.css");
+        String stylesheetPath = fxmlFile.contains("dashboardStatista1")
+                ? "/com/example/Stock/dashboardStatista1/styles.css"
+                : "/com/example/auth/styles.css";
+        URL stylesheetUrl = getClass().getResource(stylesheetPath);
         if (stylesheetUrl != null) {
             scene.getStylesheets().add(stylesheetUrl.toExternalForm());
         } else {
-            System.out.println("WARNING: Could not find styles.css in MainApp");
+            System.out.println("WARNING: Could not find stylesheet: " + stylesheetPath);
         }
 
         // Configure and show stage
-        primaryStage.setTitle("Authentication System");
+        primaryStage.setTitle(fxmlFile.contains("dashboardStatista1")
+                ? "Gestion des Stocks Agricoles"
+                : "Authentication System");
         primaryStage.setScene(scene);
         primaryStage.setResizable(true);
         primaryStage.setFullScreen(FULL_SCREEN);
         primaryStage.show();
         System.out.println("DEBUG: MainApp started successfully");
+    }
+
+    @Override
+    public void init() {
+        // Solution radicale pour le conflit WebView
+        String tempWebViewDir = System.getProperty("java.io.tmpdir") +
+                "/webview_" +
+                System.currentTimeMillis();
+        System.setProperty("javafx.webview.userDataDir", tempWebViewDir);
+        System.out.println("WebView userDataDir set to: " + tempWebViewDir);
     }
 
     public static void main(String[] args) {

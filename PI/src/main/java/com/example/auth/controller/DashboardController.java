@@ -47,6 +47,8 @@ public class DashboardController {
     @FXML
     private VBox eventSubMenu;
     @FXML
+    private Hyperlink dashboardStatiqtique;
+    @FXML
     private Label welcomeLabel;
     @FXML
     private Label emailLabel;
@@ -88,6 +90,7 @@ public class DashboardController {
         userButton.setOnAction(event -> loadContent("/com/example/auth/adminDashboard.fxml"));
         StockButton.setOnAction(event -> loadStockContent());
         EntrepotButton.setOnAction(event -> loadEntrepotContent());
+        dashboardStatiqtique.setOnAction(event -> loaddashboardStatiqtiqueContent());
         settings.setOnAction(event -> loadContent("/com/example/pages/settings.fxml"));
         logoutButton.setOnAction(event -> {
             try {
@@ -98,7 +101,18 @@ public class DashboardController {
         });
         
     }
-    
+
+    private void loaddashboardStatiqtiqueContent() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/Stock/dashboardStatista1/DashboardDynamized.fxml"));
+            Parent stockRoot = loader.load();
+            borderPane.setCenter(stockRoot);
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Erreur lors du chargement de l'interface de gestion des stocks");
+        }
+    }
+
 
     private void toggleEventSubMenu() {
         isSubMenuVisible = !isSubMenuVisible;
