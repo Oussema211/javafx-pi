@@ -551,6 +551,29 @@ public class StockService {
         }
         return movement;
     }
-
-
+    public Map<Date, Integer> getNewStocksOverTime(LocalDate startDate, LocalDate endDate, String category) {
+        Map<Date, Integer> stockData = new LinkedHashMap<>();
+        String query = "SELECT DATE(s.date_entree) as day, COUNT(*) as count " +
+                "FROM stock s " +
+                "JOIN produit p ON s.produit_id = p.id " +
+                "LEFT JOIN categorie c ON p.categorie_id = c.id " +
+                "WHERE s.date_entree >= ? AND s.date_entree <= ? AND s.user_id = ? " +
+                (category.equals("Toutes") ? "" : "AND c.nom = ?") +
+                " GROUP BY DATE(s.date_entree) ORDER BY day";
+        try (PreparedStatement ps = cnx.prepareStatement(query)) {
+            ps.setDate(1, Date.valueOf(startDate));
+            ps.setDate(2, Date.valueOf(endDate));
+            ps.setString(3, SessionManager.getInstance().getLoggedInUser().getId().toString());
+            if (!category.equals("Toutes")) {
+                ps.setString(4, category);
+            }
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                stockData.put(rs.getDate("day"), rs.getInt("count"));
+            }
+        } catch (SQLException e) {
+            System.err.println("Erreur getNewStocksOverTime: " + e.getMessage());
+        }
+        return stockData;
+    }
 }
