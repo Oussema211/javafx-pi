@@ -15,10 +15,11 @@ public class CarteVirtuelleManager {
     static {
         chargerDepuisFichier();
     }
+
     public static void desactiverCarte() {
         if (carteVirtuelle != null && carteVirtuelle.isActive()) {
             carteVirtuelle.setActive(false);
-            carteVirtuelle.setMotDePasse(null); // on enlève aussi le mot de passe pour sécurité
+            carteVirtuelle.setMotDePasse(null);
             sauvegarder();
         }
     }
@@ -30,7 +31,9 @@ public class CarteVirtuelleManager {
     public static void chargerCarte(double montant) {
         if (carteVirtuelle != null && montant > 0 && carteVirtuelle.isActive()) {
             carteVirtuelle.setSolde(carteVirtuelle.getSolde() + montant);
-            historiqueTransactions.add(new TransactionBlockchain(montant, "Recharge de la carte"));
+            historiqueTransactions.add(
+                    new TransactionBlockchain(montant, "Recharge de la carte", getDernierHash())
+            );
             sauvegarder();
         }
     }
@@ -38,7 +41,9 @@ public class CarteVirtuelleManager {
     public static boolean effectuerPaiement(double montant) {
         if (carteVirtuelle != null && montant > 0 && carteVirtuelle.isActive() && carteVirtuelle.getSolde() >= montant) {
             carteVirtuelle.setSolde(carteVirtuelle.getSolde() - montant);
-            historiqueTransactions.add(new TransactionBlockchain(montant, "Paiement avec la carte"));
+            historiqueTransactions.add(
+                    new TransactionBlockchain(montant, "Paiement avec la carte", getDernierHash())
+            );
             sauvegarder();
             return true;
         }
@@ -56,14 +61,12 @@ public class CarteVirtuelleManager {
     }
 
     public static boolean verifierMotDePasse(String motDePasse) {
-        return carteVirtuelle != null && carteVirtuelle.getMotDePasse() != null && carteVirtuelle.getMotDePasse().equals(motDePasse);
+        return carteVirtuelle != null && carteVirtuelle.getMotDePasse() != null &&
+                carteVirtuelle.getMotDePasse().equals(motDePasse);
     }
 
     public static double getSolde() {
-        if (carteVirtuelle != null) {
-            return carteVirtuelle.getSolde();
-        }
-        return 0.0;
+        return (carteVirtuelle != null) ? carteVirtuelle.getSolde() : 0.0;
     }
 
     public static boolean isCarteActive() {
@@ -71,10 +74,7 @@ public class CarteVirtuelleManager {
     }
 
     public static String getNumeroCarte() {
-        if (carteVirtuelle != null) {
-            return carteVirtuelle.getNumero();
-        }
-        return "Carte non disponible";
+        return (carteVirtuelle != null) ? carteVirtuelle.getNumero() : "Carte non disponible";
     }
 
     public static CarteVirtuelle getCarte() {
@@ -83,6 +83,13 @@ public class CarteVirtuelleManager {
 
     public static List<TransactionBlockchain> getHistoriqueTransactions() {
         return historiqueTransactions;
+    }
+
+    private static String getDernierHash() {
+        if (historiqueTransactions.isEmpty()) {
+            return "GENESIS"; // Hash de départ
+        }
+        return historiqueTransactions.get(historiqueTransactions.size() - 1).getHash();
     }
 
     private static void sauvegarder() {

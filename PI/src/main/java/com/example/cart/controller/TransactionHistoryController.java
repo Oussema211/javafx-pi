@@ -41,7 +41,15 @@ public class TransactionHistoryController {
         Label descriptionLabel = new Label(transaction.getDescription());
         descriptionLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: #333333;");
 
-        card.getChildren().addAll(montantLabel, descriptionLabel);
+        Label hashLabel = new Label("🔒 Hash: " + transaction.getHash());
+        hashLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #777;");
+
+        Label prevHashLabel = new Label("⤴️ Prev: " + transaction.getPreviousHash());
+        prevHashLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #999;");
+
+        VBox content = new VBox(5, montantLabel, descriptionLabel, hashLabel, prevHashLabel);
+        card.getChildren().add(content);
+
         return card;
     }
 }

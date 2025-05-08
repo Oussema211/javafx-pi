@@ -1,70 +1,71 @@
-/* Style général de la TableView */
+/* ✅ Style général de la TableView */
 .table-view {
-    -fx-background-color: #ffffff;
-    -fx-border-color: #cccccc;
+    -fx-background-color: #f1f8e9;
+    -fx-border-color: #c5e1a5;
     -fx-border-width: 1;
-    -fx-padding: 10;
-    -fx-background-radius: 8;
-    -fx-border-radius: 8;
-    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 4);
+    -fx-padding: 12;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-effect: dropshadow(three-pass-box, rgba(76,175,80,0.1), 10, 0, 0, 4);
 }
 
-/* Style des colonnes */
+/* ✅ Colonnes */
 .table-column {
     -fx-alignment: CENTER_LEFT;
 }
 
-/* En-têtes de colonnes */
+/* ✅ En-têtes de colonnes */
 .table-view .column-header-background {
-    -fx-background-color: linear-gradient(to bottom, #2196f3, #1976d2);
+    -fx-background-color: linear-gradient(to bottom, #66bb6a, #43a047);
     -fx-background-insets: 0;
-    -fx-background-radius: 8 8 0 0;
+    -fx-background-radius: 10 10 0 0;
     -fx-padding: 8 0 8 0;
 }
 
 .table-view .column-header, .table-view .filler {
     -fx-size: 40;
     -fx-border-width: 0 0 1 0;
-    -fx-border-color: transparent transparent #eeeeee transparent;
+    -fx-border-color: transparent transparent #c8e6c9 transparent;
     -fx-text-fill: white;
     -fx-font-weight: bold;
     -fx-font-size: 14px;
 }
 
-/* Lignes */
+/* ✅ Lignes */
 .table-row-cell {
     -fx-background-color: #ffffff;
-    -fx-border-color: #f0f0f0;
+    -fx-border-color: #e8f5e9;
     -fx-border-width: 0 0 1 0;
 }
 
 .table-row-cell:odd {
-    -fx-background-color: #f9f9f9;
+    -fx-background-color: #f9fbe7;
 }
 
 .table-row-cell:selected {
-    -fx-background-color: #bbdefb;
+    -fx-background-color: #aed581;
+    -fx-text-fill: white;
 }
 
-/* Boutons dans la table */
+/* ✅ Boutons dans la table */
 .button {
     -fx-font-size: 12px;
     -fx-padding: 5 10;
     -fx-background-radius: 5;
-    -fx-text-fill: black;
+    -fx-text-fill: #2e7d32;
 }
 
 .button:hover {
     -fx-opacity: 0.9;
 }
 
-/* Style spécifique aux boutons d'action */
+/* ✅ Boutons d'action */
 .hbox .button {
     -fx-cursor: hand;
     -fx-text-fill: white;
 }
 
-/* 🖌 Boutons "Modifier" et "Supprimer" */
+/* 🟡 Modifier */
 .button-modifier {
     -fx-cursor: hand;
     -fx-text-fill: white;
@@ -79,6 +80,7 @@
     -fx-background-color: #fdd835;
 }
 
+/* 🔴 Supprimer */
 .button-supprimer {
     -fx-cursor: hand;
     -fx-text-fill: white;
@@ -92,42 +94,46 @@
 .button-supprimer:hover {
     -fx-background-color: #d32f2f;
 }
+
+/* ✅ Titre stylisé */
 .fancy-title {
     -fx-font-size: 22px;
     -fx-font-weight: bold;
-    -fx-text-fill: #2c3e50;
+    -fx-text-fill: #2e7d32;
     -fx-padding: 5 10 5 10;
-    -fx-background-color: linear-gradient(to right, #bbdefb, #e3f2fd);
+    -fx-background-color: linear-gradient(to right, #c5e1a5, #e6ee9c);
     -fx-background-radius: 8;
 }
 
+/* ✅ Bouton "Ajouter" */
 .add-button {
     -fx-background-color: #4caf50;
     -fx-text-fill: white;
     -fx-font-weight: bold;
     -fx-padding: 6 12;
-    -fx-background-radius: 6;
+    -fx-background-radius: 8;
     -fx-cursor: hand;
 }
 
 .add-button:hover {
-    -fx-background-color: #43a047;
+    -fx-background-color: #388e3c;
 }
+
+/* ✅ Barre de recherche */
 .search-field {
     -fx-background-color: white;
-    -fx-border-color: #2196f3;
+    -fx-border-color: #66bb6a;
     -fx-border-radius: 20;
     -fx-background-radius: 20;
     -fx-padding: 6 14;
     -fx-font-size: 14px;
-    -fx-effect: dropshadow(gaussian, rgba(33,150,243,0.2), 6, 0.1, 0, 2);
+    -fx-effect: dropshadow(gaussian, rgba(76,175,80,0.2), 6, 0.1, 0, 2);
     -fx-prompt-text-fill: #999;
     -fx-text-fill: #333;
     -fx-transition: all 0.3s ease-in-out;
 }
 
 .search-field:focused {
-    -fx-border-color: #1976d2;
-    -fx-effect: dropshadow(gaussian, rgba(33,150,243,0.4), 8, 0.3, 0, 4);
+    -fx-border-color: #43a047;
+    -fx-effect: dropshadow(gaussian, rgba(76,175,80,0.4), 8, 0.3, 0, 4);
 }
-

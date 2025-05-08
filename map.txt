@@ -1,0 +1,1029 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.effect.*?>
+<?import javafx.scene.shape.*?>
+
+<?import com.example.Stock.Controller.*?>
+<VBox fx:controller="com.example.Stock.Controller.AddEntrepotController"
+      xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      prefWidth="900" prefHeight="700" spacing="20"
+      style="-fx-background-color: #f8f9fa; -fx-padding: 25;"  stylesheets="@css/map.css">
+
+    <!-- En-tête avec icône Unicode -->
+    <HBox alignment="CENTER_LEFT" spacing="10">
+        <Label text="🏭" style="-fx-font-size: 30px;"/>
+        <Label fx:id="titleLabel" text="Nouvel Entrepôt"
+               style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: linear-gradient(to right, #2c3e50, #3498db);"/>
+    </HBox>
+
+    <!-- Division en deux parties -->
+    <SplitPane dividerPositions="0.5" orientation="HORIZONTAL">
+        <!-- Première partie : Formulaire -->
+        <StackPane>
+            <Rectangle arcWidth="15" arcHeight="15" fill="WHITE"
+                       stroke="#e0e0e0" strokeType="INSIDE" strokeWidth="1">
+                <effect>
+                    <DropShadow color="rgba(0,0,0,0.1)" radius="10" spread="0.2"/>
+                </effect>
+            </Rectangle>
+
+            <ScrollPane fitToWidth="true" hbarPolicy="NEVER">
+                <GridPane hgap="15" vgap="20">
+                    <padding>
+                        <Insets top="20" right="20" bottom="20" left="20"/>
+                    </padding>
+
+                    <!-- Nom -->
+                    <Label text="📛 Nom" GridPane.columnIndex="0" GridPane.rowIndex="0"
+                           style="-fx-font-weight: bold; -fx-text-fill: #495057;"/>
+                    <TextField fx:id="nomField" GridPane.columnIndex="1" GridPane.rowIndex="0"
+                               promptText="Entrez le nom de l'entrepôt"
+                               style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #ced4da; -fx-padding: 8;"/>
+
+                    <!-- Adresse -->
+                    <Label text="📍 Adresse" GridPane.columnIndex="0" GridPane.rowIndex="1"
+                           style="-fx-font-weight: bold; -fx-text-fill: #495057;"/>
+                    <TextField fx:id="adresseField" GridPane.columnIndex="1" GridPane.rowIndex="1"
+                               promptText="Entrez l'adresse complète"
+                               style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #ced4da; -fx-padding: 8;"/>
+
+                    <!-- Ville -->
+                    <Label text="🏙️ Ville" GridPane.columnIndex="0" GridPane.rowIndex="2"
+                           style="-fx-font-weight: bold; -fx-text-fill: #495057;"/>
+                    <TextField fx:id="villeField" GridPane.columnIndex="1" GridPane.rowIndex="2"
+                               promptText="Entrez la ville"
+                               style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #ced4da; -fx-padding: 8;"/>
+
+                    <!-- Espace -->
+                    <Label text="📏 Superficie (m²)" GridPane.columnIndex="0" GridPane.rowIndex="3"
+                           style="-fx-font-weight: bold; -fx-text-fill: #495057;"/>
+                    <TextField fx:id="espaceField" GridPane.columnIndex="1" GridPane.rowIndex="3"
+                               promptText="Surface en mètres carrés"
+                               style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #ced4da; -fx-padding: 8;"/>
+
+                    <!-- Séparateur avec icône -->
+                    <HBox alignment="CENTER" spacing="10" GridPane.columnIndex="0" GridPane.rowIndex="4" GridPane.columnSpan="2">
+                        <Line endX="100" stroke="#dee2e6"/>
+                        <Label text="🌍" style="-fx-font-size: 18px; -fx-opacity: 0.7;"/>
+                        <Line endX="100" stroke="#dee2e6"/>
+                    </HBox>
+
+                    <!-- Coordonnées GPS -->
+                    <Label text="Coordonnées GPS" GridPane.columnIndex="0" GridPane.rowIndex="5"
+                           style="-fx-font-weight: bold; -fx-text-fill: #495057;" GridPane.columnSpan="2"/>
+
+                    <Label text="↔️ Latitude" GridPane.columnIndex="0" GridPane.rowIndex="6"
+                           style="-fx-font-weight: bold; -fx-text-fill: #495057;"/>
+                    <TextField fx:id="latitudeField" GridPane.columnIndex="1" GridPane.rowIndex="6"
+                               promptText="Ex: 36.8065"
+                               style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #ced4da; -fx-padding: 8;"/>
+
+                    <Label text="↕️ Longitude" GridPane.columnIndex="0" GridPane.rowIndex="7"
+                           style="-fx-font-weight: bold; -fx-text-fill: #495057;"/>
+                    <TextField fx:id="longitudeField" GridPane.columnIndex="1" GridPane.rowIndex="7"
+                               promptText="Ex: 10.1815"
+                               style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #ced4da; -fx-padding: 8;"/>
+
+                    <HBox alignment="CENTER" spacing="10" GridPane.columnIndex="0" GridPane.rowIndex="8" GridPane.columnSpan="2">
+                        <Button fx:id="searchLocationBtn" text="🔍 Rechercher sur la carte"
+                                style="-fx-background-color: #007bff; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 8;"/>
+                    </HBox>
+                </GridPane>
+            </ScrollPane>
+        </StackPane>
+
+        <!-- Deuxième partie : Carte -->
+        <StackPane>
+            <Rectangle arcWidth="15" arcHeight="15" fill="WHITE"
+                       stroke="#e0e0e0" strokeType="INSIDE" strokeWidth="1">
+                <effect>
+                    <DropShadow color="rgba(0,0,0,0.1)" radius="10" spread="0.2"/>
+                </effect>
+            </Rectangle>
+
+            <VBox spacing="10" alignment="TOP_RIGHT" stylesheets="css/map.css">
+                <ComboBox fx:id="mapTypeSelector" style="-fx-background-color: white; -fx-pref-width: 150;"/>
+            </VBox>
+
+            <StackPane fx:id="mapContainer" styleClass="map-container">
+                <MapView fx:id="mapView" styleClass="map-webview" stylesheets="@css/map.css"/>
+            </StackPane>
+
+        </StackPane>
+    </SplitPane>
+
+    <!-- Boutons avec styles améliorés -->
+    <HBox spacing="15" alignment="CENTER_RIGHT">
+        <Button fx:id="cancelBtn" text="✖ Annuler" onAction="#handleCancel"
+                style="-fx-background-color: #6c757d; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 25; -fx-background-radius: 8; -fx-cursor: hand;">
+            <effect>
+                <DropShadow color="rgba(0,0,0,0.1)" radius="5" spread="0.1"/>
+            </effect>
+        </Button>
+
+        <Button fx:id="saveBtn" text="💾 Enregistrer" onAction="#handleSave"
+                style="-fx-background-color: linear-gradient(to right, #28a745, #20c997); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 25; -fx-background-radius: 8; -fx-cursor: hand;">
+            <effect>
+                <DropShadow color="rgba(0,0,0,0.15)" radius="5" spread="0.2"/>
+            </effect>
+        </Button>
+    </HBox>
+</VBox>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+package com.example.Stock.Controller;
+
+import com.example.Stock.Model.Entrepot;
+import com.example.Stock.service.EntrepotService;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import javafx.animation.PauseTransition;
+import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.concurrent.Worker;
+import javafx.fxml.FXML;
+import javafx.scene.control.*;
+import javafx.scene.layout.StackPane;
+import javafx.util.Duration;
+import javafx.util.converter.NumberStringConverter;
+import okhttp3.*;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+
+import static javafx.util.Duration.seconds;
+
+
+
+public class AddEntrepotController {
+    @FXML private TextField nomField;
+    @FXML private TextField adresseField;
+    @FXML private TextField villeField;
+    @FXML private TextField espaceField;
+    @FXML private TextField latitudeField;
+    @FXML private TextField longitudeField;
+    @FXML private Button searchLocationBtn;
+    @FXML private StackPane mapContainer;
+    @FXML private MapView mapView;
+    @FXML private ComboBox<String> mapTypeSelector;
+
+
+    private EntrepotController parentController;
+    private EntrepotService entrepotService = new EntrepotService();
+    private final OkHttpClient httpClient = new OkHttpClient();
+    private final BooleanProperty mapReady = new SimpleBooleanProperty(false);
+
+
+    @FXML
+    public void initialize() {
+        configureMapContainer();
+        setupMapBindings();
+        setupMapListeners();
+        setupMapResizing();
+
+        mapTypeSelector.getItems().addAll("OpenStreetMap", "Satellite", "Terrain");
+        mapTypeSelector.getSelectionModel().selectFirst();
+        mapView.setMapType("OpenStreetMap");
+
+
+        mapContainer.setVisible(true);
+        mapContainer.setManaged(true);
+
+        mapTypeSelector.setVisible(false);
+        setupMapResizing();
+
+        // Écouteur pour le changement de type de carte
+        mapTypeSelector.valueProperty().addListener((obs, oldVal, newVal) -> {
+            if (mapView != null) {
+                mapView.setMapType(newVal);
+            }
+        });
+
+        // Écouteur pour le chargement de la carte
+        mapView.mapReadyProperty().addListener((obs, oldVal, ready) -> {
+            if (ready) {
+                PauseTransition pt = new PauseTransition(Duration.millis(500));
+                pt.setOnFinished(e -> {
+                    mapView.setMapType("OpenStreetMap");
+                    mapView.scheduleResize();
+                });
+                pt.play();
+            }
+        });
+
+        // Lier les champs de texte à la carte
+        setupLocationBindings();
+
+        searchLocationBtn.setOnAction(e -> searchLocation());
+        double lat = mapView.getLatitude();
+        double lng = mapView.getLongitude();
+
+
+    }
+
+    private void setupLocationBindings() {
+        // Quand la carte change, mettre à jour les champs
+        mapView.latitudeProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal.doubleValue() != 0.0) {
+                Platform.runLater(() -> {
+                    latitudeField.setText(String.format("%.6f", newVal));
+                });
+            }
+        });
+
+        mapView.longitudeProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal.doubleValue() != 0.0) {
+                Platform.runLater(() -> {
+                    longitudeField.setText(String.format("%.6f", newVal));
+                });
+            }
+        });
+
+        // Quand les champs changent manuellement, mettre à jour la carte
+        latitudeField.textProperty().addListener((obs, oldVal, newVal) -> {
+            try {
+                double lat = Double.parseDouble(newVal);
+                double lng = mapView.getLongitude();
+                if (mapView.getLatitude() != lat) {
+                    mapView.setLocation(lat, lng);
+                }
+            } catch (NumberFormatException ignored) {}
+        });
+
+        longitudeField.textProperty().addListener((obs, oldVal, newVal) -> {
+            try {
+                double lng = Double.parseDouble(newVal);
+                double lat = mapView.getLatitude();
+                if (mapView.getLongitude() != lng) {
+                    mapView.setLocation(lat, lng);
+                }
+            } catch (NumberFormatException ignored) {}
+        });
+    }
+
+    @FXML
+    private void searchLocation() {
+        String adresse = adresseField.getText().trim();
+        String ville = villeField.getText().trim();
+
+        if(adresse.isEmpty() || ville.isEmpty()) {
+            showAlert("Erreur", "Veuillez remplir l'adresse et la ville", Alert.AlertType.ERROR);
+            return;
+        }
+
+        Platform.runLater(() -> {
+            mapContainer.setVisible(true);
+            PauseTransition pause = new PauseTransition(seconds(0.5));
+            pause.setOnFinished(e -> executeLocationSearch(adresse, ville));
+            pause.play();
+        });
+    }
+
+    private void configureMapContainer() {
+        mapView.prefWidthProperty().bind(mapContainer.widthProperty());
+        mapView.prefHeightProperty().bind(mapContainer.heightProperty());
+    }
+
+    private void setupMapBindings() {
+        latitudeField.textProperty().addListener((obs, oldVal, newVal) -> {
+            try {
+                double lat = Double.parseDouble(newVal);
+                if(mapView.getLatitude() != lat) {
+                    mapView.setLocation(lat, mapView.getLongitude());
+                }
+            } catch (NumberFormatException ignored) {}
+        });
+
+        longitudeField.textProperty().addListener((obs, oldVal, newVal) -> {
+            try {
+                double lng = Double.parseDouble(newVal);
+                if(mapView.getLongitude() != lng) {
+                    mapView.setLocation(mapView.getLatitude(), lng);
+                }
+            } catch (NumberFormatException ignored) {}
+        });
+    }
+    private void setupMapListeners() {
+        mapView.mapReadyProperty().addListener((obs, oldVal, isReady) -> {
+            if (isReady) {
+                PauseTransition pt = new PauseTransition(Duration.millis(300));
+                pt.setOnFinished(e -> {
+                    mapView.setStyle("-fx-opacity: 1;");
+                    mapView.setMapType("OpenStreetMap");
+                });
+                pt.play();
+            }
+        });
+    }
+
+    private void geocodeAddress(String address, String city) {
+        String query = URLEncoder.encode(address + ", " + city, StandardCharsets.UTF_8);
+        String url = "https://nominatim.openstreetmap.org/search?format=json&q=" + query;
+
+        // Implémentez la logique de géocodage ici
+    }
+    private void setupMapResizing() {
+        // La carte s'adapte automatiquement au conteneurse
+        mapView.prefWidthProperty().bind(mapContainer.widthProperty());
+        mapView.prefHeightProperty().bind(mapContainer.heightProperty());
+    }
+
+    private void executeLocationSearch(String adresse, String ville) {
+        try {
+            String query = URLEncoder.encode(adresse + ", " + ville, StandardCharsets.UTF_8);
+            String url = "https://nominatim.openstreetmap.org/search?format=json&q=" + query;
+
+            HttpClient.Builder builder = HttpClient.newBuilder();
+            HttpClient client = builder
+                    .build();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("User-Agent", "JavaFX Map Application")
+                    .GET()
+                    .build();
+
+            client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenApply(HttpResponse::body)
+                    .thenAccept(responseBody -> {
+                        try {
+                            JSONArray results = new JSONArray(responseBody);
+                            if (results.length() > 0) {
+                                JSONObject result = results.getJSONObject(0);
+                                double lat = Double.parseDouble(result.getString("lat"));
+                                double lon = Double.parseDouble(result.getString("lon"));
+
+                                Platform.runLater(() -> {
+                                    mapView.setLocation(lat, lon);
+                                    mapView.setZoom(15);
+                                    // No need to set text fields as the bindings will handle it
+                                });
+                            } else {
+                                Platform.runLater(() ->
+                                        showAlert("Aucun résultat",
+                                                "Aucun emplacement trouvé pour cette adresse",
+                                                Alert.AlertType.INFORMATION)
+                                );
+                            }
+                        } catch (Exception e) {
+                            Platform.runLater(() ->
+                                    showAlert("Erreur",
+                                            "Erreur lors du traitement des résultats: " + e.getMessage(),
+                                            Alert.AlertType.ERROR)
+                            );
+                        }
+                    })
+                    .exceptionally(e -> {
+                        Platform.runLater(() ->
+                                showAlert("Erreur",
+                                        "Impossible de se connecter au service de géocodage: " + e.getMessage(),
+                                        Alert.AlertType.ERROR)
+                        );
+                        return null;
+                    });
+        } catch (Exception e) {
+            showAlert("Erreur", "Erreur lors de la recherche: " + e.getMessage(), Alert.AlertType.ERROR);
+        }
+
+
+
+    }
+
+    @FXML
+    private void handleSave() {
+        try {
+            // Validation des champs obligatoires
+            if (nomField.getText().isEmpty() || adresseField.getText().isEmpty() ||
+                    villeField.getText().isEmpty() || espaceField.getText().isEmpty()) {
+                showAlert("Erreur", "Veuillez remplir tous les champs obligatoires", Alert.AlertType.ERROR);
+                return;
+            }
+
+            Entrepot newEntrepot = new Entrepot();
+            newEntrepot.setNom(nomField.getText());
+            newEntrepot.setAdresse(adresseField.getText());
+            newEntrepot.setVille(villeField.getText());
+            newEntrepot.setEspace(Double.parseDouble(espaceField.getText()));
+
+            // Récupérer les coordonnées seulement si la carte est visible
+            if (mapContainer.isVisible()) {
+                try {
+                    newEntrepot.setLatitude(Double.parseDouble(latitudeField.getText()));
+                    newEntrepot.setLongitude(Double.parseDouble(longitudeField.getText()));
+                } catch (NumberFormatException e) {
+                    showAlert("Erreur", "Coordonnées GPS invalides", Alert.AlertType.ERROR);
+                    return;
+                }
+            }
+
+            if (entrepotService.saveEntrepot(newEntrepot)) {
+                if (parentController != null) {
+
+                }
+                closeWindow();
+            } else {
+                showAlert("Erreur", "Échec de la sauvegarde", Alert.AlertType.ERROR);
+            }
+        } catch (NumberFormatException e) {
+            showAlert("Erreur", "Veuillez entrer une valeur valide pour l'espace", Alert.AlertType.ERROR);
+        }
+    }
+
+    public void setParentController(EntrepotController parentController) {
+        this.parentController = parentController;
+    }
+
+    @FXML
+    private void handleCancel() {
+        closeWindow();
+    }
+
+    private void showAlert(String title, String message, Alert.AlertType type) {
+        Alert alert = new Alert(type);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    private void closeWindow() {
+        nomField.getScene().getWindow().hide();
+    }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Leaflet Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
+
+        /* Fix for tile rendering issues */
+        .leaflet-container {
+            background: #f8fafc !important;
+        }
+
+        .leaflet-tile-container {
+            pointer-events: none;
+            will-change: transform;
+        }
+
+        .leaflet-tile {
+            box-shadow: none !important;
+            border: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+    </style>
+</head>
+<body>
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+<script>
+    var marker;
+    var map;
+    var currentLayer;
+
+    var baseLayers = {
+        "OpenStreetMap": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            keepBuffer: 8,
+            updateWhenIdle: false,
+            updateWhenZooming: false
+        }),
+        "Satellite": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19,
+            keepBuffer: 8,
+            updateWhenIdle: false,
+            updateWhenZooming: false
+        })
+    };
+
+    window.L_DISABLE_3D = true;
+
+    function initMap() {
+        if (window.mapInitialized) return;
+        window.mapInitialized = true;
+
+        // Désactiver les animations problématiques
+        L.DomEvent.TRANSITION = false;
+        L.Browser.any3d = false;
+
+        var map = L.map('map', {
+            preferCanvas: true,
+            zoomControl: false,
+            attributionControl: false,
+            fadeAnimation: false,
+            zoomAnimation: false,
+            markerZoomAnimation: false,
+            renderer: L.canvas(),
+            inertia: false
+        }).setView([36.8065, 10.1815], 13);
+
+        // Configuration spéciale pour les tuiles
+        L.TileLayer.include({
+            _update: function() {
+                if (!this._map) return;
+                L.GridLayer.prototype._update.call(this);
+            }
+        });
+
+        var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            minZoom: 3,
+            keepBuffer: 10,
+            updateWhenIdle: true,
+            crossOrigin: true,
+            detectRetina: false
+        }).addTo(map);
+
+        // Forcer le redimensionnement initial
+        setTimeout(function() {
+            map.invalidateSize({animate: false, pan: false});
+            map._resetView(map.getCenter(), map.getZoom(), true);
+
+            // Notifier JavaFX que la carte est prête
+            if (window.javaBridge) {
+                window.javaBridge.onMapReady();
+            }
+        }, 500);
+    }
+
+    // Appeler initMap avec plusieurs garanties
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(initMap, 300);
+    });
+    window.onload = initMap;
+    setTimeout(initMap, 1000);
+
+    function forceRedraw() {
+        const resizeAttempts = 3;
+        for(let i = 0; i < resizeAttempts; i++) {
+            setTimeout(() => {
+                if(map) {
+                    map.invalidateSize({animate: false, pan: false});
+                    map._resetView(map.getCenter(), map.getZoom());
+                }
+            }, i * 150);
+        }
+    }
+    function setMapType(type) {
+        if (!map || !baseLayers[type]) return;
+
+        if (currentLayer) {
+            map.removeLayer(currentLayer);
+        }
+        currentLayer = baseLayers[type];
+        currentLayer.addTo(map);
+
+        setTimeout(function() {
+            map.invalidateSize();
+        }, 100);
+    }
+
+    function setMapView(lat, lng) {
+        if (!map || !marker) return;
+        map.setView([lat, lng], 15, {animate: false});
+        marker.setLatLng([lat, lng]);
+        updatePosition();
+    }
+
+    function updatePosition() {
+        var pos = marker.getLatLng();
+        if (window.javaBridge && typeof window.javaBridge.onLocationChanged === 'function') {
+            window.javaBridge.onLocationChanged(pos.lat, pos.lng);
+        }
+    }
+
+    // Initialize map when document is fully loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(initMap, 500);
+    });
+
+    // Backup initialization
+    window.onload = function() {
+        if (!map) setTimeout(initMap, 500);
+    };
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+package com.example.Stock.Controller;
+
+import javafx.animation.PauseTransition;
+import javafx.application.Platform;
+import javafx.beans.property.*;
+import javafx.concurrent.Worker;
+import javafx.scene.control.Label;
+import javafx.scene.layout.StackPane;
+import javafx.scene.web.WebEngine;
+import javafx.scene.web.WebView;
+import javafx.util.Duration;
+import netscape.javascript.JSObject;
+
+public class MapView extends StackPane {
+    private final WebView webView = new WebView();
+    private final WebEngine webEngine = webView.getEngine();
+    private final DoubleProperty latitude = new SimpleDoubleProperty();
+    private final DoubleProperty longitude = new SimpleDoubleProperty();
+    private final BooleanProperty mapReady = new SimpleBooleanProperty(false);
+
+    public MapView() {
+        // Bind le WebView à la taille du conteneur
+        webView.prefWidthProperty().bind(widthProperty());
+        webView.prefHeightProperty().bind(heightProperty());
+        webView.setContextMenuEnabled(false);
+        webView.setStyle("-fx-background-color: transparent;-fx-opacity: 0.99;");
+
+        setupWebEngine();
+        getChildren().add(webView);
+    }
+    private void setupWebEngine() {
+        webView.setZoom(0.8); // Légère réduction pour forcer le recalcul
+        webEngine.setJavaScriptEnabled(true);
+
+        // Ajouter un écouteur pour les erreurs
+        webEngine.setOnError(event -> {
+            System.err.println("WebEngine error: " + event.getMessage());
+        });
+
+        webEngine.getLoadWorker().stateProperty().addListener((obs, oldState, newState) -> {
+            if (newState == Worker.State.SUCCEEDED) {
+                // Triple vérification du chargement
+                Platform.runLater(() -> {
+                    JSObject window = (JSObject) webEngine.executeScript("window");
+                    window.setMember("javaBridge", new JavaBridge());
+
+                    // Premier essai
+                    webEngine.executeScript("initMap()");
+
+                    // Deuxième essai après délai
+                    PauseTransition pt1 = new PauseTransition(Duration.seconds(0.5));
+                    pt1.setOnFinished(e -> {
+                        webEngine.executeScript("initMap()");
+                        scheduleResize();
+                    });
+                    pt1.play();
+
+                    // Troisième essai
+                    PauseTransition pt2 = new PauseTransition(Duration.seconds(1));
+                    pt2.setOnFinished(e -> scheduleResize());
+                    pt2.play();
+                });
+            }
+        });
+
+        // Charger la page HTML
+        String url = getClass().getResource("/com/example/Stock/view/map.html").toExternalForm();
+        webEngine.load(url);
+    }
+    private void showError(String msg) {
+        Platform.runLater(() -> {
+            Label lbl = new Label(msg);
+            lbl.setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
+            getChildren().add(lbl);
+        });
+    }
+
+    public void refreshMapSize() {
+        Platform.runLater(() -> {
+            webEngine.executeScript(
+                    "if (typeof map !== 'undefined') {"
+                            + "  setTimeout(function() { map.invalidateSize(); }, 100);"
+                            + "}"
+            );
+        });
+    }
+
+    public void setLocation(double lat, double lng) {
+        Platform.runLater(() ->
+                webEngine.executeScript(String.format("setMapView(%f, %f)", lat, lng))
+        );
+    }
+
+    public void setMapType(String type) {
+        Platform.runLater(() -> {
+            if (webEngine.getLoadWorker().getState() == Worker.State.SUCCEEDED) {
+                webEngine.executeScript(
+                        "if (typeof setMapType === 'function') setMapType('" + type + "');"
+                );
+            }
+        });
+    }
+    public void scheduleResize() {
+        Platform.runLater(() -> {
+            // Solution complète pour le redimensionnement
+            webEngine.executeScript(
+                    "if (typeof map !== 'undefined') {"
+                            + "  setTimeout(function() {"
+                            + "    map.invalidateSize({animate: false, pan: false});"
+                            + "    map._resetView(map.getCenter(), map.getZoom());"
+                            + "    Array.from(document.querySelectorAll('.leaflet-tile')).forEach(tile => {"
+                            + "      tile.style.transform = 'none';"
+                            + "      tile.style.imageRendering = 'crisp-edges';"
+                            + "    });"
+                            + "  }, 100);"
+                            + "}"
+            );
+        });
+    }
+
+    // Getters pour binding et accès direct
+    public BooleanProperty mapReadyProperty() { return mapReady; }
+    public DoubleProperty latitudeProperty() { return latitude; }
+    public DoubleProperty longitudeProperty() { return longitude; }
+
+    public double getLatitude() { return latitude.get(); }
+    public double getLongitude() { return longitude.get(); }
+
+    public void setZoom(int i) {
+    }
+
+    public class JavaBridge {
+        public void onMapReady() {
+            mapReady.set(true);
+            refreshMapSize();
+        }
+        public void onLocationChanged(double lat, double lng) {
+            latitude.set(lat);
+            longitude.set(lng);
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Styles généraux */
+.root {
+    -fx-font-family: "Arial";
+    -fx-background-color: #f0f2f5;
+}
+
+/* Conteneur de la carte */
+.map-container {
+    -fx-border-color: #d1d5db;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-background-color: white;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0.2, 0, 0);
+    -fx-min-height: 400px;
+    -fx-pref-height: 500px;
+}/* Supprimer toutes les transformations 3D */
+.leaflet-container {
+    background: #f8f9fa !important;
+    transform: none !important;
+    overflow: hidden !important;
+}
+
+.leaflet-tile {
+    image-rendering: crisp-edges;
+    margin: 0 !important;
+    border: 0 !important;
+    padding: 0 !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+}
+
+.leaflet-tile-container {
+    will-change: auto !important;
+    transform: none !important;
+}
+
+/* Dans votre fichier CSS */
+.leaflet-container {
+    background: #f8f9fa !important;
+    transform: none !important;
+}
+
+.leaflet-tile {
+    image-rendering: crisp-edges;
+    margin: 0 !important;
+    border: 0 !important;
+    padding: 0 !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+}
+
+.leaflet-tile-container {
+    will-change: auto !important;
+    transform: none !important;
+}
+
+.map-webview {
+    -fx-opacity: 0.999; /* Contournement bug de rendu WebView */
+}
+
+.header-box {
+    -fx-alignment: center-left;
+    -fx-spacing: 10;
+}
+
+.header-icon {
+    -fx-font-size: 30px;
+}
+
+.header-title {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: linear-gradient(to right, #2c3e50, #3498db);
+}
+
+/* Conteneurs de formulaire */
+.form-container {
+    -fx-background-color: white;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0.2, 0, 0);
+    -fx-padding: 15;
+}
+
+.form-rectangle {
+    -fx-fill: white;
+    -fx-stroke: #e0e0e0;
+    -fx-stroke-type: inside;
+    -fx-stroke-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0.2, 0, 0);
+}
+
+/* Boutons */
+.button-container {
+    -fx-spacing: 15;
+    -fx-alignment: center-right;
+    -fx-padding: 10 0 0 0;
+}
+
+.cancel-btn {
+    -fx-background-color: #6c757d;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 10 25;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+}
+
+.cancel-btn:hover {
+    -fx-background-color: #5a6268;
+}
+
+.save-btn {
+    -fx-background-color: linear-gradient(to right, #28a745, #20c997);
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 10 25;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+}
+
+.save-btn:hover {
+    -fx-background-color: linear-gradient(to right, #218838, #1aa179);
+}

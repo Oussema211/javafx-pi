@@ -1,25 +1,27 @@
-/* 🌟 Style général de la page checkout */
+/* ✅ Style général de la page checkout */
 .main-content {
-    -fx-background-color: #f9f9f9;
+    -fx-background-color: linear-gradient(to bottom right, #e8f5e9, #c8e6c9); /* doux vert nature */
     -fx-padding: 40;
     -fx-spacing: 20;
     -fx-alignment: center;
-    -fx-background-radius: 15;
+    -fx-background-radius: 20;
+    -fx-effect: dropshadow(gaussian, rgba(56,142,60,0.1), 20, 0.2, 0, 4);
 }
 
-/* 🌟 Titre principal */
+/* ✅ Titre principal */
 .content-title {
-    -fx-font-size: 28px;
+    -fx-font-size: 30px;
     -fx-font-weight: bold;
-    -fx-text-fill: #388e3c;
+    -fx-text-fill: #2e7d32;
+    -fx-effect: dropshadow(one-pass-box, rgba(0,0,0,0.1), 1, 0.5, 0, 1);
 }
 
-/* 🌟 Champs texte */
+/* ✅ Champs texte */
 .text-field {
     -fx-background-color: #ffffff;
-    -fx-border-color: #cfd8dc;
-    -fx-border-radius: 8;
-    -fx-background-radius: 8;
+    -fx-border-color: #a5d6a7;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
     -fx-padding: 12;
     -fx-font-size: 14px;
     -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 5, 0, 0, 1);
@@ -27,40 +29,41 @@
 
 .text-field:focused {
     -fx-border-color: #66bb6a;
-    -fx-background-color: #ffffff;
+    -fx-background-color: #f1f8e9;
 }
 
-/* 🌟 Champ erreur */
+/* ✅ Champ erreur */
 #errorLabel {
-    -fx-text-fill: #d32f2f;
+    -fx-text-fill: #c62828;
     -fx-font-size: 13px;
     -fx-font-weight: bold;
 }
 
-/* 🌟 Bouton de paiement */
+/* ✅ Bouton de paiement */
 .primary-button {
-    -fx-background-color: linear-gradient(to right, #66bb6a, #43a047);
+    -fx-background-color: linear-gradient(to right, #66bb6a, #388e3c);
     -fx-text-fill: white;
     -fx-font-weight: bold;
-    -fx-background-radius: 10;
-    -fx-padding: 12 24;
+    -fx-background-radius: 12;
+    -fx-padding: 12 26;
     -fx-cursor: hand;
     -fx-font-size: 15px;
-    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 5, 0, 0, 2);
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 6, 0, 0, 2);
+    -fx-transition: all 0.3s ease-in-out;
 }
 
 .primary-button:hover {
-    -fx-background-color: linear-gradient(to right, #43a047, #388e3c);
+    -fx-background-color: linear-gradient(to right, #43a047, #2e7d32);
     -fx-scale-x: 1.05;
     -fx-scale-y: 1.05;
 }
 
-/* 🌟 HBox des champs MM/YY et CVV */
+/* ✅ HBox des champs MM/YY et CVV */
 .hbox {
     -fx-spacing: 12;
 }
 
-/* 🌟 ScrollPane (si nécessaire) */
+/* ✅ ScrollPane (si nécessaire) */
 .scroll-pane {
     -fx-background-color: transparent;
 }
