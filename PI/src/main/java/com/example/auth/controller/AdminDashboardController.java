@@ -15,6 +15,7 @@ import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class AdminDashboardController {
@@ -33,7 +34,12 @@ public class AdminDashboardController {
     public void initialize() {
         User user = sessionManager.getLoggedInUser();
         if (user == null) {
-            System.err.println("No user logged in; should have been redirected to login");
+            System.err.println("No user logged in; redirecting to login");
+            try {
+                redirectToLogin();
+            } catch (IOException e) {
+                System.err.println("Error redirecting to login: " + e.getMessage());
+            }
             return;
         }
 
@@ -74,11 +80,26 @@ public class AdminDashboardController {
                 }
             }
         });
+
+        // Add placeholder for empty table
+        usersTable.setPlaceholder(new Label("No users found. Add a user or check database."));
     }
 
     private void loadUsers() {
-        List<User> users = authService.getAllUsers();
-        usersTable.setItems(FXCollections.observableArrayList(users));
+        try {
+            List<User> users = authService.getAllUsers();
+            if (users == null || users.isEmpty()) {
+                System.err.println("No users returned from getAllUsers() or list is empty/null");
+                usersTable.setItems(FXCollections.observableArrayList(new ArrayList<>()));
+            } else {
+                System.out.println("Loaded " + users.size() + " users into table");
+                usersTable.setItems(FXCollections.observableArrayList(users));
+            }
+        } catch (Exception e) {
+            System.err.println("Error loading users: " + e.getMessage());
+            e.printStackTrace();
+            usersTable.setItems(FXCollections.observableArrayList(new ArrayList<>()));
+        }
     }
 
     @FXML
@@ -88,7 +109,7 @@ public class AdminDashboardController {
         stage.setTitle("Add New User");
         stage.setScene(new Scene(root));
         stage.showAndWait();
-        loadUsers(); // Refresh table after adding
+        loadUsers();
     }
 
     private void showEditUserForm(User user) {
@@ -101,15 +122,16 @@ public class AdminDashboardController {
             stage.setTitle("Edit User");
             stage.setScene(new Scene(root));
             stage.showAndWait();
-            loadUsers(); // Refresh table after editing
+            loadUsers();
         } catch (IOException e) {
+            System.err.println("Error opening edit user form: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
     private void deleteUser(User user) {
         if (authService.deleteUser(user.getId())) {
-            loadUsers(); // Refresh table after deletion
+            loadUsers();
         } else {
             System.err.println("Failed to delete user");
         }
@@ -118,6 +140,10 @@ public class AdminDashboardController {
     @FXML
     private void handleLogout() throws IOException {
         sessionManager.clearSession();
+        redirectToLogin();
+    }
+
+    private void redirectToLogin() throws IOException {
         Stage stage = (Stage) welcomeLabel.getScene().getWindow();
         Parent root = FXMLLoader.load(getClass().getResource("/com/example/auth/login.fxml"));
         stage.setScene(new Scene(root));

@@ -34,7 +34,7 @@ public class AuthService {
                     "roles TEXT NOT NULL, " +
                     "password VARCHAR(255), " +
                     "travail VARCHAR(100), " +
-                    "date_inscri DATE NOT NULL, " +
+                    "date_iscri DATE NOT NULL, " +
                     "photo_url TEXT, " +
                     "is_verified BOOLEAN NOT NULL, " +
                     "verification_token VARCHAR(36), " +
@@ -95,9 +95,9 @@ public class AuthService {
             System.err.println("Error serializing roles: " + e.getMessage());
             return null;
         }
-        Date dateInscri = new Date();
+        Date dateIscri = new Date();
         
-        String sql = "INSERT INTO user (id, email, roles, password, travail, date_inscri, photo_url, " +
+        String sql = "INSERT INTO user (id, email, roles, password, travail, date_iscri, photo_url, " +
                      "is_verified, verification_token, nom, prenom, num_tel) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, id.toString());
@@ -105,7 +105,7 @@ public class AuthService {
             pstmt.setString(3, rolesJson);
             pstmt.setNull(4, Types.VARCHAR);
             pstmt.setNull(5, Types.VARCHAR);
-            pstmt.setDate(6, new java.sql.Date(dateInscri.getTime()));
+            pstmt.setDate(6, new java.sql.Date(dateIscri.getTime()));
             pstmt.setNull(7, Types.VARCHAR);
             pstmt.setBoolean(8, true);
             pstmt.setNull(9, Types.VARCHAR);
@@ -114,7 +114,7 @@ public class AuthService {
             pstmt.setNull(12, Types.VARCHAR);
             int rowsAffected = pstmt.executeUpdate();
             System.out.println("New user created: " + email + ", rows affected: " + rowsAffected);
-            return new User(id, email, rolesJson, null, null, dateInscri, null, true, null, "Unknown", "Unknown", null);
+            return new User(id, email, rolesJson, null, null, dateIscri, null, true, null, "Unknown", "Unknown", null);
         } catch (SQLException e) {
             System.err.println("Error creating Gmail user: " + e.getMessage());
             return null;
@@ -128,15 +128,15 @@ public class AuthService {
             return false;
         }
 
-        String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
+        String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt(12));
         UUID id = UUID.randomUUID();
         User tempUser = new User(id, email, "[]", password, travail, new Date(), photoUrl, false, verificationCode, nom, prenom, numTel);
         tempUser.setRoles(roles);
         String rolesJson = tempUser.getRolesAsJson();
-        Date dateInscri = new Date();
+        Date dateIscri = new Date();
         boolean isVerified = false;
 
-        String sql = "INSERT INTO user (id, email, roles, password, travail, date_inscri, photo_url, " +
+        String sql = "INSERT INTO user (id, email, roles, password, travail, date_iscri, photo_url, " +
                 "is_verified, verification_token, nom, prenom, num_tel) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, id.toString());
@@ -144,7 +144,7 @@ public class AuthService {
             pstmt.setString(3, rolesJson);
             pstmt.setString(4, hashedPassword);
             pstmt.setString(5, travail);
-            pstmt.setDate(6, new java.sql.Date(dateInscri.getTime()));
+            pstmt.setDate(6, new java.sql.Date(dateIscri.getTime()));
             pstmt.setString(7, photoUrl);
             pstmt.setBoolean(8, isVerified);
             pstmt.setString(9, verificationCode);
@@ -207,30 +207,51 @@ public class AuthService {
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
                 String storedPassword = rs.getString("password");
-                if (password == null || (password != null && BCrypt.checkpw(password, storedPassword))) {
-                    Date dateInscri = rs.getDate("date_inscri");
-                    if (dateInscri == null) {
-                        System.err.println("Invalid date_inscri for user " + email + ", using current date");
-                        dateInscri = new Date();
+                // Handle Gmail login (null password) or invalid stored password
+                if (password == null && storedPassword == null) {
+                    System.out.println("Authenticated Gmail user: " + email);
+                } else if (password != null && storedPassword != null && !storedPassword.isEmpty() && 
+                           (storedPassword.startsWith("$2a$") || storedPassword.startsWith("$2y$"))) {
+                    try {
+                        // Convert $2y$ to $2a$ for compatibility with older jBCrypt versions
+                        String checkPassword = storedPassword.startsWith("$2y$") 
+                            ? "$2a$" + storedPassword.substring(4) 
+                            : storedPassword;
+                        if (!BCrypt.checkpw(password, checkPassword)) {
+                            System.err.println("Password mismatch for user: " + email);
+                            return null;
+                        }
+                    } catch (IllegalArgumentException e) {
+                        System.err.println("Invalid password hash for user " + email + ": " + storedPassword + ", error: " + e.getMessage());
+                        return null;
                     }
-                    return new User(
-                            UUID.fromString(rs.getString("id")),
-                            rs.getString("email"),
-                            rs.getString("roles"),
-                            storedPassword,
-                            rs.getString("travail"),
-                            dateInscri,
-                            rs.getString("photo_url"),
-                            rs.getBoolean("is_verified"),
-                            rs.getString("verification_token"),
-                            rs.getString("nom"),
-                            rs.getString("prenom"),
-                            rs.getString("num_tel")
-                    );
+                } else {
+                    System.err.println("Authentication failed for user " + email + ": storedPassword=" + storedPassword + ", inputPasswordProvided=" + (password != null));
+                    return null;
                 }
+                Date dateIscri = rs.getDate("date_iscri");
+                if (dateIscri == null) {
+                    System.err.println("Invalid date_iscri for user " + email + ", using current date");
+                    dateIscri = new Date();
+                }
+                return new User(
+                        UUID.fromString(rs.getString("id")),
+                        rs.getString("email"),
+                        rs.getString("roles"),
+                        storedPassword,
+                        rs.getString("travail"),
+                        dateIscri,
+                        rs.getString("photo_url"),
+                        rs.getBoolean("is_verified"),
+                        rs.getString("verification_token"),
+                        rs.getString("nom"),
+                        rs.getString("prenom"),
+                        rs.getString("num_tel")
+                );
             }
+            System.err.println("No user found with email: " + email);
         } catch (SQLException e) {
-            System.err.println("Error during authentication: " + e.getMessage());
+            System.err.println("SQL error during authentication: " + e.getMessage());
         }
         return null;
     }
@@ -250,9 +271,9 @@ public class AuthService {
             pstmt.setString(1, id.toString());
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
-                Date dateInscri = rs.getDate("date_inscri");
-                if (dateInscri == null) {
-                    dateInscri = new Date();
+                Date dateIscri = rs.getDate("date_iscri");
+                if (dateIscri == null) {
+                    dateIscri = new Date();
                 }
                 return new User(
                         UUID.fromString(rs.getString("id")),
@@ -260,7 +281,7 @@ public class AuthService {
                         rs.getString("roles"),
                         rs.getString("password"),
                         rs.getString("travail"),
-                        dateInscri,
+                        dateIscri,
                         rs.getString("photo_url"),
                         rs.getBoolean("is_verified"),
                         rs.getString("verification_token"),
@@ -286,9 +307,9 @@ public class AuthService {
         try (Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                Date dateInscri = rs.getDate("date_inscri");
-                if (dateInscri == null) {
-                    dateInscri = new Date();
+                Date dateIscri = rs.getDate("date_iscri");
+                if (dateIscri == null) {
+                    dateIscri = new Date();
                 }
                 users.add(new User(
                         UUID.fromString(rs.getString("id")),
@@ -296,7 +317,7 @@ public class AuthService {
                         rs.getString("roles"),
                         rs.getString("password"),
                         rs.getString("travail"),
-                        dateInscri,
+                        dateIscri,
                         rs.getString("photo_url"),
                         rs.getBoolean("is_verified"),
                         rs.getString("verification_token"),
@@ -305,8 +326,10 @@ public class AuthService {
                         rs.getString("num_tel")
                 ));
             }
+            System.out.println("Fetched " + users.size() + " users");
         } catch (SQLException e) {
-            System.err.println("Error fetching all users: " + e.getMessage());
+            System.err.println("Error fetching users: " + e.getMessage());
+            e.printStackTrace();
         }
         return users;
     }
