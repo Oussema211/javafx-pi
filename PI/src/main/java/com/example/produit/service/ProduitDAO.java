@@ -40,6 +40,9 @@ public class ProduitDAO {
             throw new RuntimeException("Failed to initialize produit table: " + e.getMessage());
         }
     }
+    public static Connection getConnection() throws SQLException {
+        return DriverManager.getConnection(URL, USER, PASSWORD);
+    }
 
     private static byte[] uuidToBinary(UUID uuid) {
         if (uuid == null) {
