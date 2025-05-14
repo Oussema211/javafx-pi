@@ -1,0 +1,3319 @@
+package com.example.Stock.Controller;
+
+import javafx.animation.AnimationTimer;
+import javafx.application.Platform;
+import javafx.embed.swing.SwingFXUtils;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.*;
+import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.image.WritableImage;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.paint.PhongMaterial;
+import javafx.scene.shape.Box;
+import javafx.scene.transform.Rotate;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.util.Base64;
+import java.util.Objects;
+
+public class Description3DController {
+    @FXML private TextField lengthField;
+    @FXML private TextField widthField;
+    @FXML private TextField heightField;
+    @FXML private TextField aislesField;
+    @FXML private ComboBox<String> storageTypeCombo;
+    @FXML private TextArea freeDescriptionArea;
+    @FXML private ImageView previewImageView;
+    @FXML private Button exportImageButton;
+    @FXML private StackPane view3DContainer;
+    @FXML private ProgressBar loadingProgressBar;
+    @FXML private Label loadingLabel;
+    @FXML private VBox previewContainer;
+    @FXML private Label previewLabel;
+
+    private String lastImageData;
+    private AnimationTimer renderTimer;
+    private SubScene subScene;
+    private PerspectiveCamera camera;
+    private double cameraDistance;
+    private double cameraYaw = 180;
+    private double cameraPitch = 29;
+    private double targetX, targetY, targetZ;
+
+    // Variables pour limiter les mises à jour de la caméra
+    private long lastUpdateTime = 0;
+    private final long UPDATE_INTERVAL = 16; // Environ 60 FPS (1000ms / 60 = 16ms)
+
+    @FXML
+    private void initialize() {
+        storageTypeCombo.getItems().addAll("Palettes", "Étagères mobiles", "Rayonnages métalliques");
+        exportImageButton.setDisable(true);
+    }
+
+    private boolean validateFields() {
+        try {
+            double length = Double.parseDouble(lengthField.getText());
+            double width = Double.parseDouble(widthField.getText());
+            double height = Double.parseDouble(heightField.getText());
+            int aisles = Integer.parseInt(aislesField.getText());
+            String storageType = storageTypeCombo.getValue();
+            if (length <= 0 || width <= 0 || height <= 0 || aisles <= 0) {
+                showAlert("Erreur", "Les dimensions et le nombre d'allées doivent être positifs.", Alert.AlertType.ERROR);
+                return false;
+            }
+            if (storageType == null || storageType.isEmpty()) {
+                showAlert("Erreur", "Veuillez sélectionner un type de stockage.", Alert.AlertType.ERROR);
+                return false;
+            }
+            return true;
+        } catch (NumberFormatException e) {
+            showAlert("Erreur", "Veuillez entrer des valeurs numériques valides.", Alert.AlertType.ERROR);
+            return false;
+        }
+    }
+
+    private void showLoadingState() {
+        loadingProgressBar.setProgress(0);
+        loadingLabel.setText("Chargement...");
+        loadingProgressBar.setVisible(true);
+        loadingLabel.setVisible(true);
+    }
+
+    private void resetLoadingState() {
+        loadingProgressBar.setVisible(false);
+        loadingLabel.setVisible(false);
+    }
+
+    private void showAlert(String title, String message, Alert.AlertType type) {
+        Alert alert = new Alert(type);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    private void lookAt(PerspectiveCamera camera, double fromX, double fromY, double fromZ, double toX, double toY, double toZ) {
+        double dx = toX - fromX;
+        double dy = toY - fromY;
+        double dz = toZ - fromZ;
+
+        double yaw = Math.toDegrees(Math.atan2(dx, dz));
+        double distanceXZ = Math.sqrt(dx * dx + dz * dz);
+        double pitch = Math.toDegrees(Math.atan2(-dy, distanceXZ));
+
+        cameraYaw = yaw;
+        cameraPitch = pitch;
+
+        camera.getTransforms().clear();
+        camera.getTransforms().add(new Rotate(yaw, Rotate.Y_AXIS));
+        camera.getTransforms().add(new Rotate(pitch, Rotate.X_AXIS));
+
+        System.out.println("LookAt - Direction: dx=" + dx + ", dy=" + dy + ", dz=" + dz + ", yaw=" + yaw + ", pitch=" + pitch);
+    }
+
+    private void updateCameraPosition() {
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastUpdateTime < UPDATE_INTERVAL) {
+            return; // Limiter les mises à jour à 60 FPS
+        }
+        lastUpdateTime = currentTime;
+
+        double radYaw = Math.toRadians(cameraYaw);
+        double radPitch = Math.toRadians(cameraPitch);
+
+        double cameraX = targetX + cameraDistance * Math.cos(radPitch) * Math.sin(radYaw);
+        double cameraY = targetY - cameraDistance * Math.sin(radPitch);
+        double cameraZ = targetZ + cameraDistance * Math.cos(radPitch) * Math.cos(radYaw);
+
+        camera.setTranslateX(cameraX);
+        camera.setTranslateY(cameraY);
+        camera.setTranslateZ(cameraZ);
+
+        lookAt(camera, cameraX, cameraY, cameraZ, targetX, targetY, targetZ);
+        System.out.println("Camera updated: X=" + cameraX + ", Y=" + cameraY + ", Z=" + cameraZ + ", Distance=" + cameraDistance);
+    }
+
+    @FXML
+    private void generate3DView() {
+        if (!validateFields()) return;
+
+        showLoadingState();
+        double length = Double.parseDouble(lengthField.getText());
+        double width = Double.parseDouble(widthField.getText());
+        double height = Double.parseDouble(heightField.getText());
+        int aisles = Integer.parseInt(aislesField.getText());
+        String storageType = storageTypeCombo.getValue();
+        String description = freeDescriptionArea.getText();
+
+        System.out.println("Génération 3D avec paramètres: length=" + length + ", width=" + width +
+                ", height=" + height + ", aisles=" + aisles + ", storageType=" + storageType +
+                ", description=" + description);
+
+        previewImageView.setImage(null);
+        exportImageButton.setDisable(true);
+        view3DContainer.getChildren().clear();
+        previewContainer.setVisible(false);
+        previewLabel.setVisible(false);
+        previewImageView.setVisible(false);
+
+        Platform.runLater(() -> {
+            try {
+                // Créer un groupe pour l'entrepôt
+                Group warehouseGroup = new Group();
+                System.out.println("Groupe créé");
+
+                // Sol de l'entrepôt avec texture
+                Box floor = new Box(length, 0.1, width);
+                floor.setTranslateX(0);
+                floor.setTranslateY(height / 2);
+                floor.setTranslateZ(0);
+                PhongMaterial floorMaterial = new PhongMaterial();
+                floorMaterial.setDiffuseMap(new Image("https://textures.minecraft.net/texture/9a1b8e8f8e8f8e8f8e8f8e8f8e8f8e8f8e8f8e8f8e8f8e8f8e8f8e8f8e8f8e8f"));
+                floorMaterial.setSpecularColor(Color.WHITE);
+                floorMaterial.setSpecularPower(10);
+                floor.setMaterial(floorMaterial);
+                floor.setCache(true);
+                floor.setCacheHint(CacheHint.SPEED);
+                warehouseGroup.getChildren().add(floor);
+                System.out.println("Sol ajouté: translateX=" + floor.getTranslateX() + ", translateY=" + floor.getTranslateY() + ", translateZ=" + floor.getTranslateZ());
+
+                // Murs avec texture
+                PhongMaterial wallMaterial = new PhongMaterial();
+                wallMaterial.setDiffuseMap(new Image("https://textures.minecraft.net/texture/3a1b8e8f8e8f8e8f8e8f8e8f8e8f8e8f8e8f8e8f8e8f8e8f8e8f8e8f8e8f8e8f"));
+                wallMaterial.setSpecularColor(Color.WHITE);
+                wallMaterial.setSpecularPower(5);
+
+                Box leftWall = new Box(0.2, height, width);
+                leftWall.setTranslateX(-length / 2);
+                leftWall.setTranslateY(0);
+                leftWall.setTranslateZ(0);
+                leftWall.setMaterial(wallMaterial);
+                leftWall.setCache(true);
+                leftWall.setCacheHint(CacheHint.SPEED);
+                warehouseGroup.getChildren().add(leftWall);
+                System.out.println("Mur gauche ajouté: translateX=" + leftWall.getTranslateX() + ", translateY=" + leftWall.getTranslateY() + ", translateZ=" + leftWall.getTranslateZ());
+
+                Box rightWall = new Box(0.2, height, width);
+                rightWall.setTranslateX(length / 2);
+                rightWall.setTranslateY(0);
+                rightWall.setTranslateZ(0);
+                rightWall.setMaterial(wallMaterial);
+                rightWall.setCache(true);
+                rightWall.setCacheHint(CacheHint.SPEED);
+                warehouseGroup.getChildren().add(rightWall);
+                System.out.println("Mur droit ajouté: translateX=" + rightWall.getTranslateX() + ", translateY=" + rightWall.getTranslateY() + ", translateZ=" + rightWall.getTranslateZ());
+
+                Box backWall = new Box(length, height, 0.2);
+                backWall.setTranslateX(0);
+                backWall.setTranslateY(0);
+                backWall.setTranslateZ(-width / 2);
+                backWall.setMaterial(wallMaterial);
+                backWall.setCache(true);
+                backWall.setCacheHint(CacheHint.SPEED);
+                warehouseGroup.getChildren().add(backWall);
+                System.out.println("Mur arrière ajouté: translateX=" + backWall.getTranslateX() + ", translateY=" + backWall.getTranslateY() + ", translateZ=" + backWall.getTranslateZ());
+
+                // Toit
+                Box roof = new Box(length, 0.2, width);
+                roof.setTranslateX(0);
+                roof.setTranslateY(-height / 2);
+                roof.setTranslateZ(0);
+                PhongMaterial roofMaterial = new PhongMaterial();
+                roofMaterial.setDiffuseColor(Color.DARKSLATEGRAY);
+                roofMaterial.setSpecularColor(Color.WHITE);
+                roofMaterial.setSpecularPower(10);
+                roof.setMaterial(roofMaterial);
+                roof.setCache(true);
+                roof.setCacheHint(CacheHint.SPEED);
+                warehouseGroup.getChildren().add(roof);
+                System.out.println("Toit ajouté: translateX=" + roof.getTranslateX() + ", translateY=" + roof.getTranslateY() + ", translateZ=" + roof.getTranslateZ());
+
+                // Porte sur le mur avant
+                Box door = new Box(2, 3, 0.1);
+                door.setTranslateX(-length / 4);
+                door.setTranslateY(height / 2 - 1.5);
+                door.setTranslateZ(width / 2 - 0.05);
+                PhongMaterial doorMaterial = new PhongMaterial();
+                doorMaterial.setDiffuseColor(Color.BROWN);
+                door.setMaterial(doorMaterial);
+                door.setCache(true);
+                door.setCacheHint(CacheHint.SPEED);
+                warehouseGroup.getChildren().add(door);
+                System.out.println("Porte ajoutée: translateX=" + door.getTranslateX() + ", translateY=" + door.getTranslateY() + ", translateZ=" + door.getTranslateZ());
+
+                // Fenêtres sur le mur droit (réduire à 2 pour moins de nœuds)
+                for (int i = 0; i < 2; i++) {
+                    Box window = new Box(0.1, 1, 1);
+                    window.setTranslateX(length / 2 - 0.05);
+                    window.setTranslateY(height / 2 - 2 - i * 2);
+                    window.setTranslateZ(-width / 4 + i * (width / 2));
+                    PhongMaterial windowMaterial = new PhongMaterial();
+                    windowMaterial.setDiffuseColor(Color.LIGHTCYAN);
+                    windowMaterial.setSpecularColor(Color.WHITE);
+                    windowMaterial.setSpecularPower(20);
+                    window.setMaterial(windowMaterial);
+                    window.setCache(true);
+                    window.setCacheHint(CacheHint.SPEED);
+                    warehouseGroup.getChildren().add(window);
+                    System.out.println("Fenêtre " + i + " ajoutée: translateX=" + window.getTranslateX() + ", translateY=" + window.getTranslateY() + ", translateZ=" + window.getTranslateZ());
+                }
+
+                // Crates pour légumes et fruits (une étiquette par allée)
+                double aisleWidth = width / (aisles + 1);
+                for (int i = 0; i < aisles; i++) {
+                    int crateCount = (int) (length / 2);
+                    boolean isVegetables = (i % 2 == 0);
+                    Group crateGroup = new Group(); // Grouper les caisses pour réduire les nœuds
+                    for (int j = 0; j < crateCount; j++) {
+                        Box crate = new Box(1.5, 0.8, 1.5);
+                        crate.setTranslateX(-length * 0.4 + j * (length * 0.8 / crateCount));
+                        crate.setTranslateY(height / 2 - 0.4);
+                        crate.setTranslateZ((i + 1) * aisleWidth - width / 2);
+                        PhongMaterial crateMaterial = new PhongMaterial();
+                        crateMaterial.setDiffuseColor(isVegetables ? Color.GREEN : Color.ORANGE);
+                        crateMaterial.setSpecularColor(Color.WHITE);
+                        crateMaterial.setSpecularPower(10);
+                        crate.setMaterial(crateMaterial);
+                        crate.setCache(true);
+                        crate.setCacheHint(CacheHint.SPEED);
+                        crateGroup.getChildren().add(crate);
+                    }
+                    warehouseGroup.getChildren().add(crateGroup);
+                    System.out.println("Groupe de caisses " + (isVegetables ? "légumes" : "fruits") + " ajouté: aisle " + i);
+                }
+
+                // Unités de refroidissement
+                for (int i = 0; i < 2; i++) {
+                    Box coolingUnit = new Box(1, 2, 0.5);
+                    coolingUnit.setTranslateX(-length / 2 + 0.3);
+                    coolingUnit.setTranslateY(height / 2 - 1);
+                    coolingUnit.setTranslateZ(-width / 4 + i * (width / 2));
+                    PhongMaterial coolingMaterial = new PhongMaterial();
+                    coolingMaterial.setDiffuseColor(Color.LIGHTBLUE);
+                    coolingMaterial.setSpecularColor(Color.WHITE);
+                    coolingMaterial.setSpecularPower(20);
+                    coolingUnit.setMaterial(coolingMaterial);
+                    coolingUnit.setCache(true);
+                    coolingUnit.setCacheHint(CacheHint.SPEED);
+                    warehouseGroup.getChildren().add(coolingUnit);
+                    System.out.println("Unité de refroidissement " + i + " ajoutée: translateX=" + coolingUnit.getTranslateX() + ", translateY=" + coolingUnit.getTranslateY() + ", translateZ=" + coolingUnit.getTranslateZ());
+                }
+
+                // Ajouter un chariot élévateur (simplifié)
+                Box forkliftBody = new Box(2, 1, 1);
+                forkliftBody.setTranslateX(-length / 3);
+                forkliftBody.setTranslateY(height / 2 - 0.5);
+                forkliftBody.setTranslateZ(width / 3);
+                PhongMaterial forkliftMaterial = new PhongMaterial();
+                forkliftMaterial.setDiffuseColor(Color.YELLOW);
+                forkliftMaterial.setSpecularColor(Color.WHITE);
+                forkliftMaterial.setSpecularPower(20);
+                forkliftBody.setMaterial(forkliftMaterial);
+                forkliftBody.setCache(true);
+                forkliftBody.setCacheHint(CacheHint.SPEED);
+                warehouseGroup.getChildren().add(forkliftBody);
+
+                Box forkliftFork = new Box(0.5, 0.2, 1.5);
+                forkliftFork.setTranslateX(-length / 3 - 1.25);
+                forkliftFork.setTranslateY(height / 2 - 0.5);
+                forkliftFork.setTranslateZ(width / 3);
+                forkliftFork.setMaterial(forkliftMaterial);
+                forkliftFork.setCache(true);
+                forkliftFork.setCacheHint(CacheHint.SPEED);
+                warehouseGroup.getChildren().add(forkliftFork);
+                System.out.println("Chariot élévateur ajouté: translateX=" + forkliftBody.getTranslateX() + ", translateY=" + forkliftBody.getTranslateY() + ", translateZ=" + forkliftBody.getTranslateZ());
+
+                // Éclairage amélioré
+                AmbientLight ambientLight = new AmbientLight(Color.WHITE.deriveColor(1, 1, 0.5, 1));
+                PointLight ceilingLight1 = new PointLight(Color.WHITE);
+                ceilingLight1.setTranslateX(-length / 4);
+                ceilingLight1.setTranslateY(-height / 2 + 0.1);
+                ceilingLight1.setTranslateZ(-width / 4);
+                PointLight ceilingLight2 = new PointLight(Color.WHITE);
+                ceilingLight2.setTranslateX(length / 4);
+                ceilingLight2.setTranslateY(-height / 2 + 0.1);
+                ceilingLight2.setTranslateZ(width / 4);
+                warehouseGroup.getChildren().addAll(ambientLight, ceilingLight1, ceilingLight2);
+                System.out.println("Éclairage ajouté: ceilingLight1 Y=" + ceilingLight1.getTranslateY() + ", ceilingLight2 Y=" + ceilingLight2.getTranslateY());
+
+                // Caméra
+                camera = new PerspectiveCamera(true);
+                double maxDimension = Math.max(length, Math.max(width, height));
+                cameraDistance = maxDimension * 0.9;
+                targetX = 0;
+                targetY = height / 4;
+                targetZ = 0;
+                camera.setFarClip(maxDimension * 10);
+                camera.setNearClip(0.1);
+                camera.setFieldOfView(35);
+
+                updateCameraPosition();
+
+                // SubScene
+                subScene = new SubScene(warehouseGroup, view3DContainer.getWidth(), view3DContainer.getHeight(), true, SceneAntialiasing.DISABLED);
+                subScene.widthProperty().bind(view3DContainer.widthProperty());
+                subScene.heightProperty().bind(view3DContainer.heightProperty());
+                subScene.setCamera(camera);
+                subScene.setFill(Color.WHITE);
+                view3DContainer.getChildren().add(subScene);
+                System.out.println("SubScene ajoutée: width=" + subScene.getWidth() + ", height=" + subScene.getHeight());
+
+                // Contrôles de zoom et rotation avec limitation de fréquence
+                final double[] mousePosX = {0};
+                final double[] mousePosY = {0};
+                subScene.setOnMousePressed(event -> {
+                    mousePosX[0] = event.getSceneX();
+                    mousePosY[0] = event.getSceneY();
+                });
+
+                subScene.setOnMouseDragged(event -> {
+                    double deltaX = event.getSceneX() - mousePosX[0];
+                    double deltaY = event.getSceneY() - mousePosY[0];
+
+                    cameraYaw -= deltaX * 0.2;
+                    cameraPitch = Math.max(-30, Math.min(60, cameraPitch - deltaY * 0.2));
+
+                    updateCameraPosition();
+
+                    mousePosX[0] = event.getSceneX();
+                    mousePosY[0] = event.getSceneY();
+                });
+
+                subScene.setOnScroll(event -> {
+                    double delta = event.getDeltaY();
+                    cameraDistance = Math.max(maxDimension * 0.5, Math.min(maxDimension * 2, cameraDistance - delta * 0.1));
+                    updateCameraPosition();
+                });
+
+                // AnimationTimer pour progression et activation du bouton d'export
+                final int[] frameCount = {0};
+                renderTimer = new AnimationTimer() {
+                    @Override
+                    public void handle(long now) {
+                        frameCount[0]++;
+                        double progress = Math.min(frameCount[0] / 180.0, 1.0);
+                        loadingProgressBar.setProgress(progress);
+                        loadingLabel.setText("Chargement: " + (int)(progress * 100) + "%");
+
+                        if (frameCount[0] >= 180) {
+                            exportImageButton.setDisable(false);
+                            resetLoadingState();
+                            stop();
+                        }
+                    }
+                };
+                renderTimer.start();
+
+            } catch (Exception e) {
+                System.err.println("Erreur génération 3D: " + e.getMessage());
+                showAlert("Erreur", "Échec génération 3D: " + e.getMessage(), Alert.AlertType.ERROR);
+                resetLoadingState();
+                if (renderTimer != null) {
+                    renderTimer.stop();
+                }
+            }
+        });
+    }
+
+    private String convertImageToBase64(WritableImage image) throws Exception {
+        BufferedImage bufferedImage = SwingFXUtils.fromFXImage(image, null);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageIO.write(bufferedImage, "png", baos);
+        byte[] imageBytes = baos.toByteArray();
+        return "data:image/png;base64," + Base64.getEncoder().encodeToString(imageBytes);
+    }
+
+    @FXML
+    private void exportImage() {
+        if (subScene == null) {
+            showAlert("Erreur", "Aucune visualisation 3D à exporter", Alert.AlertType.WARNING);
+            return;
+        }
+
+        System.out.println("Début capture snapshot pour export");
+        WritableImage snapshot = subScene.snapshot(new SnapshotParameters(), null);
+        System.out.println("Snapshot pris: width=" + snapshot.getWidth() + ", height=" + snapshot.getHeight());
+
+        if (snapshot.getWidth() <= 0 || snapshot.getHeight() <= 0) {
+            showAlert("Erreur", "Échec capture image: snapshot vide", Alert.AlertType.ERROR);
+            return;
+        }
+
+        previewImageView.setImage(snapshot);
+        previewContainer.setVisible(true);
+        previewLabel.setVisible(true);
+        previewImageView.setVisible(true);
+
+        try {
+            lastImageData = convertImageToBase64(snapshot);
+        } catch (Exception e) {
+            System.err.println("Erreur conversion image: " + e.getMessage());
+            showAlert("Erreur", "Échec conversion image: " + e.getMessage(), Alert.AlertType.ERROR);
+            return;
+        }
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Sauvegarder l'image 3D");
+        fileChooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter("PNG Image", "*.png"));
+        fileChooser.setInitialFileName("entrepot_3d.png");
+
+        File file = fileChooser.showSaveDialog(view3DContainer.getScene().getWindow());
+        if (file != null) {
+            try {
+                String base64 = lastImageData.replace("data:image/png;base64,", "");
+                byte[] imageBytes = Base64.getDecoder().decode(base64);
+
+                BufferedImage bufferedImage = ImageIO.read(new ByteArrayInputStream(imageBytes));
+                ImageIO.write(bufferedImage, "png", file);
+
+                showAlert("Succès", "Image exportée avec succès: " + file.getAbsolutePath(),
+                        Alert.AlertType.INFORMATION);
+            } catch (Exception e) {
+                showAlert("Erreur", "Échec de l'exportation: " + e.getMessage(),
+                        Alert.AlertType.ERROR);
+                e.printStackTrace();
+            }
+        }
+
+        previewContainer.setVisible(false);
+        previewLabel.setVisible(false);
+        previewImageView.setVisible(false);
+        previewImageView.setImage(null);
+    }
+
+    @FXML
+    private void resetForm() {
+        lengthField.clear();
+        widthField.clear();
+        heightField.clear();
+        aislesField.clear();
+        storageTypeCombo.getSelectionModel().clearSelection();
+        freeDescriptionArea.clear();
+        previewImageView.setImage(null);
+        previewContainer.setVisible(false);
+        previewLabel.setVisible(false);
+        previewImageView.setVisible(false);
+        exportImageButton.setDisable(true);
+        view3DContainer.getChildren().clear();
+        resetLoadingState();
+        if (renderTimer != null) {
+            renderTimer.stop();
+        }
+    }
+
+    @FXML
+    private void goBack() {
+        try {
+            Stage stage = (Stage) view3DContainer.getScene().getWindow();
+            Parent root = FXMLLoader.load(Objects.requireNonNull(
+                    getClass().getResource("/com/example/Stock/View/AddEntrepotForm.fxml")));
+            stage.setScene(new Scene(root));
+        } catch (Exception e) {
+            showAlert("Erreur", "Navigation impossible: " + e.getMessage(), Alert.AlertType.ERROR);
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+<?import javafx.scene.image.ImageView?>
+
+<ScrollPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.example.Stock.Controller.Description3DController"
+            fitToWidth="true" fitToHeight="true" style="-fx-background-color: #ffffff;">
+    <VBox spacing="20" alignment="CENTER" style="-fx-padding: 30; -fx-border-color: #e0e0e0; -fx-border-width: 1;">
+        <Label text="Description 3D de l'Entrepôt"
+               style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #333333; -fx-padding: 0 0 10 0;"/>
+        <VBox spacing="15" style="-fx-background-color: #f9f9f9; -fx-padding: 20; -fx-border-radius: 8; -fx-background-radius: 8;"
+              prefWidth="600" maxWidth="800">
+            <Label text="Dimensions (L x l x H)" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #444444;"/>
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <TextField fx:id="lengthField" promptText="Longueur (m)" style="-fx-pref-width: 100; -fx-background-radius: 5; -fx-border-radius: 5;">
+                    <tooltip>
+                        <Tooltip text="Entrez la longueur en mètres" />
+                    </tooltip>
+                </TextField>
+                <Label text="x" style="-fx-font-size: 14px;"/>
+                <TextField fx:id="widthField" promptText="Largeur (m)" style="-fx-pref-width: 100; -fx-background-radius: 5; -fx-border-radius: 5;">
+                    <tooltip>
+                        <Tooltip text="Entrez la largeur en mètres" />
+                    </tooltip>
+                </TextField>
+                <Label text="x" style="-fx-font-size: 14px;"/>
+                <TextField fx:id="heightField" promptText="Hauteur (m)" style="-fx-pref-width: 100; -fx-background-radius: 5; -fx-border-radius: 5;">
+                    <tooltip>
+                        <Tooltip text="Entrez la hauteur en mètres" />
+                    </tooltip>
+                </TextField>
+            </HBox>
+            <HBox spacing="20" alignment="CENTER_LEFT">
+                <VBox spacing="5">
+                    <Label text="Nombre d'allées" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+                    <TextField fx:id="aislesField" promptText="Nombre" style="-fx-pref-width: 120; -fx-background-radius: 5; -fx-border-radius: 5;">
+                        <tooltip>
+                            <Tooltip text="Entrez le nombre d'allées" />
+                        </tooltip>
+                    </TextField>
+                </VBox>
+                <VBox spacing="5">
+                    <Label text="Type de stockage" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+                    <ComboBox fx:id="storageTypeCombo" promptText="Sélectionnez..." style="-fx-pref-width: 200; -fx-background-radius: 5; -fx-border-radius: 5;"/>
+                </VBox>
+            </HBox>
+            <Label text="Description détaillée" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+            <TextArea fx:id="freeDescriptionArea" promptText="Décrivez votre entrepôt en détail (ex. matériaux, disposition...)"
+                      wrapText="true" prefHeight="120" style="-fx-background-radius: 5; -fx-border-radius: 5;">
+                <tooltip>
+                    <Tooltip text="Ajoutez des détails spécifiques pour améliorer la visualisation 3D" />
+                </tooltip>
+            </TextArea>
+        </VBox>
+        <HBox spacing="10" alignment="CENTER">
+            <Button fx:id="generateButton" text="Générer la Vue 3D" onAction="#generate3DView"
+                    style="-fx-background-color: linear-gradient(to bottom, #4CAF50, #388E3C); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-background-radius: 8;">
+                <tooltip>
+                    <Tooltip text="Générer une visualisation 3D basée sur les données fournies" />
+                </tooltip>
+            </Button>
+            <Button fx:id="exportImageButton" text="Exporter Image" onAction="#exportImage"
+                    style="-fx-background-color: linear-gradient(to bottom, #FF9800, #F57C00); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-background-radius: 8;">
+                <tooltip>
+                    <Tooltip text="Exporter la vue 3D en image PNG" />
+                </tooltip>
+            </Button>
+            <Button fx:id="resetButton" text="Réinitialiser" onAction="#resetForm"
+                    style="-fx-background-color: linear-gradient(to bottom, #2196F3, #1976D2); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-background-radius: 8;">
+            </Button>
+        </HBox>
+        <StackPane fx:id="view3DContainer" prefWidth="800" prefHeight="400" minWidth="600" minHeight="300" maxWidth="1000" maxHeight="600"
+                   style="-fx-border-color: #cccccc; -fx-border-width: 1; -fx-background-color: #f0f0f0;">
+            <VBox alignment="CENTER" spacing="10">
+                <Label text="Visualisation 3D" style="-fx-font-size: 16px;"/>
+                <Label text="Entrez les données et cliquez sur Générer"/>
+            </VBox>
+            <ProgressBar fx:id="loadingProgressBar" visible="false" style="-fx-pref-width: 200; -fx-progress-color: #6f42c1;"/>
+            <Label fx:id="loadingLabel" text="Chargement..." visible="false" style="-fx-font-size: 14px; -fx-text-fill: #333333;"/>
+        </StackPane>
+        <VBox fx:id="previewContainer" spacing="10" alignment="CENTER" visible="false">
+            <Label fx:id="previewLabel" text="Prévisualisation de l'Image" style="-fx-font-size: 16px; -fx-font-weight: bold;" visible="false"/>
+            <ImageView fx:id="previewImageView" fitWidth="800" fitHeight="400" preserveRatio="true"
+                       style="-fx-border-color: #cccccc; -fx-border-width: 1;" visible="false"/>
+        </VBox>
+        <Button text="Retour" onAction="#goBack"
+                style="-fx-background-color: linear-gradient(to bottom, #f44336, #d32f2f); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 8;">
+        </Button>
+    </VBox>
+</ScrollPane>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Test WebView</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        #loading-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            color: white;
+        }
+        #progress-container {
+            width: 300px;
+            margin-top: 20px;
+            background: #555;
+            border-radius: 5px;
+        }
+        #progress-bar {
+            height: 20px;
+            width: 0%;
+            background: #4CAF50;
+            border-radius: 5px;
+            transition: width 0.3s;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+            font-size: 12px;
+        }
+        .status-message {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #ccc;
+        }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+<div id="loading-container">
+    <h2>Génération de la vue 3D</h2>
+    <div id="progress-container">
+        <div id="progress-bar">0%</div>
+    </div>
+    <div id="status-message" class="status-message">Initialisation...</div>
+</div>
+<canvas id="testCanvas"></canvas>
+<script>
+    const loadingContainer = document.getElementById('loading-container');
+    const progressBar = document.getElementById('progress-bar');
+    const statusMessage = document.getElementById('status-message');
+
+    function log(message) {
+        console.log('[Test] ' + message);
+        if (window.javaBridge && typeof window.javaBridge.onProgressUpdate === 'function') {
+            window.javaBridge.onProgressUpdate(0, message);
+        }
+    }
+
+    function updateProgress(percent, message) {
+        try {
+            progressBar.style.width = percent + '%';
+            progressBar.textContent = percent + '%';
+            statusMessage.textContent = message;
+            log('Progression: ' + message);
+            if (window.javaBridge && typeof window.javaBridge.onProgressUpdate === 'function') {
+                window.javaBridge.onProgressUpdate(percent);
+            }
+            if (percent >= 100) {
+                setTimeout(() => {
+                    loadingContainer.style.opacity = '0';
+                    setTimeout(() => {
+                        loadingContainer.style.display = 'none';
+                        if (window.javaBridge && typeof window.javaBridge.onLoadingComplete === 'function') {
+                            window.javaBridge.onLoadingComplete(true);
+                        }
+                    }, 500);
+                }, 1000);
+            }
+        } catch (error) {
+            log('Erreur updateProgress: ' + error.message);
+        }
+    }
+
+    function init() {
+        log('Début init');
+        try {
+            updateProgress(10, 'Initialisation canvas...');
+            const canvas = document.getElementById('testCanvas');
+            canvas.width = 400;
+            canvas.height = 300;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                throw new Error('Contexte 2D non supporté');
+            }
+            log('Contexte 2D créé');
+
+            updateProgress(30, 'Dessin rectangle...');
+            ctx.fillStyle = 'green';
+            ctx.fillRect(20, 20, 100, 100);
+            ctx.fillStyle = 'black';
+            ctx.font = '16px Arial';
+            ctx.fillText('Test WebView', 20, 150);
+            log('Rectangle dessiné');
+
+            updateProgress(70, 'Préparation capture...');
+            setTimeout(() => {
+                try {
+                    log('Capture image');
+                    const imgData = canvas.toDataURL('image/png', 0.5);
+                    log('Image data length: ' + imgData.length);
+                    log('Image data début: ' + imgData.substring(0, 50));
+                    if (imgData && imgData.startsWith('data:image/png;base64,')) {
+                        log('Image capturée');
+                        if (window.javaBridge && typeof window.javaBridge.onImageCaptured === 'function') {
+                            window.javaBridge.onImageCaptured(imgData);
+                            updateProgress(100, 'Terminé !');
+                        } else {
+                            log('Erreur: javaBridge.onImageCaptured non disponible');
+                        }
+                    } else {
+                        throw new Error('Données image invalides');
+                    }
+                } catch (error) {
+                    log('Erreur capture: ' + error.message);
+                    if (window.javaBridge) {
+                        window.javaBridge.onImageCaptured(null);
+                        window.javaBridge.onLoadingComplete(false);
+                    }
+                }
+            }, 3000); // Augmenter le délai pour s'assurer que le dessin est terminé
+
+        } catch (error) {
+            log('Erreur init: ' + error.message);
+            updateProgress(0, 'Erreur: ' + error.message);
+            if (window.javaBridge) {
+                window.javaBridge.onLoadingComplete(false);
+            }
+        }
+    }
+
+    window.addEventListener('load', () => {
+        log('Événement load déclenché');
+        init();
+    });
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+package com.example.Stock.service;
+
+import javafx.application.Platform;
+import javafx.concurrent.Worker;
+import javafx.scene.web.WebEngine;
+import javafx.scene.web.WebView;
+import netscape.javascript.JSObject;
+
+import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
+public class ThreeJSGenerator {
+    public static WebView createWarehouseView(double length, double width, double height,
+                                              int aisles, String storageType, String description,
+                                              ImageCaptureCallback imageCallback,
+                                              LoadingCompleteCallback loadingCallback,
+                                              ProgressUpdateCallback progressCallback) {
+        WebView webView = new WebView();
+        WebEngine engine = webView.getEngine();
+
+        try {
+            URL htmlUrl = ThreeJSGenerator.class.getResource("/com/example/Stock/View/modelViewer.html");
+            if (htmlUrl == null) {
+                System.err.println("Erreur: Fichier modelViewer.html non trouvé dans src/main/resources/com/example/Stock/View/");
+                throw new RuntimeException("Fichier HTML non trouvé");
+            }
+
+            String url = htmlUrl.toExternalForm() +
+                    "?length=" + length +
+                    "&width=" + width +
+                    "&height=" + height +
+                    "&aisles=" + aisles +
+                    "&storageType=" + URLEncoder.encode(storageType != null ? storageType : "", StandardCharsets.UTF_8) +
+                    "&description=" + URLEncoder.encode(description != null ? description : "", StandardCharsets.UTF_8);
+
+            engine.setJavaScriptEnabled(true);
+
+            engine.setOnError(event -> System.err.println("Erreur WebView: " + event.getMessage()));
+            engine.setOnAlert(event -> System.err.println("Alerte JavaScript: " + event.getData()));
+
+            engine.getLoadWorker().stateProperty().addListener((obs, oldState, newState) -> {
+                System.out.println("État WebView: " + newState);
+                if (newState == Worker.State.SUCCEEDED) {
+                    try {
+                        JSObject window = (JSObject) engine.executeScript("window");
+                        window.setMember("javaBridge", new JavaBridge(imageCallback, loadingCallback, progressCallback));
+                        System.out.println("JavaBridge initialisé avec succès");
+                    } catch (Exception e) {
+                        System.err.println("Erreur initialisation JavaBridge: " + e.getMessage());
+                        if (loadingCallback != null) {
+                            loadingCallback.onLoadingComplete(false);
+                        }
+                    }
+                } else if (newState == Worker.State.FAILED) {
+                    System.err.println("Échec du chargement WebView");
+                    if (loadingCallback != null) {
+                        loadingCallback.onLoadingComplete(false);
+                    }
+                }
+            });
+
+            System.out.println("Chargement de l'URL: " + url);
+            engine.load(url);
+        } catch (Exception e) {
+            System.err.println("Erreur création vue 3D: " + e.getMessage());
+            throw new RuntimeException("Erreur création vue 3D: " + e.getMessage(), e);
+        }
+
+        return webView;
+    }
+
+    public interface ImageCaptureCallback {
+        void onImageCaptured(String imageData);
+    }
+
+    public interface LoadingCompleteCallback {
+        void onLoadingComplete(boolean success);
+    }
+
+    public interface ProgressUpdateCallback {
+        void onProgressUpdate(double progress);
+    }
+
+    public static class JavaBridge {
+        private final ImageCaptureCallback imageCallback;
+        private final LoadingCompleteCallback loadingCallback;
+        private final ProgressUpdateCallback progressCallback;
+
+        public JavaBridge(ImageCaptureCallback imageCallback,
+                          LoadingCompleteCallback loadingCallback,
+                          ProgressUpdateCallback progressCallback) {
+            this.imageCallback = imageCallback;
+            this.loadingCallback = loadingCallback;
+            this.progressCallback = progressCallback;
+        }
+
+        public void onImageCaptured(String imageData) {
+            System.out.println("Image capturée reçue dans JavaBridge: " + (imageData != null ? "Valide" : "Nulle"));
+            if (imageCallback != null) {
+                Platform.runLater(() -> imageCallback.onImageCaptured(imageData));
+            }
+        }
+
+        public void onLoadingComplete(boolean success) {
+            System.out.println("Chargement terminé: " + (success ? "Succès" : "Échec"));
+            if (loadingCallback != null) {
+                Platform.runLater(() -> loadingCallback.onLoadingComplete(success));
+            }
+        }
+
+        public void onProgressUpdate(double progress) {
+            System.out.println("Mise à jour progression: " + progress + "%");
+            if (progressCallback != null) {
+                Platform.runLater(() -> progressCallback.onProgressUpdate(progress));
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+version2////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+<?import javafx.scene.image.ImageView?>
+
+<ScrollPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.example.Stock.Controller.Description3DController"
+            fitToWidth="true" fitToHeight="true" style="-fx-background-color: #ffffff;">
+    <VBox spacing="20" alignment="CENTER" style="-fx-padding: 30; -fx-border-color: #e0e0e0; -fx-border-width: 1;">
+        <Label text="Description 3D de l'Entrepôt"
+               style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #333333; -fx-padding: 0 0 10 0;"/>
+        <VBox spacing="15" style="-fx-background-color: #f9f9f9; -fx-padding: 20; -fx-border-radius: 8; -fx-background-radius: 8;"
+              prefWidth="600" maxWidth="800">
+            <Label text="Dimensions (L x l x H)" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #444444;"/>
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <TextField fx:id="lengthField" promptText="Longueur (m)" style="-fx-pref-width: 100; -fx-background-radius: 5; -fx-border-radius: 5;">
+                    <tooltip>
+                        <Tooltip text="Entrez la longueur en mètres" />
+                    </tooltip>
+                </TextField>
+                <Label text="x" style="-fx-font-size: 14px;"/>
+                <TextField fx:id="widthField" promptText="Largeur (m)" style="-fx-pref-width: 100; -fx-background-radius: 5; -fx-border-radius: 5;">
+                    <tooltip>
+                        <Tooltip text="Entrez la largeur en mètres" />
+                    </tooltip>
+                </TextField>
+                <Label text="x" style="-fx-font-size: 14px;"/>
+                <TextField fx:id="heightField" promptText="Hauteur (m)" style="-fx-pref-width: 100; -fx-background-radius: 5; -fx-border-radius: 5;">
+                    <tooltip>
+                        <Tooltip text="Entrez la hauteur en mètres" />
+                    </tooltip>
+                </TextField>
+            </HBox>
+            <HBox spacing="20" alignment="CENTER_LEFT">
+                <VBox spacing="5">
+                    <Label text="Nombre d'allées" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+                    <TextField fx:id="aislesField" promptText="Nombre" style="-fx-pref-width: 120; -fx-background-radius: 5; -fx-border-radius: 5;">
+                        <tooltip>
+                            <Tooltip text="Entrez le nombre d'allées" />
+                        </tooltip>
+                    </TextField>
+                </VBox>
+                <VBox spacing="5">
+                    <Label text="Type de stockage" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+                    <ComboBox fx:id="storageTypeCombo" promptText="Sélectionnez..." style="-fx-pref-width: 200; -fx-background-radius: 5; -fx-border-radius: 5;"/>
+                </VBox>
+            </HBox>
+            <!-- Premium Feature Checkboxes -->
+            <HBox spacing="20" alignment="CENTER_LEFT">
+                <CheckBox fx:id="lightingCheckBox" text="Éclairage Premium" style="-fx-font-size: 14px;" disable="true">
+                    <tooltip>
+                        <Tooltip text="Activer l'éclairage premium (disponible avec type Premium)" />
+                    </tooltip>
+                </CheckBox>
+                <CheckBox fx:id="transparencyCheckBox" text="Transparence" style="-fx-font-size: 14px;" disable="true">
+                    <tooltip>
+                        <Tooltip text="Rendre les murs transparents (disponible avec type Premium)" />
+                    </tooltip>
+                </CheckBox>
+                <CheckBox fx:id="animationCheckBox" text="Animation" style="-fx-font-size: 14px;" disable="true">
+                    <tooltip>
+                        <Tooltip text="Activer l'animation du chariot (disponible avec type Premium)" />
+                    </tooltip>
+                </CheckBox>
+            </HBox>
+            <Label text="Description détaillée" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+            <TextArea fx:id="freeDescriptionArea" promptText="Décrivez votre entrepôt en détail (ex. matériaux, disposition...)"
+                      wrapText="true" prefHeight="120" style="-fx-background-radius: 5; -fx-border-radius: 5;">
+                <tooltip>
+                    <Tooltip text="Ajoutez des détails spécifiques pour améliorer la visualisation 3D" />
+                </tooltip>
+            </TextArea>
+        </VBox>
+        <HBox spacing="10" alignment="CENTER">
+            <Button fx:id="generateButton" text="Générer la Vue 3D" onAction="#generate3DView"
+                    style="-fx-background-color: linear-gradient(to bottom, #4CAF50, #388E3C); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-background-radius: 8;">
+                <tooltip>
+                    <Tooltip text="Générer une visualisation 3D basée sur les données fournies" />
+                </tooltip>
+            </Button>
+            <Button fx:id="exportImageButton" text="Exporter Image" onAction="#exportImage"
+                    style="-fx-background-color: linear-gradient(to bottom, #FF9800, #F57C00); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-background-radius: 8;">
+                <tooltip>
+                    <Tooltip text="Exporter la vue 3D en image PNG" />
+                </tooltip>
+            </Button>
+            <Button fx:id="resetButton" text="Réinitialiser" onAction="#resetForm"
+                    style="-fx-background-color: linear-gradient(to bottom, #2196F3, #1976D2); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-background-radius: 8;">
+            </Button>
+        </HBox>
+        <StackPane fx:id="view3DContainer" prefWidth="800" prefHeight="400" minWidth="600" minHeight="300" maxWidth="1000" maxHeight="600"
+                   style="-fx-border-color: #cccccc; -fx-border-width: 1; -fx-background-color: #f0f0f0;">
+            <VBox alignment="CENTER" spacing="10">
+                <Label text="Visualisation 3D" style="-fx-font-size: 16px;"/>
+                <Label text="Entrez les données et cliquez sur Générer"/>
+            </VBox>
+            <ProgressBar fx:id="loadingProgressBar" visible="false" style="-fx-pref-width: 200; -fx-progress-color: #6f42c1;"/>
+            <Label fx:id="loadingLabel" text="Chargement..." visible="false" style="-fx-font-size: 14px; -fx-text-fill: #333333;"/>
+        </StackPane>
+        <!-- Camera Controls -->
+        <VBox spacing="10" alignment="CENTER">
+            <Label text="Contrôles de la Caméra" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #444444;"/>
+            <Slider fx:id="cameraSlider" min="0" max="360" value="180" prefWidth="300" style="-fx-background-radius: 5; -fx-border-radius: 5;">
+                <tooltip>
+                    <Tooltip text="Ajuster l'angle de la caméra (rotation horizontale)" />
+                </tooltip>
+            </Slider>
+            <HBox spacing="10" alignment="CENTER">
+                <Button fx:id="rotateLeftButton" text="← Tourner Gauche"
+                        style="-fx-background-color: linear-gradient(to bottom, #2196F3, #1976D2); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 8;">
+                    <tooltip>
+                        <Tooltip text="Tourner la caméra vers la gauche" />
+                    </tooltip>
+                </Button>
+                <Button fx:id="rotateRightButton" text="Tourner Droite →"
+                        style="-fx-background-color: linear-gradient(to bottom, #2196F3, #1976D2); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 8;">
+                    <tooltip>
+                        <Tooltip text="Tourner la caméra vers la droite" />
+                    </tooltip>
+                </Button>
+                <Button fx:id="zoomInButton" text="Zoom +"
+                        style="-fx-background-color: linear-gradient(to bottom, #4CAF50, #388E3C); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 8;">
+                    <tooltip>
+                        <Tooltip text="Zoomer vers l'entrepôt" />
+                    </tooltip>
+                </Button>
+                <Button fx:id="zoomOutButton" text="Zoom -"
+                        style="-fx-background-color: linear-gradient(to bottom, #4CAF50, #388E3C); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 8;">
+                    <tooltip>
+                        <Tooltip text="Dézoomer de l'entrepôt" />
+                    </tooltip>
+                </Button>
+            </HBox>
+        </VBox>
+        <!-- Premium Features Toolbar -->
+        <VBox spacing="10" alignment="CENTER">
+            <Label text="Fonctionnalités Premium" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #444444;"/>
+            <HBox spacing="10" alignment="CENTER">
+                <Button fx:id="toggleGridButton" text="Grille" onAction="#toggleGrid"
+                        style="-fx-background-color: linear-gradient(to bottom, #9C27B0, #7B1FA2); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 8;">
+                    <tooltip>
+                        <Tooltip text="Afficher/Masquer la grille au sol" />
+                    </tooltip>
+                </Button>
+                <Button fx:id="toggleMeasureButton" text="Mesurer" onAction="#toggleMeasureMode"
+                        style="-fx-background-color: linear-gradient(to bottom, #9C27B0, #7B1FA2); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 8;">
+                    <tooltip>
+                        <Tooltip text="Activer/Désactiver le mode de mesure (cliquez sur deux points)" />
+                    </tooltip>
+                </Button>
+                <Button fx:id="toggleSectionButton" text="Coupe" onAction="#toggleSection"
+                        style="-fx-background-color: linear-gradient(to bottom, #9C27B0, #7B1FA2); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 8;">
+                    <tooltip>
+                        <Tooltip text="Afficher/Masquer une coupe transversale" />
+                    </tooltip>
+                </Button>
+                <Button fx:id="toggleWireframeButton" text="Filaire" onAction="#toggleWireframe"
+                        style="-fx-background-color: linear-gradient(to bottom, #9C27B0, #7B1FA2); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 8;">
+                    <tooltip>
+                        <Tooltip text="Basculer en mode filaire" />
+                    </tooltip>
+                </Button>
+            </HBox>
+            <HBox spacing="10" alignment="CENTER">
+                <Label text="Couleur des murs:" style="-fx-font-size: 14px;"/>
+                <ColorPicker fx:id="wallColorPicker" style="-fx-pref-width: 120;" disable="true"/>
+                <Label text="Couleur du sol:" style="-fx-font-size: 14px;"/>
+                <ColorPicker fx:id="floorColorPicker" style="-fx-pref-width: 120;" disable="true"/>
+            </HBox>
+            <HBox spacing="10" alignment="CENTER">
+                <TextField fx:id="annotationField" promptText="Texte de l'annotation" style="-fx-pref-width: 200;" disable="true"/>
+                <Button fx:id="addAnnotationButton" text="Ajouter Annotation" onAction="#addAnnotation"
+                        style="-fx-background-color: linear-gradient(to bottom, #9C27B0, #7B1FA2); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 8;"
+                        disable="true">
+                    <tooltip>
+                        <Tooltip text="Ajouter une annotation à l'objet sélectionné" />
+                    </tooltip>
+                </Button>
+            </HBox>
+
+            <Label fx:id="measurementLabel" text="Mesure: 0 m" visible="false" style="-fx-font-size: 14px; -fx-text-fill: #333333;"/>
+        </VBox>
+        <!-- Statistics Panel -->
+        <VBox spacing="5" alignment="CENTER" style="-fx-background-color: #f0f0f0; -fx-padding: 10; -fx-border-color: #cccccc; -fx-border-width: 1;">
+            <Label text="Statistiques de l'Entrepôt" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+            <Label fx:id="volumeLabel" text="Volume total: 0 m³" style="-fx-font-size: 14px;"/>
+            <Label fx:id="spaceUsedLabel" text="Espace utilisé: 0%" style="-fx-font-size: 14px;" visible="false"/>
+        </VBox>
+        <VBox fx:id="previewContainer" spacing="10" alignment="CENTER" visible="false">
+            <Label fx:id="previewLabel" text="Prévisualisation de l'Image" style="-fx-font-size: 16px; -fx-font-weight: bold;" visible="false"/>
+            <ScrollPane fx:id="previewScrollPane" fitToWidth="true" fitToHeight="true" prefWidth="800" prefHeight="400" style="-fx-border-color: #cccccc; -fx-border-width: 1;">
+                <ImageView fx:id="previewImageView" fitWidth="800" fitHeight="400" preserveRatio="true" visible="false"/>
+            </ScrollPane>
+        </VBox>
+        <Button text="Retour" onAction="#goBack"
+                style="-fx-background-color: linear-gradient(to bottom, #f44336, #d32f2f); -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 8;">
+        </Button>
+    </VBox>
+</ScrollPane>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+package com.example.Stock.Controller;
+
+import javafx.animation.AnimationTimer;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.embed.swing.SwingFXUtils;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.*;
+import javafx.scene.control.*;
+import javafx.scene.image.ImageView;
+import javafx.scene.image.WritableImage;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.paint.PhongMaterial;
+import javafx.scene.shape.*;
+import javafx.scene.text.Text;
+import javafx.scene.transform.Rotate;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+import javafx.util.Duration;
+
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.List;
+import java.util.Objects;
+
+public class Description3DController {
+    // Contrôles FXML
+    @FXML private TextField lengthField;
+    @FXML private TextField widthField;
+    @FXML private TextField heightField;
+    @FXML private TextField aislesField;
+    @FXML private ComboBox<String> storageTypeCombo;
+    @FXML private TextArea freeDescriptionArea;
+    @FXML private ImageView previewImageView;
+    @FXML private ScrollPane previewScrollPane;
+    @FXML private Button exportImageButton;
+    @FXML private StackPane view3DContainer;
+    @FXML private ProgressBar loadingProgressBar;
+    @FXML private Label loadingLabel;
+    @FXML private VBox previewContainer;
+    @FXML private Label previewLabel;
+    @FXML private CheckBox lightingCheckBox;
+    @FXML private CheckBox transparencyCheckBox;
+    @FXML private CheckBox animationCheckBox;
+    @FXML private Slider cameraSlider;
+    @FXML private Button rotateLeftButton;
+    @FXML private Button rotateRightButton;
+    @FXML private Button zoomInButton;
+    @FXML private Button zoomOutButton;
+    @FXML private Button toggleGridButton;
+    @FXML private Button toggleMeasureButton;
+    @FXML private Button toggleSectionButton;
+    @FXML private Button toggleWireframeButton;
+    @FXML private ColorPicker wallColorPicker;
+    @FXML private ColorPicker floorColorPicker;
+    @FXML private TextField annotationField;
+    @FXML private Button addAnnotationButton;
+    @FXML private Label measurementLabel;
+    @FXML private Label volumeLabel;
+    @FXML private Label spaceUsedLabel;
+
+    // Variables d'état
+    private String lastImageData;
+    private AnimationTimer renderTimer;
+    private SubScene subScene;
+    private PerspectiveCamera camera;
+    private double cameraDistance;
+    private double cameraYaw = 180;
+    private double cameraPitch = 29;
+    private double targetX, targetY, targetZ;
+    private long lastUpdateTime = 0;
+    private final long UPDATE_INTERVAL = 16; // ~60 FPS
+    private Group warehouseGroup;
+    private Group gridGroup;
+    private Box sectionPlane;
+    private boolean isGridVisible = false;
+    private boolean isMeasuring = false;
+    private List<Node> measurePoints = new ArrayList<>();
+    private Line measureLine;
+    private boolean isWireframe = false;
+    private Node selectedNode;
+    private PhongMaterial originalMaterial;
+    private Group forklift;
+    private Timeline forkliftAnimation;
+    private List<Node> draggableNodes = new ArrayList<>();
+    private List<Text> annotations = new ArrayList<>();
+    private double totalVolume;
+    private double usedSpace;
+
+    @FXML
+    private void initialize() {
+        // Populate storage types (removing "Premium" as it's no longer needed)
+        storageTypeCombo.getItems().addAll("Palettes", "Étagères mobiles", "Rayonnages métalliques");
+        exportImageButton.setDisable(true);
+
+        // Configuration de l'image de prévisualisation
+        configurePreviewImage();
+
+        // Configuration des écouteurs
+        setupListeners();
+
+        // Configuration des boutons de contrôle de la caméra
+        setupCameraControls();
+    }
+
+    private void configurePreviewImage() {
+        previewImageView.setPreserveRatio(true);
+        previewImageView.setSmooth(true);
+        previewScrollPane.setFitToWidth(true);
+        previewScrollPane.setFitToHeight(true);
+
+        previewImageView.setOnScroll(event -> {
+            double delta = event.getDeltaY();
+            double scale = previewImageView.getScaleX() + delta * 0.005;
+            scale = Math.max(0.3, Math.min(4.0, scale));
+            previewImageView.setScaleX(scale);
+            previewImageView.setScaleY(scale);
+            updateScrollPaneViewport();
+        });
+    }
+
+    private void updateScrollPaneViewport() {
+        if (previewImageView.getImage() != null) {
+            double imageWidth = previewImageView.getFitWidth();
+            double imageHeight = previewImageView.getFitHeight();
+            previewScrollPane.setContent(previewImageView);
+            Platform.runLater(() -> {
+                previewScrollPane.layout();
+                previewImageView.setTranslateX((previewScrollPane.getWidth() - imageWidth) / 2);
+                previewImageView.setTranslateY((previewScrollPane.getHeight() - imageHeight) / 2);
+            });
+        }
+    }
+
+    private void setupListeners() {
+        cameraSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
+            cameraYaw = newVal.doubleValue();
+            updateCameraPosition();
+        });
+
+        wallColorPicker.setOnAction(e -> updateWallColor());
+        floorColorPicker.setOnAction(e -> updateFloorColor());
+    }
+
+    private void setupCameraControls() {
+        rotateLeftButton.setOnAction(e -> {
+            cameraYaw -= 15;
+            updateCameraPosition();
+        });
+
+        rotateRightButton.setOnAction(e -> {
+            cameraYaw += 15;
+            updateCameraPosition();
+        });
+
+        zoomInButton.setOnAction(e -> {
+            cameraDistance = Math.max(5, cameraDistance - 2);
+            updateCameraPosition();
+        });
+
+        zoomOutButton.setOnAction(e -> {
+            cameraDistance = Math.min(50, cameraDistance + 2);
+            updateCameraPosition();
+        });
+    }
+
+    private boolean validateFields() {
+        try {
+            double length = Double.parseDouble(lengthField.getText());
+            double width = Double.parseDouble(widthField.getText());
+            double height = Double.parseDouble(heightField.getText());
+            int aisles = Integer.parseInt(aislesField.getText());
+            String storageType = storageTypeCombo.getValue();
+            if (length <= 0 || width <= 0 || height <= 0 || aisles <= 0) {
+                showAlert("Erreur", "Les dimensions et le nombre d'allées doivent être positifs.", Alert.AlertType.ERROR);
+                return false;
+            }
+            if (storageType == null || storageType.isEmpty()) {
+                showAlert("Erreur", "Veuillez sélectionner un type de stockage.", Alert.AlertType.ERROR);
+                return false;
+            }
+            return true;
+        } catch (NumberFormatException e) {
+            showAlert("Erreur", "Veuillez entrer des valeurs numériques valides.", Alert.AlertType.ERROR);
+            return false;
+        }
+    }
+
+    private void showLoadingState() {
+        loadingProgressBar.setProgress(0);
+        loadingLabel.setText("Chargement...");
+        loadingProgressBar.setVisible(true);
+        loadingLabel.setVisible(true);
+    }
+
+    private void resetLoadingState() {
+        loadingProgressBar.setVisible(false);
+        loadingLabel.setVisible(false);
+    }
+
+    private void showAlert(String title, String message, Alert.AlertType type) {
+        Alert alert = new Alert(type);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    private void lookAt(PerspectiveCamera camera, double fromX, double fromY, double fromZ, double toX, double toY, double toZ) {
+        double dx = toX - fromX;
+        double dy = toY - fromY;
+        double dz = toZ - fromZ;
+
+        double yaw = Math.toDegrees(Math.atan2(dx, dz));
+        double distanceXZ = Math.sqrt(dx * dx + dz * dz);
+        double pitch = Math.toDegrees(Math.atan2(-dy, distanceXZ));
+
+        cameraYaw = yaw;
+        cameraPitch = pitch;
+
+        camera.getTransforms().clear();
+        camera.getTransforms().add(new Rotate(yaw, Rotate.Y_AXIS));
+        camera.getTransforms().add(new Rotate(pitch, Rotate.X_AXIS));
+    }
+
+    private void updateCameraPosition() {
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastUpdateTime < UPDATE_INTERVAL) {
+            return;
+        }
+        lastUpdateTime = currentTime;
+
+        double radYaw = Math.toRadians(cameraYaw);
+        double radPitch = Math.toRadians(cameraPitch);
+
+        double cameraX = targetX + cameraDistance * Math.cos(radPitch) * Math.sin(radYaw);
+        double cameraY = targetY - cameraDistance * Math.sin(radPitch);
+        double cameraZ = targetZ + cameraDistance * Math.cos(radPitch) * Math.cos(radYaw);
+
+        camera.setTranslateX(cameraX);
+        camera.setTranslateY(cameraY);
+        camera.setTranslateZ(cameraZ);
+
+        lookAt(camera, cameraX, cameraY, cameraZ, targetX, targetY, targetZ);
+    }
+
+    private PhongMaterial createMaterial(Color baseColor, boolean transparent) {
+        PhongMaterial material = new PhongMaterial(baseColor);
+        if (lightingCheckBox.isSelected()) {
+            material.setSpecularColor(Color.WHITE);
+            material.setSpecularPower(20);
+        } else {
+            material.setSpecularColor(Color.TRANSPARENT);
+        }
+        if (transparent && transparencyCheckBox.isSelected()) {
+            material.setDiffuseColor(baseColor.deriveColor(1, 1, 1, 0.3));
+        }
+        return material;
+    }
+
+    @FXML
+    private void generate3DView() {
+        if (!validateFields()) return;
+
+        showLoadingState();
+        double length = Double.parseDouble(lengthField.getText());
+        double width = Double.parseDouble(widthField.getText());
+        double height = Double.parseDouble(heightField.getText());
+        int aisles = Integer.parseInt(aislesField.getText());
+        String storageType = storageTypeCombo.getValue();
+        String description = freeDescriptionArea.getText();
+
+        previewImageView.setImage(null);
+        exportImageButton.setDisable(true);
+        view3DContainer.getChildren().clear();
+        previewContainer.setVisible(false);
+        previewLabel.setVisible(false);
+        previewImageView.setVisible(false);
+
+        Platform.runLater(() -> {
+            try {
+                warehouseGroup = new Group();
+                draggableNodes.clear();
+                annotations.clear();
+
+                // Calculer le volume total
+                totalVolume = length * width * height;
+                volumeLabel.setText(String.format("Volume total: %.2f m³", totalVolume));
+
+                // Création du sol
+                Box floor = createFloor(length, width, height);
+                warehouseGroup.getChildren().add(floor);
+
+                // Création de la grille (initialement invisible)
+                createGrid(length, width);
+                warehouseGroup.getChildren().add(gridGroup);
+
+                // Création des murs
+                createWalls(warehouseGroup, length, width, height);
+
+                // Création du toit
+                Box roof = createRoof(length, width, height);
+                warehouseGroup.getChildren().add(roof);
+
+                // Ajout des portes et fenêtres
+                createDoorsAndWindows(warehouseGroup, length, width, height);
+
+                // Ajout des étagères selon le type sélectionné
+                createStorageUnits(warehouseGroup, length, width, height, aisles, storageType);
+
+                // Ajout d'équipements (chariots, unités de refroidissement)
+                addEquipment(warehouseGroup, length, width, height);
+
+                // Calculer l'espace utilisé
+                calculateUsedSpace(length, width, height, aisles);
+
+                // Configuration de l'éclairage
+                if (lightingCheckBox.isSelected()) {
+                    setupEnhancedLighting(warehouseGroup, length, width, height);
+                } else {
+                    AmbientLight ambientLight = new AmbientLight(Color.WHITE.deriveColor(1, 1, 0.5, 1));
+                    PointLight ceilingLight1 = new PointLight(Color.WHITE);
+                    ceilingLight1.setTranslateX(-length / 4);
+                    ceilingLight1.setTranslateY(-height / 2 + 0.1);
+                    ceilingLight1.setTranslateZ(-width / 4);
+                    PointLight ceilingLight2 = new PointLight(Color.WHITE);
+                    ceilingLight2.setTranslateX(length / 4);
+                    ceilingLight2.setTranslateY(-height / 2 + 0.1);
+                    ceilingLight2.setTranslateZ(width / 4);
+                    warehouseGroup.getChildren().addAll(ambientLight, ceilingLight1, ceilingLight2);
+                }
+
+                // Configuration de la caméra
+                setupCamera(length, width, height);
+
+                // Création de la SubScene
+                setupSubScene(warehouseGroup);
+
+                // Animation de chargement
+                startLoadingAnimation();
+
+            } catch (Exception e) {
+                showAlert("Erreur", "Échec génération 3D: " + e.getMessage(), Alert.AlertType.ERROR);
+                resetLoadingState();
+                if (renderTimer != null) {
+                    renderTimer.stop();
+                }
+            }
+        });
+    }
+
+    private Box createFloor(double length, double width, double height) {
+        Box floor = new Box(length, 0.1, width);
+        floor.setTranslateY(height / 2);
+        floor.setMaterial(createMaterial(Color.DARKGRAY, false));
+        floor.setCache(true);
+        floor.setCacheHint(CacheHint.SPEED);
+        floor.setUserData("floor");
+        return floor;
+    }
+
+    private void createGrid(double length, double width) {
+        gridGroup = new Group();
+        int gridSize = (int) Math.max(length, width);
+        double spacing = 1.0;
+        PhongMaterial gridMaterial = new PhongMaterial(Color.GRAY);
+
+        for (int i = -gridSize / 2; i <= gridSize / 2; i++) {
+            Line hLine = new Line(i * spacing, -gridSize / 2, i * spacing, gridSize / 2);
+            hLine.setStroke(gridMaterial.getDiffuseColor());
+            hLine.setStrokeWidth(0.05);
+            double height=0;
+            hLine.setTranslateY(height / 2 - 0.01);
+            gridGroup.getChildren().add(hLine);
+
+            Line vLine = new Line(-gridSize / 2, i * spacing, gridSize / 2, i * spacing);
+            vLine.setStroke(gridMaterial.getDiffuseColor());
+            vLine.setStrokeWidth(0.05);
+            vLine.setTranslateY(height / 2 - 0.01);
+            gridGroup.getChildren().add(vLine);
+        }
+        gridGroup.setVisible(false);
+    }
+
+    @FXML
+    private void toggleGrid() {
+        if (gridGroup == null) return;
+        isGridVisible = !isGridVisible;
+        gridGroup.setVisible(isGridVisible);
+        toggleGridButton.setStyle(isGridVisible ?
+                "-fx-background-color: linear-gradient(to bottom, #4CAF50, #388E3C);" :
+                "-fx-background-color: linear-gradient(to bottom, #9C27B0, #7B1FA2);");
+    }
+
+    private void createWalls(Group warehouseGroup, double length, double width, double height) {
+        PhongMaterial wallMaterial = createMaterial(Color.LIGHTGRAY, true);
+
+        Box leftWall = new Box(0.2, height, width);
+        leftWall.setTranslateX(-length / 2);
+        leftWall.setMaterial(wallMaterial);
+        leftWall.setCache(true);
+        leftWall.setCacheHint(CacheHint.SPEED);
+        leftWall.setUserData("wall-left");
+        warehouseGroup.getChildren().add(leftWall);
+
+        Box rightWall = new Box(0.2, height, width);
+        rightWall.setTranslateX(length / 2);
+        rightWall.setMaterial(wallMaterial);
+        rightWall.setCache(true);
+        rightWall.setCacheHint(CacheHint.SPEED);
+        rightWall.setUserData("wall-right");
+        warehouseGroup.getChildren().add(rightWall);
+
+        Box backWall = new Box(length, height, 0.2);
+        backWall.setTranslateZ(-width / 2);
+        backWall.setMaterial(wallMaterial);
+        backWall.setCache(true);
+        backWall.setCacheHint(CacheHint.SPEED);
+        backWall.setUserData("wall-back");
+        warehouseGroup.getChildren().add(backWall);
+    }
+
+    private Box createRoof(double length, double width, double height) {
+        Box roof = new Box(length, 0.2, width);
+        roof.setTranslateY(-height / 2);
+        roof.setMaterial(createMaterial(Color.DARKSLATEGRAY, true));
+        roof.setCache(true);
+        roof.setCacheHint(CacheHint.SPEED);
+        roof.setUserData("roof");
+        return roof;
+    }
+
+    private void createDoorsAndWindows(Group warehouseGroup, double length, double width, double height) {
+        Box door = new Box(2, 3, 0.1);
+        door.setTranslateX(-length / 4);
+        door.setTranslateY(height / 2 - 1.5);
+        door.setTranslateZ(width / 2 - 0.05);
+        door.setMaterial(createMaterial(Color.BROWN, false));
+        door.setCache(true);
+        door.setCacheHint(CacheHint.SPEED);
+        door.setUserData("door");
+        warehouseGroup.getChildren().add(door);
+
+        for (int i = 0; i < 2; i++) {
+            Box window = new Box(0.1, 1, 1);
+            window.setTranslateX(length / 2 - 0.05);
+            window.setTranslateY(height / 2 - 2 - i * 2);
+            window.setTranslateZ(-width / 4 + i * (width / 2));
+            PhongMaterial windowMaterial = new PhongMaterial(Color.LIGHTCYAN);
+            windowMaterial.setSpecularColor(Color.WHITE);
+            windowMaterial.setSpecularPower(20);
+            window.setMaterial(windowMaterial);
+            window.setCache(true);
+            window.setCacheHint(CacheHint.SPEED);
+            window.setUserData("window-" + i);
+            warehouseGroup.getChildren().add(window);
+        }
+    }
+
+    private void createStorageUnits(Group warehouseGroup, double length, double width, double height, int aisles, String storageType) {
+        double aisleWidth = width / (aisles + 1);
+
+        for (int i = 0; i < aisles; i++) {
+            Group shelfGroup = new Group();
+            double xPos = -length / 2 + (i + 1) * (length / (aisles + 1));
+
+            if (storageType.contains("Rayonnages")) {
+                // Always use the enhanced version of metal shelves (previously premium)
+                createMetalShelves(shelfGroup, width, height, true, i);
+            } else if (storageType.contains("Palettes")) {
+                createPallets(shelfGroup, length, width, height, i);
+            } else {
+                createBasicShelves(shelfGroup, width, height, i);
+            }
+
+            shelfGroup.setTranslateX(xPos);
+            shelfGroup.setUserData("shelf-system-" + i);
+            warehouseGroup.getChildren().add(shelfGroup);
+        }
+    }
+
+    private void createMetalShelves(Group shelfGroup, double width, double height, boolean enhanced, int aisleIndex) {
+        int levels = enhanced ? 5 : 4;
+        double shelfWidth = width * 0.7;
+        double shelfDepth = enhanced ? 1.0 : 0.8;
+
+        PhongMaterial shelfMaterial = createMaterial(Color.SILVER, false);
+        PhongMaterial supportMaterial = createMaterial(Color.DARKGRAY, false);
+
+        for (int level = 0; level < levels; level++) {
+            double zPos = (level + 1) * height / (levels + 1);
+
+            Box shelf = new Box(shelfDepth, shelfWidth, 0.05);
+            shelf.setTranslateZ(zPos);
+            shelf.setMaterial(shelfMaterial);
+            shelf.setCache(true);
+            shelf.setCacheHint(CacheHint.SPEED);
+            shelf.setUserData("shelf-aisle" + aisleIndex + "-level" + level);
+            shelfGroup.getChildren().add(shelf);
+
+            if (level < levels - 1) {
+                double supportHeight = height / (levels + 1);
+
+                Cylinder leftSupport = new Cylinder(0.05, supportHeight, 8);
+                leftSupport.setTranslateY(-shelfWidth / 2 + 0.1);
+                leftSupport.setTranslateZ(zPos + supportHeight / 2);
+                leftSupport.setRotationAxis(Rotate.X_AXIS);
+                leftSupport.setRotate(90);
+                leftSupport.setMaterial(supportMaterial);
+                leftSupport.setCache(true);
+                leftSupport.setCacheHint(CacheHint.SPEED);
+                leftSupport.setUserData("support-left-aisle" + aisleIndex + "-level" + level);
+                shelfGroup.getChildren().add(leftSupport);
+
+                Cylinder rightSupport = new Cylinder(0.05, supportHeight, 8);
+                rightSupport.setTranslateY(shelfWidth / 2 - 0.1);
+                rightSupport.setTranslateZ(zPos + supportHeight / 2);
+                rightSupport.setRotationAxis(Rotate.X_AXIS);
+                rightSupport.setRotate(90);
+                rightSupport.setMaterial(supportMaterial);
+                rightSupport.setCache(true);
+                rightSupport.setCacheHint(CacheHint.SPEED);
+                rightSupport.setUserData("support-right-aisle" + aisleIndex + "-level" + level);
+                shelfGroup.getChildren().add(rightSupport);
+            }
+
+            if (enhanced && level > 0) {
+                addEnhancedShelfDetails(shelfGroup, shelfWidth, zPos, level, aisleIndex);
+            }
+        }
+    }
+
+    private void addEnhancedShelfDetails(Group shelfGroup, double shelfWidth, double zPos, int level, int aisleIndex) {
+        Sphere label = new Sphere(0.05);
+        label.setMaterial(new PhongMaterial(Color.RED));
+        label.setTranslateY(-shelfWidth / 2 + 0.2);
+        label.setTranslateZ(zPos + 0.1);
+        label.setCache(true);
+        label.setCacheHint(CacheHint.SPEED);
+        label.setUserData("label-aisle" + aisleIndex + "-level" + level);
+        shelfGroup.getChildren().add(label);
+
+        if (level == 3) {
+            Box safetyBar = new Box(0.8, 0.05, 0.05);
+            safetyBar.setTranslateZ(zPos + 0.2);
+            safetyBar.setMaterial(new PhongMaterial(Color.YELLOW));
+            safetyBar.setCache(true);
+            safetyBar.setCacheHint(CacheHint.SPEED);
+            safetyBar.setUserData("safetyBar-aisle" + aisleIndex + "-level" + level);
+            shelfGroup.getChildren().add(safetyBar);
+        }
+    }
+
+    private void createPallets(Group shelfGroup, double length, double width, double height, int aisleIndex) {
+        double aisleWidth = width / (aislesField.getText().isEmpty() ? 1 : Integer.parseInt(aislesField.getText()) + 1);
+        int crateCount = (int) (length / 2);
+        boolean isVegetables = (aisleIndex % 2 == 0);
+
+        for (int j = 0; j < crateCount; j++) {
+            Box crate = new Box(1.5, 0.8, 1.5);
+            crate.setTranslateX(-length * 0.4 + j * (length * 0.8 / crateCount));
+            crate.setTranslateY(height / 2 - 0.4);
+            crate.setTranslateZ((aisleIndex + 1) * aisleWidth - width / 2);
+            PhongMaterial crateMaterial = new PhongMaterial();
+            crateMaterial.setDiffuseColor(isVegetables ? Color.GREEN : Color.ORANGE);
+            crateMaterial.setSpecularColor(Color.WHITE);
+            crateMaterial.setSpecularPower(10);
+            crate.setMaterial(crateMaterial);
+            crate.setCache(true);
+            crate.setCacheHint(CacheHint.SPEED);
+            crate.setUserData("crate-aisle" + aisleIndex + "-index" + j);
+            shelfGroup.getChildren().add(crate);
+        }
+    }
+
+    private void createBasicShelves(Group shelfGroup, double width, double height, int aisleIndex) {
+        double shelfWidth = width * 0.7;
+        int levels = 3;
+
+        PhongMaterial shelfMaterial = createMaterial(Color.BROWN, false);
+
+        for (int level = 0; level < levels; level++) {
+            Box shelf = new Box(0.8, shelfWidth, 0.05);
+            shelf.setTranslateZ((level + 1) * height / (levels + 1));
+            shelf.setMaterial(shelfMaterial);
+            shelf.setCache(true);
+            shelf.setCacheHint(CacheHint.SPEED);
+            shelf.setUserData("basic-shelf-aisle" + aisleIndex + "-level" + level);
+            shelfGroup.getChildren().add(shelf);
+        }
+    }
+
+    private void addEquipment(Group warehouseGroup, double length, double width, double height) {
+        for (int i = 0; i < 2; i++) {
+            Box coolingUnit = new Box(1, 2, 0.5);
+            coolingUnit.setTranslateX(-length / 2 + 0.3);
+            coolingUnit.setTranslateY(height / 2 - 1);
+            coolingUnit.setTranslateZ(-width / 4 + i * (width / 2));
+            coolingUnit.setMaterial(createMaterial(Color.LIGHTBLUE, false));
+            coolingUnit.setCache(true);
+            coolingUnit.setCacheHint(CacheHint.SPEED);
+            coolingUnit.setUserData("coolingUnit-" + i);
+            makeNodeDraggable(coolingUnit, length, width, height);
+            warehouseGroup.getChildren().add(coolingUnit);
+            draggableNodes.add(coolingUnit);
+        }
+
+        createForklift(warehouseGroup, length, width, height);
+    }
+
+    private void createForklift(Group warehouseGroup, double length, double width, double height) {
+        forklift = new Group();
+
+        Box body = new Box(1.5, 0.8, 0.8);
+        body.setMaterial(createMaterial(Color.ORANGE, false));
+        body.setUserData("forklift-body");
+
+        Box cabin = new Box(0.8, 0.7, 0.7);
+        cabin.setTranslateX(0.3);
+        cabin.setTranslateZ(0.5);
+        cabin.setMaterial(createMaterial(Color.BLUE, false));
+        cabin.setUserData("forklift-cabin");
+
+        Box fork1 = new Box(0.1, 0.6, 0.2);
+        fork1.setTranslateX(-0.5);
+        fork1.setTranslateZ(0.3);
+        fork1.setMaterial(createMaterial(Color.SILVER, false));
+        fork1.setUserData("forklift-fork1");
+
+        Box fork2 = new Box(0.1, 0.6, 0.2);
+        fork2.setTranslateX(-0.5);
+        fork2.setTranslateZ(0.1);
+        fork2.setMaterial(createMaterial(Color.SILVER, false));
+        fork2.setUserData("forklift-fork2");
+
+        Box mast = new Box(0.1, 0.1, 1.5);
+        mast.setTranslateX(-0.5);
+        mast.setTranslateZ(1.1);
+        mast.setMaterial(createMaterial(Color.SILVER, false));
+        mast.setUserData("forklift-mast");
+
+        forklift.getChildren().addAll(body, cabin, fork1, fork2, mast);
+        forklift.setTranslateX(-length / 3);
+        forklift.setTranslateY(height / 2 - 0.4);
+        forklift.setTranslateZ(width / 3);
+        forklift.setUserData("forklift");
+        makeNodeDraggable(forklift, length, width, height);
+        warehouseGroup.getChildren().add(forklift);
+        draggableNodes.add(forklift);
+
+        if (animationCheckBox.isSelected()) {
+            startForkliftAnimation(length);
+        }
+    }
+
+    private void makeNodeDraggable(Node node, double length, double width, double height) {
+        final double[] mousePos = new double[2];
+        node.setOnMousePressed(event -> {
+            mousePos[0] = event.getSceneX();
+            mousePos[1] = event.getSceneY();
+        });
+
+        node.setOnMouseDragged(event -> {
+            double deltaX = event.getSceneX() - mousePos[0];
+            double deltaZ = event.getSceneY() - mousePos[1];
+
+            double newX = node.getTranslateX() + deltaX * 0.05;
+            double newZ = node.getTranslateZ() + deltaZ * 0.05;
+
+            // Limiter le déplacement à l'intérieur de l'entrepôt
+            double halfLength = length / 2 - 1;
+            double halfWidth = width / 2 - 1;
+            newX = Math.max(-halfLength, Math.min(halfLength, newX));
+            newZ = Math.max(-halfWidth, Math.min(halfWidth, newZ));
+
+            node.setTranslateX(newX);
+            node.setTranslateZ(newZ);
+
+            mousePos[0] = event.getSceneX();
+            mousePos[1] = event.getSceneY();
+        });
+    }
+
+    private void startForkliftAnimation(double length) {
+        if (forklift == null) return;
+
+        forkliftAnimation = new Timeline();
+        forkliftAnimation.setCycleCount(Timeline.INDEFINITE);
+        forkliftAnimation.setAutoReverse(true);
+
+        KeyFrame moveFrame = new KeyFrame(Duration.seconds(5),
+                event -> {
+                    double startX = -length / 3;
+                    double endX = length / 3;
+                    forklift.setTranslateX(startX);
+                    forklift.setTranslateX(endX);
+                });
+
+        forkliftAnimation.getKeyFrames().add(moveFrame);
+        if (animationCheckBox.isSelected()) {
+            forkliftAnimation.play();
+        }
+    }
+
+    private void calculateUsedSpace(double length, double width, double height, int aisles) {
+        // Approximation: chaque unité de stockage (palette ou étagère) utilise un volume fixe
+        double unitVolume;
+        String storageType = storageTypeCombo.getValue();
+        if (storageType.contains("Palettes")) {
+            unitVolume = 1.5 * 0.8 * 1.5; // Volume d'une palette
+        } else {
+            unitVolume = 1.0 * (width * 0.7) * 0.05 * (storageType.contains("Rayonnages") ? 5 : 4); // Volume d'une étagère
+        }
+        usedSpace = (unitVolume * aisles) / totalVolume * 100;
+        spaceUsedLabel.setText(String.format("Espace utilisé: %.2f%%", usedSpace));
+    }
+
+    private void setupEnhancedLighting(Group warehouseGroup, double length, double width, double height) {
+        PointLight mainLight = new PointLight(Color.WHITE.deriveColor(1, 1, 0.9, 1));
+        mainLight.setTranslateX(0);
+        mainLight.setTranslateY(-height / 2 + 0.1);
+        mainLight.setTranslateZ(0);
+        warehouseGroup.getChildren().add(mainLight);
+
+        AmbientLight ambientLight = new AmbientLight(Color.WHITE.deriveColor(1, 1, 0.4, 1));
+        warehouseGroup.getChildren().add(ambientLight);
+
+        for (int i = 0; i < 4; i++) {
+            PointLight spotLight = new PointLight(Color.WHITE.deriveColor(1, 1, 0.8, 1));
+            spotLight.setTranslateX(-length / 2 + 0.5 + i * (length / 3));
+            spotLight.setTranslateY(-height / 2 + 0.1);
+            spotLight.setTranslateZ(-width / 2 + 0.5 + (i % 2) * (width - 1));
+            warehouseGroup.getChildren().add(spotLight);
+        }
+    }
+
+    private void setupCamera(double length, double width, double height) {
+        camera = new PerspectiveCamera(true);
+        double maxDimension = Math.max(length, Math.max(width, height));
+        cameraDistance = maxDimension * 1.5;
+        targetX = 0;
+        targetY = height / 4;
+        targetZ = 0;
+        camera.setFarClip(maxDimension * 10);
+        camera.setNearClip(0.1);
+        camera.setFieldOfView(45);
+        updateCameraPosition();
+    }
+
+    private void setupSubScene(Group warehouseGroup) {
+        subScene = new SubScene(warehouseGroup, view3DContainer.getWidth(), view3DContainer.getHeight(),
+                true, SceneAntialiasing.BALANCED);
+        subScene.widthProperty().bind(view3DContainer.widthProperty());
+        subScene.heightProperty().bind(view3DContainer.heightProperty());
+        subScene.setCamera(camera);
+        subScene.setFill(Color.WHITE);
+
+        setupCameraControls(subScene);
+        setupObjectInteraction(subScene);
+
+        view3DContainer.getChildren().clear();
+        view3DContainer.getChildren().add(subScene);
+    }
+
+    private void setupCameraControls(SubScene subScene) {
+        final double[] mousePos = new double[2];
+
+        subScene.setOnMousePressed(event -> {
+            mousePos[0] = event.getSceneX();
+            mousePos[1] = event.getSceneY();
+        });
+
+        subScene.setOnMouseDragged(event -> {
+            double deltaX = event.getSceneX() - mousePos[0];
+            double deltaY = event.getSceneY() - mousePos[1];
+
+            cameraYaw -= deltaX * 0.2;
+            cameraPitch = Math.max(-80, Math.min(80, cameraPitch - deltaY * 0.2));
+            updateCameraPosition();
+
+            mousePos[0] = event.getSceneX();
+            mousePos[1] = event.getSceneY();
+        });
+
+        subScene.setOnScroll(event -> {
+            double delta = event.getDeltaY();
+            double maxDimension = Math.max(
+                    Double.parseDouble(lengthField.getText()),
+                    Math.max(
+                            Double.parseDouble(widthField.getText()),
+                            Double.parseDouble(heightField.getText())
+                    )
+            );
+            cameraDistance = Math.max(maxDimension * 0.5, Math.min(maxDimension * 3, cameraDistance - delta * 0.1));
+            updateCameraPosition();
+        });
+    }
+
+    private void setupObjectInteraction(SubScene subScene) {
+        subScene.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
+            if (warehouseGroup == null) return;
+
+            Node picked = event.getPickResult().getIntersectedNode();
+            if (picked != null && picked != subScene && picked != warehouseGroup) {
+                if (isMeasuring) {
+                    handleMeasurement(picked);
+                } else {
+                    highlightObject(picked);
+                    showObjectInfo(picked);
+                }
+            }
+        });
+    }
+
+    private void highlightObject(Node node) {
+        if (selectedNode != null && selectedNode instanceof Shape3D) {
+            ((Shape3D) selectedNode).setMaterial(originalMaterial);
+        }
+
+        if (node instanceof Shape3D) {
+            Shape3D shape = (Shape3D) node;
+            originalMaterial = (PhongMaterial) shape.getMaterial();
+            PhongMaterial highlightMaterial = new PhongMaterial(Color.YELLOW);
+            shape.setMaterial(highlightMaterial);
+            selectedNode = shape;
+        }
+    }
+
+    private void showObjectInfo(Node node) {
+        String userData = (String) node.getUserData();
+        if (userData != null) {
+            showAlert("Information", "Objet sélectionné: " + userData, Alert.AlertType.INFORMATION);
+        }
+    }
+
+    @FXML
+    private void toggleMeasureMode() {
+        isMeasuring = !isMeasuring;
+        toggleMeasureButton.setStyle(isMeasuring ?
+                "-fx-background-color: linear-gradient(to bottom, #4CAF50, #388E3C);" :
+                "-fx-background-color: linear-gradient(to bottom, #9C27B0, #7B1FA2);");
+        measurementLabel.setVisible(isMeasuring);
+        if (!isMeasuring) {
+            resetMeasurement();
+        }
+    }
+
+    private void handleMeasurement(Node node) {
+        measurePoints.add(node);
+        if (measurePoints.size() == 2) {
+            createMeasurementLine();
+            calculateDistance();
+        }
+    }
+
+    private void createMeasurementLine() {
+        if (measureLine != null) {
+            warehouseGroup.getChildren().remove(measureLine);
+        }
+
+        Node point1 = measurePoints.get(0);
+        Node point2 = measurePoints.get(1);
+
+        measureLine = new Line(
+                point1.getTranslateX(), point1.getTranslateZ(),
+                point2.getTranslateX(), point2.getTranslateZ()
+        );
+        measureLine.setStroke(Color.RED);
+        measureLine.setStrokeWidth(2);
+        measureLine.setTranslateY(point1.getTranslateY());
+        warehouseGroup.getChildren().add(measureLine);
+    }
+
+    private void calculateDistance() {
+        if (measurePoints.size() < 2) return;
+
+        Node point1 = measurePoints.get(0);
+        Node point2 = measurePoints.get(1);
+
+        double dx = point1.getTranslateX() - point2.getTranslateX();
+        double dz = point1.getTranslateZ() - point2.getTranslateZ();
+        double distance = Math.sqrt(dx * dx + dz * dz);
+        measurementLabel.setText(String.format("Mesure: %.2f m", distance));
+    }
+
+    private void resetMeasurement() {
+        if (measureLine != null) {
+            warehouseGroup.getChildren().remove(measureLine);
+            measureLine = null;
+        }
+        measurePoints.clear();
+        measurementLabel.setText("Mesure: 0 m");
+    }
+
+    @FXML
+    private void toggleSection() {
+        if (sectionPlane != null) {
+            warehouseGroup.getChildren().remove(sectionPlane);
+            sectionPlane = null;
+            toggleSectionButton.setStyle("-fx-background-color: linear-gradient(to bottom, #9C27B0, #7B1FA2);");
+            return;
+        }
+
+        double length = Double.parseDouble(lengthField.getText());
+        double width = Double.parseDouble(widthField.getText());
+        double height = Double.parseDouble(heightField.getText());
+
+        sectionPlane = new Box(length * 2, width * 2, 0.05);
+        sectionPlane.setMaterial(new PhongMaterial(Color.CYAN.deriveColor(1, 1, 1, 0.3)));
+        sectionPlane.setTranslateY(height / 4);
+        sectionPlane.setRotationAxis(Rotate.X_AXIS);
+        sectionPlane.setRotate(90);
+        warehouseGroup.getChildren().add(sectionPlane);
+        toggleSectionButton.setStyle("-fx-background-color: linear-gradient(to bottom, #4CAF50, #388E3C);");
+    }
+
+    @FXML
+    private void toggleWireframe() {
+        isWireframe = !isWireframe;
+        toggleWireframeButton.setStyle(isWireframe ?
+                "-fx-background-color: linear-gradient(to bottom, #4CAF50, #388E3C);" :
+                "-fx-background-color: linear-gradient(to bottom, #9C27B0, #7B1FA2);");
+
+        warehouseGroup.getChildren().forEach(node -> {
+            if (node instanceof Shape3D) {
+                Shape3D shape = (Shape3D) node;
+                shape.setDrawMode(isWireframe ? DrawMode.LINE : DrawMode.FILL);
+            }
+        });
+    }
+
+    private void updateWallColor() {
+        Color newColor = wallColorPicker.getValue();
+        warehouseGroup.getChildren().forEach(node -> {
+            String userData = (String) node.getUserData();
+            if (userData != null && (userData.startsWith("wall") || userData.equals("roof"))) {
+                if (node instanceof Shape3D) {
+                    Shape3D shape = (Shape3D) node;
+                    shape.setMaterial(createMaterial(newColor, true));
+                }
+            }
+        });
+    }
+
+    private void updateFloorColor() {
+        Color newColor = floorColorPicker.getValue();
+        warehouseGroup.getChildren().forEach(node -> {
+            String userData = (String) node.getUserData();
+            if (userData != null && userData.equals("floor")) {
+                if (node instanceof Shape3D) {
+                    Shape3D shape = (Shape3D) node;
+                    shape.setMaterial(createMaterial(newColor, false));
+                }
+            }
+        });
+    }
+
+    @FXML
+    private void addAnnotation() {
+        if (selectedNode == null || annotationField.getText().isEmpty()) {
+            showAlert("Erreur", "Veuillez sélectionner un objet et entrer un texte d'annotation.", Alert.AlertType.WARNING);
+            return;
+        }
+
+        Text annotation = new Text(annotationField.getText());
+        annotation.setFill(Color.BLACK);
+        annotation.setTranslateX(selectedNode.getTranslateX());
+        annotation.setTranslateY(selectedNode.getTranslateY() - 1);
+        annotation.setTranslateZ(selectedNode.getTranslateZ());
+        warehouseGroup.getChildren().add(annotation);
+        annotations.add(annotation);
+        annotationField.clear();
+    }
+
+    private void startLoadingAnimation() {
+        final int[] frameCount = {0};
+        renderTimer = new AnimationTimer() {
+            @Override
+            public void handle(long now) {
+                frameCount[0]++;
+                double progress = Math.min(frameCount[0] / 180.0, 1.0);
+                loadingProgressBar.setProgress(progress);
+                loadingLabel.setText("Chargement: " + (int) (progress * 100) + "%");
+
+                if (frameCount[0] >= 180) {
+                    exportImageButton.setDisable(false);
+                    resetLoadingState();
+                    stop();
+                }
+            }
+        };
+        renderTimer.start();
+    }
+
+    private ChangeListener<Number> createRenderListener(Runnable callback) {
+        ChangeListener<Number> listener = new ChangeListener<Number>() {
+            @Override
+            public void changed(ObservableValue<? extends Number> obs, Number oldValue, Number newValue) {
+                obs.removeListener(this);
+                if (obs == subScene.widthProperty()) {
+                    subScene.heightProperty().removeListener(this);
+                } else {
+                    subScene.widthProperty().removeListener(this);
+                }
+
+                Platform.runLater(() -> {
+                    if (subScene.getWidth() > 0 && subScene.getHeight() > 0) {
+                        callback.run();
+                    } else {
+                        showAlert("Erreur", "SubScene non rendu: dimensions invalides.", Alert.AlertType.ERROR);
+                    }
+                });
+            }
+        };
+        return listener;
+    }
+
+    private void ensureRendered(Runnable callback) {
+        if (subScene == null || subScene.getRoot() == null) {
+            showAlert("Erreur", "Aucune visualisation 3D à exporter.", Alert.AlertType.WARNING);
+            return;
+        }
+
+        subScene.getScene().getRoot().requestLayout();
+        subScene.requestFocus();
+
+        ChangeListener<Number> renderListener = createRenderListener(callback);
+
+        subScene.widthProperty().addListener(renderListener);
+        subScene.heightProperty().addListener(renderListener);
+
+        subScene.getScene().getRoot().requestLayout();
+        subScene.getScene().getRoot().layout();
+    }
+
+    @FXML
+    private void exportImage() {
+        if (subScene == null) {
+            showAlert("Erreur", "Aucune visualisation 3D à exporter", Alert.AlertType.WARNING);
+            return;
+        }
+
+        double length = Double.parseDouble(lengthField.getText());
+        double width = Double.parseDouble(widthField.getText());
+        double height = Double.parseDouble(heightField.getText());
+        double maxDimension = Math.max(length, Math.max(width, height));
+
+        cameraDistance = maxDimension * 1.5;
+        cameraYaw = 180;
+        cameraPitch = 29;
+        targetX = 0;
+        targetY = height / 4;
+        targetZ = 0;
+        updateCameraPosition();
+
+        ensureRendered(() -> {
+            try {
+                SnapshotParameters params = new SnapshotParameters();
+                params.setCamera(camera);
+                params.setFill(Color.WHITE);
+                double snapshotWidth = Math.min(subScene.getWidth(), 1280);
+                double snapshotHeight = Math.min(subScene.getHeight(), 720);
+
+                WritableImage snapshot = subScene.snapshot(params, new WritableImage((int) snapshotWidth, (int) snapshotHeight));
+                if (snapshot.getWidth() <= 0 || snapshot.getHeight() <= 0) {
+                    showAlert("Erreur", "Échec capture image: snapshot vide", Alert.AlertType.ERROR);
+                    return;
+                }
+
+                previewImageView.setScaleX(1.0);
+                previewImageView.setScaleY(1.0);
+                previewImageView.setFitWidth(snapshotWidth);
+                previewImageView.setFitHeight(snapshotHeight);
+                previewImageView.setImage(snapshot);
+                previewContainer.setVisible(true);
+                previewLabel.setVisible(true);
+                previewImageView.setVisible(true);
+                updateScrollPaneViewport();
+
+                lastImageData = convertImageToBase64(snapshot);
+
+                FileChooser fileChooser = new FileChooser();
+                fileChooser.setTitle("Sauvegarder l'image 3D");
+                fileChooser.getExtensionFilters().add(
+                        new FileChooser.ExtensionFilter("PNG Image", "*.png"));
+                fileChooser.setInitialFileName("entrepot_3d.png");
+
+                File file = fileChooser.showSaveDialog(view3DContainer.getScene().getWindow());
+                if (file != null) {
+                    String base64 = lastImageData.replace("data:image/png;base64,", "");
+                    byte[] imageBytes = Base64.getDecoder().decode(base64);
+                    BufferedImage bufferedImage = ImageIO.read(new ByteArrayInputStream(imageBytes));
+                    ImageIO.write(bufferedImage, "png", file);
+                    showAlert("Succès", "Image exportée avec succès: " + file.getAbsolutePath(),
+                            Alert.AlertType.INFORMATION);
+                }
+            } catch (Exception e) {
+                showAlert("Erreur", "Échec de l'exportation: " + e.getMessage(), Alert.AlertType.ERROR);
+            }
+        });
+    }
+
+    private String convertImageToBase64(WritableImage image) throws Exception {
+        BufferedImage bufferedImage = SwingFXUtils.fromFXImage(image, null);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageIO.write(bufferedImage, "png", baos);
+        byte[] imageBytes = baos.toByteArray();
+        return "data:image/png;base64," + Base64.getEncoder().encodeToString(imageBytes);
+    }
+
+    @FXML
+    private void resetForm() {
+        lengthField.clear();
+        widthField.clear();
+        heightField.clear();
+        aislesField.clear();
+        storageTypeCombo.getSelectionModel().clearSelection();
+        freeDescriptionArea.clear();
+        previewImageView.setImage(null);
+        previewContainer.setVisible(false);
+        previewLabel.setVisible(false);
+        previewImageView.setVisible(false);
+        exportImageButton.setDisable(true);
+        view3DContainer.getChildren().clear();
+        resetLoadingState();
+        if (renderTimer != null) {
+            renderTimer.stop();
+        }
+        if (forkliftAnimation != null) {
+            forkliftAnimation.stop();
+        }
+        gridGroup = null;
+        sectionPlane = null;
+        measureLine = null;
+        measurePoints.clear();
+        selectedNode = null;
+        isGridVisible = false;
+        isMeasuring = false;
+        isWireframe = false;
+        draggableNodes.clear();
+        annotations.clear();
+        volumeLabel.setText("Volume total: 0 m³");
+        spaceUsedLabel.setText("Espace utilisé: 0%");
+    }
+
+    @FXML
+    private void goBack() {
+        try {
+            Stage stage = (Stage) view3DContainer.getScene().getWindow();
+            Parent root = FXMLLoader.load(Objects.requireNonNull(
+                    getClass().getResource("/com/example/Stock/view/AddEntrepotForm.fxml")));
+            stage.setScene(new Scene(root));
+        } catch (Exception e) {
+            showAlert("Erreur", "Navigation impossible: " + e.getMessage(), Alert.AlertType.ERROR);
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Entrepôt 3D Premium</title>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/postprocessing/UnrealBloomPass.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+        }
+        #container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+        }
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            z-index: 100;
+            text-align: center;
+        }
+        #ui-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.9);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10;
+            max-width: 300px;
+        }
+        #toolbar {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.8);
+            padding: 10px 15px;
+            border-radius: 8px;
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+        }
+        button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            background: #4a6baf;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #3a5a9f;
+        }
+        #context-menu {
+            position: absolute;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            display: none;
+            z-index: 100;
+        }
+        #context-menu ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        #context-menu li {
+            padding: 8px 15px;
+            cursor: pointer;
+        }
+        #context-menu li:hover {
+            background: #f0f0f0;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #ddd;
+            margin-top: 10px;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .progress {
+            height: 100%;
+            background: #4a6baf;
+            width: 0%;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+<div id="container">
+    <div id="loading">
+        <div>Chargement de l'entrepôt 3D...</div>
+        <div class="progress-bar">
+            <div class="progress" id="load-progress"></div>
+        </div>
+    </div>
+
+    <div id="ui-panel">
+        <h2>Entrepôt 3D Premium</h2>
+        <div id="warehouse-stats">
+            <p><strong>Dimensions:</strong> <span id="dimensions-display">20m x 15m x 8m</span></p>
+            <p><strong>Allées:</strong> <span id="aisles-display">4</span></p>
+            <p><strong>Espace utilisé:</strong> <span id="space-used">35%</span></p>
+        </div>
+        <div id="measurement-result" style="display: none; margin-top: 10px;">
+            <p><strong>Mesure:</strong> <span id="measure-value">0m</span></p>
+        </div>
+    </div>
+
+    <div id="toolbar">
+        <button id="toggle-grid">Grille</button>
+        <button id="toggle-measure">Mesurer</button>
+        <button id="toggle-sections">Coupes</button>
+        <button id="toggle-wireframe">Filaire</button>
+        <button id="export-btn">Exporter</button>
+    </div>
+
+    <div id="context-menu">
+        <ul>
+            <li data-action="measure">Mesurer depuis ici</li>
+            <li data-action="highlight">Surligner</li>
+            <li data-action="info">Informations</li>
+            <li data-action="delete">Supprimer</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+    // Variables globales
+    let scene, camera, renderer, controls, composer;
+    let warehouseGroup, selectedObjects = [];
+    let isMeasuring = false, measurePoints = [], measureLine = null;
+    let raycaster = new THREE.Raycaster();
+    let mouse = new THREE.Vector2();
+    let currentSection = null;
+
+    // Paramètres de l'entrepôt
+    const warehouseParams = {
+        length: 20,
+        width: 15,
+        height: 8,
+        aisles: 4,
+        storageType: 'Rayonnages métalliques',
+        description: 'Entrepôt premium avec fonctionnalités avancées'
+    };
+
+    // Initialisation
+    function init() {
+        // Création de la scène
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xf0f5ff);
+        scene.fog = new THREE.FogExp2(0xf0f5ff, 0.001);
+
+        // Configuration de la caméra
+        const aspect = window.innerWidth / window.innerHeight;
+        camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
+        camera.position.set(25, 30, 25);
+
+        // Configuration du rendu
+        renderer = new THREE.WebGLRenderer({
+            antialias: true,
+            powerPreference: "high-performance"
+        });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.getElementById('container').appendChild(renderer.domElement);
+
+        // Contrôles
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.minDistance = 5;
+        controls.maxDistance = 100;
+        controls.maxPolarAngle = Math.PI * 0.9;
+
+        // Post-processing
+        setupPostProcessing();
+
+        // Éclairage
+        setupPremiumLighting();
+
+        // Environnement
+        createEnvironment();
+
+        // Création de l'entrepôt
+        createWarehouse();
+
+        // Événements
+        setupEventListeners();
+
+        // Animation
+        animate();
+
+        // Mise à jour UI
+        updateUI();
+    }
+
+    // Post-processing
+    function setupPostProcessing() {
+        composer = new EffectComposer(renderer);
+        composer.addPass(new RenderPass(scene, camera));
+
+        const bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight),
+            1.5, 0.4, 0.85
+        );
+        composer.addPass(bloomPass);
+    }
+
+    // Éclairage premium
+    function setupPremiumLighting() {
+        // Lumière directionnelle principale (soleil)
+        const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        sunLight.position.set(10, 20, 10);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
+        sunLight.shadow.camera.near = 0.1;
+        sunLight.shadow.camera.far = 100;
+        sunLight.shadow.camera.left = -20;
+        sunLight.shadow.camera.right = 20;
+        sunLight.shadow.camera.top = 20;
+        sunLight.shadow.camera.bottom = -20;
+        scene.add(sunLight);
+
+        // Lumière ambiante
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+        scene.add(ambientLight);
+
+        // Lumière d'appoint
+        const fillLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        fillLight.position.set(-10, 10, -10);
+        scene.add(fillLight);
+
+        // Projecteurs
+        const spotLight1 = new THREE.SpotLight(0xfffae5, 0.7, 30, Math.PI/6, 0.5);
+        spotLight1.position.set(0, warehouseParams.height - 1, 0);
+        spotLight1.castShadow = true;
+        scene.add(spotLight1);
+    }
+
+    // Environnement
+    function createEnvironment() {
+        // Grille
+        const gridHelper = new THREE.GridHelper(50, 50, 0x555555, 0x555555);
+        gridHelper.position.y = 0.01;
+        scene.add(gridHelper);
+
+        // Axes
+        const axesHelper = new THREE.AxesHelper(15);
+        scene.add(axesHelper);
+    }
+
+    // Création de l'entrepôt
+    function createWarehouse() {
+        warehouseGroup = new THREE.Group();
+
+        // Sol
+        const floorGeometry = new THREE.PlaneGeometry(
+            warehouseParams.length,
+            warehouseParams.width
+        );
+        const floorMaterial = new THREE.MeshStandardMaterial({
+            color: 0xcccccc,
+            roughness: 0.7,
+            metalness: 0.1
+        });
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        warehouseGroup.add(floor);
+
+        // Murs
+        createWalls();
+
+        // Étagères
+        createShelves();
+
+        // Objets divers
+        createWarehouseObjects();
+
+        scene.add(warehouseGroup);
+        updateLoadProgress(100);
+    }
+
+    function createWalls() {
+        const wallMaterial = new THREE.MeshStandardMaterial({
+            color: 0xaaaaaa,
+            roughness: 0.6,
+            metalness: 0.2
+        });
+
+        // Murs longitudinaux
+        createWall(
+            warehouseParams.length, warehouseParams.height,
+            0, warehouseParams.width/2, 0, wallMaterial
+        );
+        createWall(
+            warehouseParams.length, warehouseParams.height,
+            0, -warehouseParams.width/2, 0, wallMaterial
+        );
+
+        // Murs latéraux
+        createWall(
+            warehouseParams.width, warehouseParams.height,
+            warehouseParams.length/2, 0, Math.PI/2, wallMaterial
+        );
+        createWall(
+            warehouseParams.width, warehouseParams.height,
+            -warehouseParams.length/2, 0, Math.PI/2, wallMaterial
+        );
+
+        // Portes
+        createDoors();
+    }
+
+    function createWall(length, height, x, y, rotationY, material) {
+        const geometry = new THREE.BoxGeometry(length, height, 0.3);
+        const wall = new THREE.Mesh(geometry, material);
+        wall.position.set(x, y, height/2);
+        wall.rotation.y = rotationY;
+        wall.castShadow = true;
+        wall.receiveShadow = true;
+        wall.userData = { type: 'wall', dimensions: `${length}m x ${height}m` };
+        warehouseGroup.add(wall);
+    }
+
+    function createDoors() {
+        const doorMaterial = new THREE.MeshStandardMaterial({
+            color: 0x8B4513,
+            roughness: 0.6,
+            metalness: 0.2
+        });
+
+        // Porte principale
+        const doorGeometry = new THREE.BoxGeometry(3, 0.2, 4);
+        const door = new THREE.Mesh(doorGeometry, doorMaterial);
+        door.position.set(0, -warehouseParams.width/2 + 0.1, 2);
+        door.userData = { type: 'door', dimensions: '3m x 4m' };
+        warehouseGroup.add(door);
+    }
+
+    function createShelves() {
+        const shelfSpacing = warehouseParams.length / (warehouseParams.aisles + 1);
+
+        for (let i = 0; i < warehouseParams.aisles; i++) {
+            const x = -warehouseParams.length/2 + (i + 1) * shelfSpacing;
+            createShelf(x, warehouseParams.width, warehouseParams.height);
+        }
+    }
+
+    function createShelf(x, width, height) {
+        const shelfGroup = new THREE.Group();
+        shelfGroup.position.set(x, 0, 0);
+
+        const shelfWidth = width * 0.7;
+        const shelfDepth = 0.8;
+        const shelfHeight = 0.05;
+        const levels = 4;
+
+        // Matériau métallique
+        const shelfMaterial = new THREE.MeshStandardMaterial({
+            color: 0xC0C0C0,
+            roughness: 0.2,
+            metalness: 0.9
+        });
+
+        // Support vertical
+        const supportGeometry = new THREE.CylinderGeometry(0.05, 0.05, height, 8);
+        const supportMaterial = new THREE.MeshStandardMaterial({
+            color: 0x555555,
+            metalness: 0.8,
+            roughness: 0.3
+        });
+
+        // Supports gauche et droit
+        const leftSupport = new THREE.Mesh(supportGeometry, supportMaterial);
+        leftSupport.position.set(0, -shelfWidth/2 + 0.1, height/2);
+        leftSupport.rotation.x = Math.PI/2;
+        leftSupport.castShadow = true;
+        shelfGroup.add(leftSupport);
+
+        const rightSupport = new THREE.Mesh(supportGeometry, supportMaterial);
+        rightSupport.position.set(0, shelfWidth/2 - 0.1, height/2);
+        rightSupport.rotation.x = Math.PI/2;
+        rightSupport.castShadow = true;
+        shelfGroup.add(rightSupport);
+
+        // Plateformes
+        for (let level = 0; level < levels; level++) {
+            const z = (level + 1) * height / (levels + 1);
+
+            const shelfGeometry = new THREE.BoxGeometry(shelfDepth, shelfWidth, shelfHeight);
+            const shelf = new THREE.Mesh(shelfGeometry, shelfMaterial);
+            shelf.position.set(0, 0, z);
+            shelf.castShadow = true;
+            shelf.receiveShadow = true;
+            shelf.userData = {
+                type: 'shelf',
+                level: level+1,
+                dimensions: `${shelfWidth}m x ${shelfDepth}m`,
+                capacity: `${shelfWidth * shelfDepth * 0.8} m²`
+            };
+            shelfGroup.add(shelf);
+        }
+
+        shelfGroup.userData = { type: 'shelf-system', aisles: warehouseParams.aisles };
+        warehouseGroup.add(shelfGroup);
+    }
+
+    function createWarehouseObjects() {
+        // Palettes
+        for (let i = 0; i < 10; i++) {
+            createPalette(
+                THREE.MathUtils.randFloatSpread(warehouseParams.length * 0.8),
+                THREE.MathUtils.randFloatSpread(warehouseParams.width * 0.8),
+                0.1
+            );
+        }
+
+        // Chariots élévateurs
+        createForklift(-warehouseParams.length/3, -warehouseParams.width/3, 0);
+        createForklift(warehouseParams.length/3, warehouseParams.width/3, 0);
+    }
+
+    function createPalette(x, y, z) {
+        const paletteGroup = new THREE.Group();
+
+        // Base en bois
+        const baseGeometry = new THREE.BoxGeometry(1.2, 1.0, 0.1);
+        const baseMaterial = new THREE.MeshStandardMaterial({
+            color: 0xA0522D,
+            roughness: 0.7
+        });
+        const base = new THREE.Mesh(baseGeometry, baseMaterial);
+        base.position.set(0, 0, 0.05);
+        base.castShadow = true;
+        base.receiveShadow = true;
+        paletteGroup.add(base);
+
+        // Blocs de support
+        const blockGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.15);
+        for (let i = 0; i < 4; i++) {
+            const block = new THREE.Mesh(blockGeometry, baseMaterial);
+            const posX = i % 2 === 0 ? -0.5 : 0.5;
+            const posY = i < 2 ? -0.4 : 0.4;
+            block.position.set(posX, posY, -0.05);
+            block.castShadow = true;
+            paletteGroup.add(block);
+        }
+
+        paletteGroup.position.set(x, y, z);
+        paletteGroup.userData = { type: 'palette', dimensions: '1.2m x 1.0m' };
+        warehouseGroup.add(paletteGroup);
+    }
+
+    function createForklift(x, y, z) {
+        const forkliftGroup = new THREE.Group();
+
+        // Base
+        const baseGeometry = new THREE.BoxGeometry(1.5, 0.8, 0.8);
+        const baseMaterial = new THREE.MeshStandardMaterial({
+            color: 0xFF4500,
+            roughness: 0.5
+        });
+        const base = new THREE.Mesh(baseGeometry, baseMaterial);
+        base.position.set(0, 0, 0.4);
+        base.castShadow = true;
+        forkliftGroup.add(base);
+
+        // Cabine
+        const cabinGeometry = new THREE.BoxGeometry(0.8, 0.7, 0.7);
+        const cabinMaterial = new THREE.MeshStandardMaterial({
+            color: 0x4682B4,
+            roughness: 0.3,
+            metalness: 0.4
+        });
+        const cabin = new THREE.Mesh(cabinGeometry, cabinMaterial);
+        cabin.position.set(0.3, 0, 0.9);
+        forkliftGroup.add(cabin);
+
+        // Fourche
+        const forkGeometry = new THREE.BoxGeometry(0.1, 0.6, 0.2);
+        const forkMaterial = new THREE.MeshStandardMaterial({
+            color: 0xC0C0C0,
+            metalness: 0.8
+        });
+        const fork1 = new THREE.Mesh(forkGeometry, forkMaterial);
+        fork1.position.set(-0.5, 0, 0.3);
+        forkliftGroup.add(fork1);
+
+        const fork2 = new THREE.Mesh(forkGeometry, forkMaterial);
+        fork2.position.set(-0.5, 0, 0.1);
+        forkliftGroup.add(fork2);
+
+        // Mât
+        const mastGeometry = new THREE.BoxGeometry(0.1, 0.1, 1.5);
+        const mast = new THREE.Mesh(mastGeometry, forkMaterial);
+        mast.position.set(-0.5, 0, 1.1);
+        forkliftGroup.add(mast);
+
+        forkliftGroup.position.set(x, y, z);
+        forkliftGroup.userData = { type: 'forklift', dimensions: '1.5m x 0.8m' };
+        warehouseGroup.add(forkliftGroup);
+    }
+
+    // Gestion des événements
+    function setupEventListeners() {
+        // Redimensionnement
+        window.addEventListener('resize', onWindowResize);
+
+        // Clic souris
+        window.addEventListener('click', onMouseClick);
+
+        // Mouvement souris
+        window.addEventListener('mousemove', onMouseMove);
+
+        // Boutons UI
+        document.getElementById('toggle-grid').addEventListener('click', toggleGrid);
+        document.getElementById('toggle-measure').addEventListener('click', toggleMeasureMode);
+        document.getElementById('toggle-sections').addEventListener('click', toggleSections);
+        document.getElementById('toggle-wireframe').addEventListener('click', toggleWireframe);
+        document.getElementById('export-btn').addEventListener('click', exportScene);
+    }
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        composer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function onMouseClick(event) {
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(warehouseGroup.children, true);
+
+        if (intersects.length > 0) {
+            const object = intersects[0].object;
+
+            if (isMeasuring) {
+                handleMeasurement(object);
+            } else {
+                showContextMenu(event, object);
+            }
+        } else {
+            hideContextMenu();
+        }
+    }
+
+    function onMouseMove(event) {
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    }
+
+    function showContextMenu(event, object) {
+        const contextMenu = document.getElementById('context-menu');
+        contextMenu.style.display = 'block';
+        contextMenu.style.left = `${event.clientX}px`;
+        contextMenu.style.top = `${event.clientY}px`;
+
+        // Stocker l'objet sélectionné
+        selectedObjects = [object];
+
+        // Gérer les clics sur le menu contextuel
+        const items = contextMenu.querySelectorAll('li');
+        items.forEach(item => {
+            item.addEventListener('click', () => {
+                const action = item.getAttribute('data-action');
+                handleContextAction(action);
+                contextMenu.style.display = 'none';
+            });
+        });
+    }
+
+    function hideContextMenu() {
+        document.getElementById('context-menu').style.display = 'none';
+    }
+
+    function handleContextAction(action) {
+        if (selectedObjects.length === 0) return;
+
+        const object = selectedObjects[0];
+
+        switch(action) {
+            case 'measure':
+                startMeasurement(object);
+                break;
+            case 'highlight':
+                highlightObject(object);
+                break;
+            case 'info':
+                showObjectInfo(object);
+                break;
+            case 'delete':
+                removeObject(object);
+                break;
+        }
+    }
+
+    // Fonctionnalités avancées
+    function toggleGrid() {
+        const grid = scene.children.find(child => child instanceof THREE.GridHelper);
+        if (grid) grid.visible = !grid.visible;
+    }
+
+    function toggleMeasureMode() {
+        isMeasuring = !isMeasuring;
+        const btn = document.getElementById('toggle-measure');
+
+        if (isMeasuring) {
+            btn.style.backgroundColor = '#4CAF50';
+            document.getElementById('measurement-result').style.display = 'block';
+        } else {
+            btn.style.backgroundColor = '#4a6baf';
+            document.getElementById('measurement-result').style.display = 'none';
+            resetMeasurement();
+        }
+    }
+
+    function startMeasurement(object) {
+        isMeasuring = true;
+        measurePoints = [object.position.clone()];
+        document.getElementById('toggle-measure').style.backgroundColor = '#4CAF50';
+        document.getElementById('measurement-result').style.display = 'block';
+    }
+
+    function handleMeasurement(object) {
+        if (!isMeasuring) return;
+
+        measurePoints.push(object.position.clone());
+
+        if (measurePoints.length === 2) {
+            createMeasurementLine();
+            calculateDistance();
+        }
+    }
+
+    function createMeasurementLine() {
+        // Supprimer la ligne existante
+        if (measureLine) {
+            scene.remove(measureLine);
+        }
+
+        const geometry = new THREE.BufferGeometry().setFromPoints(measurePoints);
+        const material = new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 2 });
+        measureLine = new THREE.Line(geometry, material);
+        scene.add(measureLine);
+    }
+
+    function calculateDistance() {
+        if (measurePoints.length < 2) return;
+
+        const distance = measurePoints[0].distanceTo(measurePoints[1]);
+        document.getElementById('measure-value').textContent = `${distance.toFixed(2)} m`;
+    }
+
+    function resetMeasurement() {
+        if (measureLine) {
+            scene.remove(measureLine);
+            measureLine = null;
+        }
+        measurePoints = [];
+        document.getElementById('measure-value').textContent = '0m';
+    }
+
+    function toggleSections() {
+        if (currentSection) {
+            scene.remove(currentSection);
+            currentSection = null;
+            return;
+        }
+
+        // Créer un plan de coupe
+        const sectionGeometry = new THREE.PlaneGeometry(30, 30);
+        const sectionMaterial = new THREE.MeshBasicMaterial({
+            color: 0x00ffff,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.3
+        });
+        currentSection = new THREE.Mesh(sectionGeometry, sectionMaterial);
+        currentSection.rotation.x = Math.PI / 2;
+        currentSection.position.z = warehouseParams.height / 2;
+        scene.add(currentSection);
+    }
+
+    function toggleWireframe() {
+        warehouseGroup.traverse(child => {
+            if (child.isMesh) {
+                child.material.wireframe = !child.material.wireframe;
+            }
+        });
+    }
+
+    function highlightObject(object) {
+        // Réinitialiser les surbrillances précédentes
+        warehouseGroup.traverse(child => {
+            if (child.isMesh && child.userData.originalColor) {
+                child.material.color.setHex(child.userData.originalColor);
+                delete child.userData.originalColor;
+            }
+        });
+
+        // Appliquer la surbrillance
+        if (object.isMesh) {
+            object.userData.originalColor = object.material.color.getHex();
+            object.material.color.setHex(0x00ff00);
+        }
+    }
+
+    function showObjectInfo(object) {
+        const infoPanel = document.getElementById('ui-panel');
+        let infoHTML = `<h3>${object.userData.type || 'Objet'}</h3>`;
+
+        if (object.userData.dimensions) {
+            infoHTML += `<p><strong>Dimensions:</strong> ${object.userData.dimensions}</p>`;
+        }
+
+        if (object.userData.capacity) {
+            infoHTML += `<p><strong>Capacité:</strong> ${object.userData.capacity}</p>`;
+        }
+
+        infoPanel.innerHTML = infoHTML + infoPanel.innerHTML;
+    }
+
+    function removeObject(object) {
+        if (object.parent) {
+            object.parent.remove(object);
+        }
+    }
+
+    function exportScene() {
+        // Créer une image de la scène
+        renderer.render(scene, camera);
+        const imageData = renderer.domElement.toDataURL('image/png');
+
+        // Créer un lien de téléchargement
+        const link = document.createElement('a');
+        link.href = imageData;
+        link.download = 'entrepot-3d.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function updateUI() {
+        document.getElementById('dimensions-display').textContent =
+            `${warehouseParams.length}m x ${warehouseParams.width}m x ${warehouseParams.height}m`;
+        document.getElementById('aisles-display').textContent = warehouseParams.aisles;
+    }
+
+    function updateLoadProgress(percent) {
+        document.getElementById('load-progress').style.width = `${percent}%`;
+        if (percent >= 100) {
+            setTimeout(() => {
+                document.getElementById('loading').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('loading').style.display = 'none';
+                }, 300);
+            }, 500);
+        }
+    }
+
+    // Animation
+    function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        composer.render();
+    }
+
+    // Démarrer l'application
+    window.onload = init;
+</script>
+</body>
+</html>
+
+
+
+

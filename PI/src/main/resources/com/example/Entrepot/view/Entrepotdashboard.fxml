@@ -18,6 +18,7 @@
         <padding><Insets bottom="15" left="20" right="20" top="15" /></padding>
         <Label alignment="CENTER_LEFT" styleClass="header-title" text="🏭 Gestion des Entrepôts" HBox.hgrow="ALWAYS" />
         <Button fx:id="ajouterBtn" onAction="#handleAjouter" styleClass="btn-primary" text="➕ Ajouter" />
+
         <Button fx:id="excelBtn" onAction="#handleExportExcel" styleClass="btn-success" text="📥 Exporter Excel" />
         <Button fx:id="pdfBtn" onAction="#handleExportPDF" styleClass="btn-danger" text="📝 Exporter PDF" />
     </HBox>
@@ -51,6 +52,7 @@
    
                                 <Label styleClass="placeholder-label" text="Aucun entrepôt disponible" />
                                 <Button onAction="#handleAjouter" styleClass="add-button" text="Ajouter un nouvel entrepôt" />
+
                             </VBox>
                         </placeholder>
                     </ListView>

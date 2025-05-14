@@ -2,9 +2,6 @@ package com.example.auth.model;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import javafx.beans.value.ObservableValue;
-
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
@@ -19,23 +16,23 @@ public class User implements Serializable {
     private List<String> roles;
     private String password;
     private String travail;
-    private Date dateInscri;
+    private Date dateIscri; // Changed from dateInscri to dateIscri
     private String photoUrl;
     private boolean isVerified;
-    private String verificationToken; // New field
+    private String verificationToken;
     private String nom;
     private String prenom;
     private String numTel;
 
     // Updated constructor
-    public User(UUID id, String email, String rolesJson, String password, String travail, Date dateInscri,
+    public User(UUID id, String email, String rolesJson, String password, String travail, Date dateIscri,
                 String photoUrl, boolean isVerified, String verificationToken, String nom, String prenom, String numTel) {
         this.id = id;
         this.email = email;
         this.roles = parseRoles(rolesJson);
         this.password = password;
         this.travail = travail;
-        this.dateInscri = dateInscri;
+        this.dateIscri = dateIscri; // Updated field name
         this.photoUrl = photoUrl;
         this.isVerified = isVerified;
         this.verificationToken = verificationToken;
@@ -107,8 +104,6 @@ public class User implements Serializable {
     public String getPassword() {
         return password;
     }
- 
-
 
     public void setPassword(String password) {
         this.password = password;
@@ -122,12 +117,12 @@ public class User implements Serializable {
         this.travail = travail;
     }
 
-    public Date getDateInscri() {
-        return dateInscri;
+    public Date getDateIscri() { // Updated getter
+        return dateIscri;
     }
 
-    public void setDateInscri(Date dateInscri) {
-        this.dateInscri = dateInscri;
+    public void setDateIscri(Date dateIscri) { // Updated setter
+        this.dateIscri = dateIscri;
     }
 
     public String getPhotoUrl() {
@@ -177,14 +172,13 @@ public class User implements Serializable {
     public void setNumTel(String numTel) {
         this.numTel = numTel;
     }
+
     public String getUsername() {
         return prenom + " " + nom;
     }
+
     @Override
     public String toString() {
         return getPrenom() + " " + getNom();
     }
-
-
-
 }

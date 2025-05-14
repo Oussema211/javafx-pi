@@ -128,6 +128,9 @@
                     </ImageView>
                 </graphic>
             </Hyperlink>
+            <Hyperlink fx:id="dashboardStatiqtique" text="dashboardStatiqtique" graphicTextGap="10" styleClass="nav-link">
+
+            </Hyperlink>
 
             <Hyperlink fx:id="settings" text="Settings" graphicTextGap="10" styleClass="nav-link">
                 <graphic>

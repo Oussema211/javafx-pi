@@ -74,7 +74,7 @@ public class MessageReclamationService {
             Map.of("reclamation", reclamationText)
         );
         HttpRequest request = HttpRequest.newBuilder()
-            .uri(new URI("http://localhost:5000/predict"))
+            .uri(new URI("http://192.168.1.193:5000/predict"))
             .header("Content-Type", "application/json")
             .POST(HttpRequest.BodyPublishers.ofString(requestJson))
             .build();
@@ -112,7 +112,7 @@ public class MessageReclamationService {
     }
     public String retrainModel() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
-            .uri(new URI("http://localhost:5000/retrain"))
+            .uri(new URI("http://192.168.1.193:5000/retrain"))
             .POST(HttpRequest.BodyPublishers.noBody())
             .build();
 
@@ -159,7 +159,7 @@ public class MessageReclamationService {
 
         // 4) Call Flask API
         HttpRequest request = HttpRequest.newBuilder()
-            .uri(new URI("http://localhost:5000/add_reclamations"))
+            .uri(new URI("http://192.168.1.193:5000/add_reclamations"))
             .header("Content-Type", "application/json")
             .POST(HttpRequest.BodyPublishers.ofString(requestJson))
             .build();

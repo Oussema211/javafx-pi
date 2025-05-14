@@ -44,7 +44,7 @@ public class TopRatedProductsController implements Initializable {
     private List<Produit> topProducts = new ArrayList<>();
     private int currentPage = 1;
     private static final int PRODUCTS_PER_PAGE = 8;
-    private static final String API_URL = "http://localhost:5000/predict";
+    private static final String API_URL = "https://payments-terms-mechanical-kingdom.trycloudflare.com/predict";
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
     @Override
@@ -55,7 +55,7 @@ public class TopRatedProductsController implements Initializable {
             configureFastBuyButton();
             updatePage();
         } catch (Exception e) {
-            showAlert(Alert.AlertType.ERROR, "Initialization Error", "Failed to load top products: " + e.getMessage());
+            showAlert(Alert.AlertType.ERROR, "Erreur d'initialisation", "Échec du chargement des produits les mieux notés : " + e.getMessage());
         }
     }
 
@@ -70,7 +70,7 @@ public class TopRatedProductsController implements Initializable {
                 FastBuyController fastBuyController = new FastBuyController();
                 fastBuyController.showFastBuyDialog();
             } catch (Exception ex) {
-                showAlert(Alert.AlertType.ERROR, "Fast Buy Error", "Failed to open Fast Buy dialog: " + ex.getMessage());
+                showAlert(Alert.AlertType.ERROR, "Erreur d'achat rapide", "Échec de l'ouverture de la boîte de dialogue d'achat rapide : " + ex.getMessage());
             }
         });
     }
@@ -122,6 +122,7 @@ public class TopRatedProductsController implements Initializable {
         if (allProducts == null) {
             allProducts = new ArrayList<>();
         }
+        System.out.println("getAllProducts: Retrieved " + allProducts.size() + " products");
         allProducts.forEach(product -> product.setCommentaires(
                 CommentaireDAO.getCommentairesByProduit(product)));
 
@@ -145,6 +146,7 @@ public class TopRatedProductsController implements Initializable {
 
         double totalPositiveConfidence = 0.0;
         int positiveCount = 0;
+        boolean apiFailed = false;
 
         for (Commentaire commentaire : commentaires) {
             String review = commentaire.getContenu();
@@ -162,24 +164,42 @@ public class TopRatedProductsController implements Initializable {
                         .build();
 
                 HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-                if (response.statusCode() == 200) {
-                    JSONObject responseJson = new JSONObject(response.body());
-                    String sentiment = responseJson.getString("sentiment");
-                    double confidence = responseJson.getDouble("confidence");
+                System.out.println("API Response for review '" + review + "': " + response.body());
 
-                    if ("Positive".equals(sentiment)) {
+                if (response.statusCode() == 200) {
+                    String responseBody = response.body();
+                    if (!responseBody.trim().startsWith("{")) {
+                        System.err.println("Invalid JSON response for review '" + review + "': Response does not start with '{'. Response: " + responseBody);
+                        apiFailed = true;
+                        continue;
+                    }
+
+                    JSONObject responseJson = new JSONObject(responseBody);
+                    String sentiment = responseJson.optString("sentiment", "Unknown");
+                    double confidence = responseJson.optDouble("confidence", 0.0);
+
+                    if ("Positive".equalsIgnoreCase(sentiment)) {
                         totalPositiveConfidence += confidence;
                         positiveCount++;
                     }
                 } else {
-                    System.err.println("API error for review: " + review + ", Status: " + response.statusCode());
+                    System.err.println("API error for review '" + review + "': Status " + response.statusCode() + ", Response: " + response.body());
+                    apiFailed = true;
                 }
             } catch (Exception e) {
-                System.err.println("Error processing review: " + review + ", Error: " + e.getMessage());
+                System.err.println("Error processing review '" + review + "': " + e.getMessage());
+                apiFailed = true;
             }
         }
 
-        return positiveCount > 0 ? totalPositiveConfidence / commentaires.size() : 0.0;
+        if (apiFailed || positiveCount == 0) {
+            // Fallback to average rating if API fails or no positive sentiments
+            double averageRating = getAverageRating(commentaires);
+            System.out.println("Falling back to average rating for product '" + product.getNom() + "': " + averageRating);
+            return averageRating / 5.0; // Normalize to 0-1 scale
+        }
+
+        return totalPositiveConfidence / commentaires.size();
     }
 
     private VBox createProductCard(Produit product) {
@@ -202,7 +222,7 @@ public class TopRatedProductsController implements Initializable {
         imageView.getStyleClass().add("product-image");
 
         // Name
-        Label nameLabel = new Label(product.getNom() != null ? product.getNom() : "Unknown");
+        Label nameLabel = new Label(product.getNom() != null ? product.getNom() : "Inconnu");
         nameLabel.getStyleClass().add("product-name");
 
         // Rating
@@ -213,21 +233,21 @@ public class TopRatedProductsController implements Initializable {
         priceBox.setAlignment(Pos.CENTER_LEFT);
         Label priceLabel = new Label(String.format("$%.2f", product.getPrixUnitaire()));
         priceLabel.getStyleClass().add("product-price");
-        Label quantityLabel = new Label("Qty: " + product.getQuantite());
+        Label quantityLabel = new Label("Qté : " + product.getQuantite());
         quantityLabel.getStyleClass().add("product-quantity");
         priceBox.getChildren().addAll(priceLabel, quantityLabel);
 
         // Category
-        Label categoryLabel = new Label(product.getCategory() != null ? product.getCategory().getNom() : "None");
+        Label categoryLabel = new Label(product.getCategory() != null ? product.getCategory().getNom() : "Aucune");
         categoryLabel.getStyleClass().add("product-category");
 
         // Positivity Score
         double positivityScore = calculatePositivityScore(product);
-        Label positivityLabel = new Label(String.format("Positivity: %.2f%%", positivityScore * 100));
+        Label positivityLabel = new Label(String.format("Score de positivité : %.2f%%", positivityScore * 100));
         positivityLabel.getStyleClass().add("product-positivity");
 
         // Add to Cart Button
-        Button addToCartButton = new Button("Add to Cart");
+        Button addToCartButton = new Button("Ajouter au panier");
         addToCartButton.getStyleClass().add("add-to-cart-button");
         addToCartButton.setOnAction(e -> {
             CartManager.addProduct(product);
@@ -245,34 +265,27 @@ public class TopRatedProductsController implements Initializable {
         Button favoriteButton = new Button();
         favoriteButton.getStyleClass().add("favorite-button");
 
-        var imageUrl = getClass().getResource("/com/example/frontPages/icons/heart.png");
-        if (imageUrl != null) {
-            ImageView heartIcon = new ImageView(new Image(imageUrl.toExternalForm(), 28, 28, true, true));
-            heartIcon.getStyleClass().add("heart-icon");
-            favoriteButton.setGraphic(heartIcon);
-        } else {
-            System.err.println("Warning: heart.png not found at /com/example/frontPages/icons/heart.png");
-            Label heartLabel = new Label("♥");
-            heartLabel.getStyleClass().add("favorite-fallback");
-            favoriteButton.setGraphic(heartLabel);
-        }
+        // Use Unicode heart symbol as a fallback instead of relying on heart.png
+        Label heartLabel = new Label("♥");
+        heartLabel.getStyleClass().add("favorite-fallback");
+        favoriteButton.setGraphic(heartLabel);
 
         updateFavoriteButtonStyle(favoriteButton, product.isFavoritedByCurrentUser());
 
         favoriteButton.setOnAction(e -> {
             UUID userId = sessionManager.getLoggedInUser() != null ? sessionManager.getLoggedInUser().getId() : null;
             if (userId == null) {
-                showAlert(Alert.AlertType.WARNING, "Login Required", "Please log in to add favorites.");
+                showAlert(Alert.AlertType.WARNING, "Connexion requise", "Veuillez vous connecter pour ajouter des favoris.");
                 return;
             }
             if (product.isFavoritedByCurrentUser()) {
                 FavoriteDAO.removeFavorite(userId, product.getId());
                 updateFavoriteButtonStyle(favoriteButton, false);
-                showAlert(Alert.AlertType.INFORMATION, "Favorite Removed", product.getNom() + " removed from favorites.");
+                showAlert(Alert.AlertType.INFORMATION, "Favori supprimé", product.getNom() + " a été supprimé des favoris.");
             } else {
                 FavoriteDAO.addFavorite(userId, product.getId());
                 updateFavoriteButtonStyle(favoriteButton, true);
-                showAlert(Alert.AlertType.INFORMATION, "Favorite Added", product.getNom() + " added to favorites.");
+                showAlert(Alert.AlertType.INFORMATION, "Favori ajouté", product.getNom() + " a été ajouté aux favoris.");
             }
         });
 
@@ -299,15 +312,15 @@ public class TopRatedProductsController implements Initializable {
             try {
                 image = new Image(imageUrl, width, height, true, true, true);
                 if (image.isError()) {
-                    System.err.println("Error loading product image from URL: " + imageUrl);
+                    System.err.println("Erreur lors du chargement de l'image du produit depuis l'URL : " + imageUrl);
                     image = null;
                 }
             } catch (Exception e) {
-                System.err.println("Failed to load product image from URL " + imageUrl + ": " + e.getMessage());
+                System.err.println("Échec du chargement de l'image du produit depuis l'URL " + imageUrl + " : " + e.getMessage());
                 image = null;
             }
         } else {
-            System.err.println("Product image URL is null or empty for product: " + product.getNom());
+            System.err.println("L'URL de l'image du produit est nulle ou vide pour le produit : " + product.getNom());
         }
 
         // Fallback to default image if the product image fails to load
@@ -316,7 +329,7 @@ public class TopRatedProductsController implements Initializable {
             if (defaultStream != null) {
                 image = new Image(defaultStream, width, height, true, true);
             } else {
-                System.err.println("Warning: default.png not found at /images/default.png");
+                System.err.println("Avertissement : default.png non trouvé à /images/default.png");
                 image = null; // No fallback image available
             }
         }
@@ -333,7 +346,7 @@ public class TopRatedProductsController implements Initializable {
         dialog.getDialogPane().getStyleClass().add("product-dialog");
         dialog.getDialogPane().setPrefSize(800, 600);
 
-        ButtonType submitButtonType = new ButtonType("Submit", ButtonBar.ButtonData.OK_DONE);
+        ButtonType submitButtonType = new ButtonType("Soumettre", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(submitButtonType, ButtonType.CANCEL);
         dialog.getDialogPane().getStylesheets().add(getClass().getResource("/com/example/frontPages/pages/products.css").toExternalForm());
 
@@ -361,20 +374,20 @@ public class TopRatedProductsController implements Initializable {
         HBox ratingBox = createStarRating(getAverageRating(product.getCommentaires()));
         Label priceLabel = new Label(String.format("$%.2f", product.getPrixUnitaire()));
         priceLabel.getStyleClass().add("dialog-price");
-        Label quantityLabel = new Label("Stock: " + product.getQuantite());
+        Label quantityLabel = new Label("Stock : " + product.getQuantite());
         quantityLabel.getStyleClass().add("dialog-quantity");
-        Label categoryLabel = new Label("Category: " + (product.getCategory() != null ? product.getCategory().getNom() : "None"));
+        Label categoryLabel = new Label("Catégorie : " + (product.getCategory() != null ? product.getCategory().getNom() : "Aucune"));
         categoryLabel.getStyleClass().add("dialog-category");
-        Label positivityLabel = new Label(String.format("Positivity Score: %.2f%%", calculatePositivityScore(product) * 100));
+        Label positivityLabel = new Label(String.format("Score de positivité : %.2f%%", calculatePositivityScore(product) * 100));
         positivityLabel.getStyleClass().add("dialog-positivity");
 
         HBox actionBox = new HBox(8);
         Spinner<Integer> qtySpinner = new Spinner<>(1, Math.max(1, product.getQuantite()), 1);
         qtySpinner.setPrefWidth(100);
         qtySpinner.getStyleClass().add("qty-spinner");
-        actionBox.getChildren().addAll(new Label("Qty:"), qtySpinner);
+        actionBox.getChildren().addAll(new Label("Qté :"), qtySpinner);
 
-        Button addToCartButton = new Button("Add to Cart");
+        Button addToCartButton = new Button("Ajouter au panier");
         addToCartButton.getStyleClass().add("add-to-cart-button");
         addToCartButton.setOnAction(e -> {
             CartManager.addProduct(product);
@@ -390,7 +403,7 @@ public class TopRatedProductsController implements Initializable {
         rightBox.setAlignment(Pos.TOP_LEFT);
 
         // Description
-        Text descriptionText = new Text(product.getDescription() != null ? product.getDescription() : "No description available.");
+        Text descriptionText = new Text(product.getDescription() != null ? product.getDescription() : "Aucune description disponible.");
         descriptionText.getStyleClass().add("dialog-description");
         descriptionText.setWrappingWidth(400);
 
@@ -410,14 +423,14 @@ public class TopRatedProductsController implements Initializable {
         // Add Review
         VBox addReviewBox = new VBox(8);
         addReviewBox.getStyleClass().add("add-review-box");
-        Label addReviewLabel = new Label("Add Review");
+        Label addReviewLabel = new Label("Ajouter un avis");
         addReviewLabel.getStyleClass().add("add-review-label");
         ComboBox<Integer> ratingCombo = new ComboBox<>();
         ratingCombo.getItems().addAll(1, 2, 3, 4, 5);
-        ratingCombo.setPromptText("Rating");
+        ratingCombo.setPromptText("Note");
         ratingCombo.getStyleClass().add("rating-combo");
         TextArea commentTextArea = new TextArea();
-        commentTextArea.setPromptText("Your review...");
+        commentTextArea.setPromptText("Votre avis...");
         commentTextArea.setPrefRowCount(3);
         commentTextArea.setPrefHeight(80);
         commentTextArea.getStyleClass().add("input-textarea");
@@ -448,7 +461,7 @@ public class TopRatedProductsController implements Initializable {
                     reviewsBox.getChildren().clear();
                     populateComments(reviewsBox, product.getCommentaires());
                 } catch (Exception e) {
-                    showAlert(Alert.AlertType.ERROR, "Comment Error", "Failed to save comment: " + e.getMessage());
+                    showAlert(Alert.AlertType.ERROR, "Erreur de commentaire", "Échec de l'enregistrement du commentaire : " + e.getMessage());
                 }
             }
         });
@@ -457,14 +470,14 @@ public class TopRatedProductsController implements Initializable {
     private void populateComments(VBox reviewsBox, List<Commentaire> commentaires) {
         reviewsBox.getChildren().clear();
         if (commentaires.isEmpty()) {
-            reviewsBox.getChildren().add(new Label("No reviews yet."));
+            reviewsBox.getChildren().add(new Label("Aucun avis pour le moment."));
             return;
         }
 
         for (Commentaire c : commentaires) {
             VBox commentBox = new VBox(5);
             commentBox.getStyleClass().add("comment-box");
-            Label authorLabel = new Label(c.getAuteur() != null ? c.getAuteur() : "Anonymous");
+            Label authorLabel = new Label(c.getAuteur() != null ? c.getAuteur() : "Anonyme");
             authorLabel.getStyleClass().add("comment-author");
             HBox stars = createStarRating(c.getNote() != null ? c.getNote() : 0);
             Text contentText = new Text(truncateText(c.getContenu() != null ? c.getContenu() : "", 100));

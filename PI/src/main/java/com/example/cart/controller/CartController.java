@@ -127,10 +127,10 @@ public class CartController {
         fadeBtn2.setToValue(1);
         fadeBtn2.play();
 
-        // 🔥 Pour le bouton payer avec carte virtuelle
+
         payerAvecCarteVirtuelleButton.setDisable(!CarteVirtuelleManager.isCarteActive());
 
-        // 🔥 Ajout du contrôle automatique toutes les 2 secondes
+
         javafx.animation.Timeline timeline = new javafx.animation.Timeline(
                 new javafx.animation.KeyFrame(
                         javafx.util.Duration.seconds(2),
@@ -212,7 +212,7 @@ public class CartController {
                 CartManager.addProduct(p);
                 cartTable.refresh();
                 updateTotal();
-                loadRecommendations(); // mise à jour après ajout
+                loadRecommendations();
             });
 
             recoBox.getChildren().add(card);
@@ -300,12 +300,11 @@ public class CartController {
                     showAlert(Alert.AlertType.WARNING, "Panier Vide", "Ajoutez des produits avant de payer.");
                     return;
                 }
-
                 double totalAmount = CartManager.getCartItems().stream()
                         .mapToDouble(item -> item.getProduit().getPrixUnitaire() * item.getQuantite())
                         .sum();
 
-// 🔥 Correction : arrondir au centime
+
                 totalAmount = Math.round(totalAmount * 100.0) / 100.0;
 
 

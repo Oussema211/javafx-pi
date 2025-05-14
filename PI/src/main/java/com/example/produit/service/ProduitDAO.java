@@ -6,6 +6,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import com.example.produit.model.Categorie;
+import java.sql.Date;
+import java.time.LocalDate;
+import java.util.*;
 
 public class ProduitDAO {
     private static final String URL = "jdbc:mysql://localhost:3306/pidevv";
@@ -58,6 +62,7 @@ public class ProduitDAO {
         }
         return products;
     }
+    
 
     public static Produit getProduitById(String id) {
         String query = "SELECT id, nom, description, prix_unitaire, quantite, " +
@@ -178,5 +183,62 @@ public class ProduitDAO {
             e.printStackTrace();
             throw new RuntimeException("Failed to delete products: " + e.getMessage());
         }
+    }
+    public static Produit getProductById(UUID productId) throws SQLException {
+        String query = "SELECT p.id, p.nom, p.date_creation, c.id AS category_id, c.nom AS category_nom " +
+                "FROM produits p LEFT JOIN categories c ON p.category_id = c.id " +
+                "WHERE p.id = ?";
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, productId.toString());
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Produit produit = new Produit();
+                    produit.setId(UUID.fromString(rs.getString("id")));
+                    produit.setNom(rs.getString("nom"));
+                    produit.setDateCreation(rs.getTimestamp("date_creation").toLocalDateTime());
+
+
+                    String categoryId = rs.getString("category_id");
+                    if (categoryId != null) {
+                        Categorie categorie = new Categorie();
+                        categorie.setId(UUID.fromString(categoryId));
+                        categorie.setNom(rs.getString("category_nom"));
+                        produit.setCategory(categorie);
+                    }
+                    return produit;
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("SQL Error in updateProduct: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to update product: " + e.getMessage());
+        }
+
+        return null;
+    }
+    public static Map<Date, Integer> getNewProductsOverTime(LocalDate startDate, LocalDate endDate, String category) {
+        Map<Date, Integer> productData = new LinkedHashMap<>();
+        String query = "SELECT DATE(p.date_creation) as day, COUNT(*) as count " +
+                "FROM produit p " +
+                "LEFT JOIN categorie c ON p.categorie_id = c.id " +
+                "WHERE p.date_creation >= ? AND p.date_creation <= ? " +
+                (category.equals("Toutes") ? "" : "AND c.nom = ?") +
+                " GROUP BY DATE(p.date_creation) ORDER BY day";
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setDate(1, Date.valueOf(startDate));
+            ps.setDate(2, Date.valueOf(endDate));
+            if (!category.equals("Toutes")) {
+                ps.setString(3, category);
+            }
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                productData.put(rs.getDate("day"), rs.getInt("count"));
+            }
+        } catch (SQLException e) {
+            System.err.println("SQL Error in getNewProductsOverTime: " + e.getMessage());
+        }
+        return productData;
     }
 }

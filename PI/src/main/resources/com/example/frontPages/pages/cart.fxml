@@ -6,18 +6,19 @@
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.example.cart.controller.CartController"
       spacing="25" alignment="TOP_CENTER"
-      style="-fx-background-color: linear-gradient(to right,#6a11cb,#2575fc); -fx-padding:40;"
+      style="-fx-background-color: linear-gradient(to right,#e8f5e9,#c8e6c9); -fx-padding:40;"
       stylesheets="@cart.css">
 
-    <!-- 🔥 Titre -->
+    <!-- 🌿 Titre -->
     <Label text="🛒 Mon Panier"
-           style="-fx-font-size:36;-fx-text-fill:white;-fx-font-weight:bold;"/>
+           style="-fx-font-size:36; -fx-text-fill:#2e7d32; -fx-font-weight:bold;"/>
 
-    <!-- 💎 Tableau -->
+    <!-- 🧺 Tableau des produits -->
     <TableView fx:id="cartTable"
                prefWidth="900" prefHeight="260" maxHeight="260"
                VBox.vgrow="NEVER"
-               style="-fx-background-radius:10;-fx-background-color:white;-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.1),12,0.5,0,0);">
+               style="-fx-background-radius:10; -fx-background-color:white;
+                      -fx-effect:dropshadow(gaussian, rgba(0,0,0,0.08), 10, 0.3, 0, 2);">
         <columns>
             <TableColumn fx:id="colImage"   text="Image"       prefWidth="150"/>
             <TableColumn fx:id="colProduit" text="Produit"     prefWidth="250"/>
@@ -27,16 +28,16 @@
         </columns>
     </TableView>
 
-    <!-- 🧾 Total -->
+    <!-- 💵 Total -->
     <Label fx:id="totalLabel"
            text="Total : 0,00 DT"
-           style="-fx-font-size:20;-fx-text-fill:white;-fx-font-weight:bold;"/>
+           style="-fx-font-size:20; -fx-text-fill:#2e7d32; -fx-font-weight:bold;"/>
 
-    <!-- 💡 Recommandations -->
+    <!-- 🌾 Recommandations produits -->
     <VBox spacing="8" alignment="TOP_LEFT" prefWidth="900" VBox.vgrow="ALWAYS">
 
         <Label text="🔎 Vous pourriez aimer"
-               style="-fx-font-size:22;-fx-text-fill:white;-fx-font-weight:bold;"/>
+               style="-fx-font-size:22; -fx-text-fill:#33691e; -fx-font-weight:bold;"/>
 
         <ScrollPane fitToWidth="true" prefHeight="220"
                     hbarPolicy="ALWAYS" vbarPolicy="NEVER"
@@ -46,18 +47,27 @@
         </ScrollPane>
     </VBox>
 
-    <!-- 🎯 Boutons -->
+    <!-- ✅ Boutons d'action -->
     <HBox spacing="20" alignment="CENTER">
-        <Button text="🗑 Vider Panier"              onAction="#handleClearCart"
-                style="-fx-background-color:#f44336;-fx-text-fill:white;-fx-font-weight:bold;-fx-background-radius:10;"/>
+        <Button text="🗑 Vider Panier" onAction="#handleClearCart"
+                style="-fx-background-color:#e53935; -fx-text-fill:white;
+                       -fx-font-weight:bold; -fx-background-radius:10;"/>
+
         <Button fx:id="checkoutButton" text="💳 Payer avec Carte Bancaire" onAction="#handleCheckout"
-                style="-fx-background-color:#4CAF50;-fx-text-fill:white;-fx-font-weight:bold;-fx-background-radius:10;"/>
-        <Button fx:id="orderHistoryButton" text="🧾 Voir Mes Commandes"    onAction="#handleOrderHistory"
-                style="-fx-background-color:#03A9F4;-fx-text-fill:white;-fx-font-weight:bold;-fx-background-radius:10;"/>
+                style="-fx-background-color:#43a047; -fx-text-fill:white;
+                       -fx-font-weight:bold; -fx-background-radius:10;"/>
+
+        <Button fx:id="orderHistoryButton" text="🧾 Voir Mes Commandes" onAction="#handleOrderHistory"
+                style="-fx-background-color:#66bb6a; -fx-text-fill:white;
+                       -fx-font-weight:bold; -fx-background-radius:10;"/>
+
         <Button fx:id="carteVirtuelleButton" text="💳 Ma Carte Bancaire Virtuelle" onAction="#handleCarteVirtuelle"
-                style="-fx-background-color:#673ab7;-fx-text-fill:white;-fx-font-weight:bold;-fx-background-radius:10;"/>
+                style="-fx-background-color:#8bc34a; -fx-text-fill:white;
+                       -fx-font-weight:bold; -fx-background-radius:10;"/>
+
         <Button fx:id="payerAvecCarteVirtuelleButton" text="💳 Payer avec Carte Virtuelle" onAction="#handlePayerAvecCarteVirtuelle"
-                style="-fx-background-color:#9C27B0;-fx-text-fill:white;-fx-font-weight:bold;-fx-background-radius:10;"/>
+                style="-fx-background-color:#689f38; -fx-text-fill:white;
+                       -fx-font-weight:bold; -fx-background-radius:10;"/>
     </HBox>
 
 </VBox>
