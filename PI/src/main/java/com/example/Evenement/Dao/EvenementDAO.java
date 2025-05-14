@@ -21,20 +21,18 @@ public class EvenementDAO {
 
     private void createTablesIfNotExist() {
         try (Statement stmt = connection.createStatement()) {
-            // Create evenement table
             String createEventTable = "CREATE TABLE IF NOT EXISTS evenement (" +
                     "id INT PRIMARY KEY AUTO_INCREMENT, " +
                     "titre VARCHAR(255) NOT NULL, " +
                     "description LONGTEXT NOT NULL, " +
-                    "type VARCHAR(20) NOT NULL, " +
-                    "statut VARCHAR(20) NOT NULL, " +
+                    "type VARCHAR(20), " + // Changed to nullable
+                    "statut VARCHAR(20), " + // Changed to nullable
                     "date_debut DATETIME NOT NULL, " +
                     "date_fin DATETIME NOT NULL, " +
                     "photo VARCHAR(255)" +
                     ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
             stmt.execute(createEventTable);
 
-            // Create evenement_region junction table
             String createEventRegionTable = "CREATE TABLE IF NOT EXISTS evenement_region (" +
                     "id INT PRIMARY KEY AUTO_INCREMENT, " +
                     "evenement_id INT NOT NULL, " +
@@ -51,7 +49,6 @@ public class EvenementDAO {
         }
     }
 
-
     public int create(Evenement event) throws SQLException {
         String sql = "INSERT INTO evenement (titre, description, type, statut, date_debut, date_fin, photo) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?)";
@@ -59,14 +56,13 @@ public class EvenementDAO {
         try (PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, event.getTitre());
             stmt.setString(2, event.getDescription());
-            stmt.setString(3, event.getType().name());
-            stmt.setString(4, event.getStatut().name());
+            stmt.setString(3, event.getType() != null ? event.getType().getValue() : null);
+            stmt.setString(4, event.getStatut() != null ? event.getStatut().getValue() : null);
             stmt.setTimestamp(5, Timestamp.valueOf(event.getDateDebut()));
             stmt.setTimestamp(6, Timestamp.valueOf(event.getDateFin()));
             stmt.setString(7, event.getPhotoPath());
 
             int affectedRows = stmt.executeUpdate();
-
             if (affectedRows == 0) {
                 throw new SQLException("La création de l'événement a échoué, aucune ligne affectée.");
             }
@@ -87,7 +83,6 @@ public class EvenementDAO {
         }
 
         String sql = "INSERT INTO evenement_region (evenement_id, region_id) VALUES (?, ?)";
-
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             for (Region region : regions) {
                 stmt.setInt(1, eventId);
@@ -104,7 +99,6 @@ public class EvenementDAO {
 
         try (Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
-
             while (rs.next()) {
                 events.add(mapResultSetToEvenement(rs));
             }
@@ -114,10 +108,8 @@ public class EvenementDAO {
 
     public Evenement getById(int id) throws SQLException {
         String sql = "SELECT * FROM evenement WHERE id = ?";
-
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, id);
-
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     return mapResultSetToEvenement(rs);
@@ -134,8 +126,8 @@ public class EvenementDAO {
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, event.getTitre());
             stmt.setString(2, event.getDescription());
-            stmt.setString(3, event.getType().name());
-            stmt.setString(4, event.getStatut().name());
+            stmt.setString(3, event.getType() != null ? event.getType().getValue() : null);
+            stmt.setString(4, event.getStatut() != null ? event.getStatut().getValue() : null);
             stmt.setTimestamp(5, Timestamp.valueOf(event.getDateDebut()));
             stmt.setTimestamp(6, Timestamp.valueOf(event.getDateFin()));
             stmt.setString(7, event.getPhotoPath());
@@ -151,20 +143,17 @@ public class EvenementDAO {
     }
 
     public void delete(int id) throws SQLException {
-        // Désactiver temporairement les contraintes de clé étrangère
         try (Statement stmt = connection.createStatement()) {
             stmt.execute("SET FOREIGN_KEY_CHECKS=0");
         }
 
         try {
-            // Supprimer d'abord les associations avec les régions
             String deleteRegionsSql = "DELETE FROM evenement_region WHERE evenement_id = ?";
             try (PreparedStatement stmt = connection.prepareStatement(deleteRegionsSql)) {
                 stmt.setInt(1, id);
                 stmt.executeUpdate();
             }
 
-            // Puis supprimer l'événement
             String deleteEventSql = "DELETE FROM evenement WHERE id = ?";
             try (PreparedStatement stmt = connection.prepareStatement(deleteEventSql)) {
                 stmt.setInt(1, id);
@@ -174,7 +163,6 @@ public class EvenementDAO {
                 }
             }
         } finally {
-            // Réactiver les contraintes de clé étrangère
             try (Statement stmt = connection.createStatement()) {
                 stmt.execute("SET FOREIGN_KEY_CHECKS=1");
             }
@@ -189,7 +177,6 @@ public class EvenementDAO {
 
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, eventId);
-
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     Region region = new Region();
@@ -209,27 +196,22 @@ public class EvenementDAO {
         event.setId(rs.getInt("id"));
         event.setTitre(rs.getString("titre"));
         event.setDescription(rs.getString("description"));
-        event.setType(TypeEvenement.valueOf(rs.getString("type")));
-        event.setStatut(StatutEvenement.valueOf(rs.getString("statut")));
-        event.setDateDebut(rs.getTimestamp("date_debut").toLocalDateTime());
-        event.setDateFin(rs.getTimestamp("date_fin").toLocalDateTime());
+        event.setType(TypeEvenement.fromValue(rs.getString("type")));
+        event.setStatut(StatutEvenement.fromValue(rs.getString("statut")));
+        event.setDateDebut(rs.getTimestamp("date_debut") != null ? rs.getTimestamp("date_debut").toLocalDateTime() : null);
+        event.setDateFin(rs.getTimestamp("date_fin") != null ? rs.getTimestamp("date_fin").toLocalDateTime() : null);
         event.setPhotoPath(rs.getString("photo"));
-
-        // Charger les régions associées
         event.getRegions().addAll(getRegionsForEvent(event.getId()));
-
         return event;
     }
 
     private void updateEventRegions(Evenement event) throws SQLException {
-        // Supprimer les anciennes associations
         String deleteSql = "DELETE FROM evenement_region WHERE evenement_id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(deleteSql)) {
             stmt.setInt(1, event.getId());
             stmt.executeUpdate();
         }
 
-        // Ajouter les nouvelles associations si elles existent
         if (event.getRegions() != null && !event.getRegions().isEmpty()) {
             linkRegionsToEvent(event.getId(), event.getRegions());
         }
@@ -262,5 +244,3 @@ public class EvenementDAO {
         return false;
     }
 }
-
-
