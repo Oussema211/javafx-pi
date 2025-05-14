@@ -1,30 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.control.cell.PropertyValueFactory?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
 
+<?import javafx.scene.control.cell.PropertyValueFactory?>
 <VBox spacing="10" styleClass="main-vbox" stylesheets="@../css/produits.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.produit.controller.CategorieController">
-
     <HBox spacing="10" styleClass="title-box">
         <Label styleClass="title-label" text="Categories" />
-        <Label styleClass="subtitle-label" text="Add, view and edit your categories all in one place. Need help?" />
+        <Label styleClass="subtitle-label" text="Add, view and edit your categories all in one place." />
         <Region HBox.hgrow="ALWAYS" />
-        <Button styleClass="secondary-button" text="IMPORT" />
+        <Button fx:id="deleteSelectedButton" onAction="#handleBulkDelete" styleClass="secondary-button" text="DELETE SELECTED" />
         <Button fx:id="addCategoryButton" onAction="#handleAddCategory" styleClass="primary-button" text="ADD CATEGORY" />
+    </HBox>
+
+    <HBox spacing="10" styleClass="filter-box">
+        <TextField fx:id="searchField" promptText="Search categories..." styleClass="search-field" HBox.hgrow="ALWAYS" />
+        <ComboBox fx:id="parentFilterComboBox" styleClass="filter-combo" />
     </HBox>
 
     <HBox styleClass="results-header">
         <Label fx:id="resultsCountLabel" styleClass="results-count" text="SHOWING 0 CATEGORIES" />
-        <Label styleClass="time-filter" text="1H" />
-        <Button styleClass="export-button" text="EXPORT LIST" />
+        <Region HBox.hgrow="ALWAYS" />
     </HBox>
 
     <TableView fx:id="categoryTableView" styleClass="category-table-view" VBox.vgrow="ALWAYS">
@@ -34,14 +37,10 @@
                     <PropertyValueFactory property="nom" />
                 </cellValueFactory>
             </TableColumn>
-            <TableColumn fx:id="descriptionColumn" text="Description">
+            <TableColumn fx:id="parentColumn" text="Parent Category" />
+            <TableColumn fx:id="imagePreviewColumn" text="Image Preview">
                 <cellValueFactory>
-                    <PropertyValueFactory property="description" />
-                </cellValueFactory>
-            </TableColumn>
-            <TableColumn fx:id="dateCreationColumn" text="Date Created">
-                <cellValueFactory>
-                    <PropertyValueFactory property="dateCreation" />
+                    <PropertyValueFactory property="imgUrl" />
                 </cellValueFactory>
             </TableColumn>
             <TableColumn fx:id="actionsColumn" text="Actions" />

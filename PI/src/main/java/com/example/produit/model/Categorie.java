@@ -1,63 +1,44 @@
 package com.example.produit.model;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 
 public class Categorie {
-    private UUID id;
-    private String nom;
-    private String description;
-    private LocalDateTime dateCreation;
+    private final ObjectProperty<Integer> id = new SimpleObjectProperty<>();
+    private final StringProperty nom = new SimpleStringProperty();
+    private final StringProperty imgUrl = new SimpleStringProperty();
+    private final ObjectProperty<Categorie> parent = new SimpleObjectProperty<>();
 
     public Categorie() {
     }
 
-    public Categorie(UUID id, String nom, String description, LocalDateTime dateCreation) {
-        this.id = id;
-        this.nom = nom;
-        this.description = description;
-        this.dateCreation = dateCreation;
+    public Categorie(Integer id, String nom, String imgUrl, Categorie parent) {
+        setId(id);
+        setNom(nom);
+        setImgUrl(imgUrl);
+        setParent(parent);
     }
 
-    public UUID getId() {
-        return id;
-    }
+    public Integer getId() { return id.get(); }
+    public void setId(Integer id) { this.id.set(id); }
+    public ObjectProperty<Integer> idProperty() { return id; }
 
-    public void setId(UUID id) {
-        this.id = id;
-    }
+    public String getNom() { return nom.get(); }
+    public void setNom(String nom) { this.nom.set(nom); }
+    public StringProperty nomProperty() { return nom; }
 
-    public String getNom() {
-        return nom;
-    }
+    public String getImgUrl() { return imgUrl.get(); }
+    public void setImgUrl(String imgUrl) { this.imgUrl.set(imgUrl); }
+    public StringProperty imgUrlProperty() { return imgUrl; }
 
-    public void setNom(String nom) {
-        this.nom = nom;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public LocalDateTime getDateCreation() {
-        return dateCreation;
-    }
-
-    public void setDateCreation(LocalDateTime dateCreation) {
-        this.dateCreation = dateCreation;
-    }
+    public Categorie getParent() { return parent.get(); }
+    public void setParent(Categorie parent) { this.parent.set(parent); }
+    public ObjectProperty<Categorie> parentProperty() { return parent; }
 
     @Override
     public String toString() {
-        return "Categorie{" +
-                "id=" + id +
-                ", nom='" + nom + '\'' +
-                ", description='" + description + '\'' +
-                ", dateCreation=" + dateCreation +
-                '}';
+        return getNom();
     }
 }

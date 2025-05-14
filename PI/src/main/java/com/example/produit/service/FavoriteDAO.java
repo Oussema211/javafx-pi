@@ -1,18 +1,12 @@
 package com.example.produit.service;
 
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 public class FavoriteDAO {
-    private static final String URL = "jdbc:mysql://localhost:3306/pidevv";
+    private static final String URL = "jdbc:mysql://localhost:3306/PIDES";
     private static final String USER = "root";
     private static final String PASSWORD = "";
     private static boolean tableChecked = false; // Flag to avoid repeated checks
