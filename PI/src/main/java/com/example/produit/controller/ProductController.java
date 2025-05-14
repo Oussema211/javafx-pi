@@ -16,12 +16,15 @@ import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
-import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
+import javafx.scene.chart.CategoryAxis;
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -29,32 +32,31 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.mime.MultipartEntityBuilder;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.json.JSONException;
+
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.sql.Date;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import com.example.auth.service.AuthService;
 
 public class ProductController {
 
@@ -82,18 +84,18 @@ public class ProductController {
     @FXML private Button researchButton;
     @FXML private Button deleteSelectedButton;
     @FXML private Button exportSelectedButton;
+    @FXML private Button showChartButton;
     @FXML private Label resultsCountLabel;
 
     private final SessionManager sessionManager = SessionManager.getInstance();
     private ObservableList<Produit> productList = FXCollections.observableArrayList();
     private ObservableList<Categorie> categoryList = FXCollections.observableArrayList();
     private FilteredList<Produit> filteredList;
-    private static final String GROQ_API_KEY = "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";
-    private static final String GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-    private static final String FLUX_API_URL = "https://queue.fal.run/fal-ai/flux-pro/v1.1-ultra";
-    private static final String FLUX_AUTHORIZATION_KEY = "Key 3939b927-68c8-4ade-8095-d70b7c000476:db8c23f6d7f3d18803a231eddb8a6a8c";
     private final HttpClient client = HttpClient.newHttpClient();
-    private static final String IMAGE_DIR = "images/";
+    private static final String IMAGE_DIR = "Uploads/images/";
+    private static final String GROK_API_URL = "https://api.x.ai/v1/grok";
+    private static final String GROK_API_KEY = "your_grok_api_key_here";
+    private final AuthService authService = new AuthService();
 
     @FXML
     public void initialize() {
@@ -101,17 +103,17 @@ public class ProductController {
             createImagesDirectory();
             productTableView.setEditable(true);
             configureTableColumns();
-            initializeComboBoxes();
             loadInitialData();
+            initializeComboBoxes();
             setupContextMenu();
             setupActionsColumn();
             setupResultsCountListener();
             setupSearchListeners();
             setupInputValidation();
             setupSelectionListener();
+            setupChartButton();
         } catch (Exception e) {
-            System.err.println("Error in initialize: " + e.getMessage());
-            e.printStackTrace();
+            showError("Initialization Error", "Initialization failed: " + e.getMessage());
         }
     }
 
@@ -140,21 +142,19 @@ public class ProductController {
 
         imagePreviewColumn.setCellFactory(param -> new TableCell<>() {
             private final ImageView imageView = new ImageView();
-
             {
                 imageView.setFitWidth(40);
                 imageView.setFitHeight(40);
                 imageView.setPreserveRatio(true);
             }
-
             @Override
-            protected void updateItem(String imageUrl, boolean empty) {
-                super.updateItem(imageUrl, empty);
-                if (empty || imageUrl == null || imageUrl.isEmpty()) {
+            protected void updateItem(String imageName, boolean empty) {
+                super.updateItem(imageName, empty);
+                if (empty || imageName == null || imageName.isEmpty()) {
                     setGraphic(null);
                 } else {
                     try {
-                        Image image = new Image(imageUrl);
+                        Image image = new Image("file:" + imageName);
                         imageView.setImage(image);
                         setGraphic(imageView);
                     } catch (Exception ex) {
@@ -169,7 +169,10 @@ public class ProductController {
 
     private void initializeComboBoxes() {
         ObservableList<String> categoryNames = FXCollections.observableArrayList("All");
-        categoryNames.addAll(categoryList.stream().map(Categorie::getNom).toList());
+        categoryNames.addAll(categoryList.stream()
+                .filter(c -> c.getNom() != null)
+                .map(c -> c.getNom() + (c.getParent() != null ? " (Parent: " + c.getParent().getNom() + ")" : ""))
+                .collect(Collectors.toList()));
         categoryComboBox.setItems(categoryNames);
         categoryComboBox.getSelectionModel().selectFirst();
 
@@ -178,12 +181,15 @@ public class ProductController {
     }
 
     private void loadInitialData() {
-        categoryList.addAll(CategorieDAO.getAllCategories());
-        initializeComboBoxes();
-        productList.addAll(ProduitDAO.getAllProducts());
-        filteredList = new FilteredList<>(productList, p -> true);
-        productTableView.setItems(filteredList);
-        updateResultsCount();
+        try {
+            categoryList.addAll(CategorieDAO.getAllCategories());
+            productList.addAll(ProduitDAO.getAllProducts());
+            filteredList = new FilteredList<>(productList, p -> true);
+            productTableView.setItems(filteredList);
+            updateResultsCount();
+        } catch (Exception e) {
+            showError("Data Loading Error", "Error loading data: " + e.getMessage());
+        }
     }
 
     private void setupSearchListeners() {
@@ -301,6 +307,68 @@ public class ProductController {
         exportSelectedButton.setDisable(!hasSelection);
     }
 
+    private void setupChartButton() {
+        if (showChartButton != null) {
+            showChartButton.setOnAction(e -> showNewProductsChart());
+        }
+    }
+
+    @FXML
+    private void showNewProductsChart() {
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("New Products Over Time");
+        DialogPane dialogPane = dialog.getDialogPane();
+        dialogPane.getStylesheets().add(getClass().getResource("/com/example/css/produitdialog.css").toExternalForm());
+
+        DatePicker startDatePicker = new DatePicker(LocalDate.now().minusMonths(1));
+        DatePicker endDatePicker = new DatePicker(LocalDate.now());
+        ComboBox<String> categoryCombo = new ComboBox<>();
+        categoryCombo.getItems().add("Toutes");
+        categoryCombo.getItems().addAll(categoryList.stream()
+                .filter(c -> c.getNom() != null)
+                .map(Categorie::getNom)
+                .collect(Collectors.toList()));
+        categoryCombo.getSelectionModel().selectFirst();
+        Button generateButton = new Button("Generate Chart");
+        LineChart<String, Number> lineChart = new LineChart<>(new CategoryAxis(), new NumberAxis());
+        lineChart.setTitle("New Products Over Time");
+        lineChart.setPrefSize(600, 400);
+
+        generateButton.setOnAction(e -> {
+            LocalDate startDate = startDatePicker.getValue();
+            LocalDate endDate = endDatePicker.getValue();
+            String category = categoryCombo.getValue();
+            if (startDate == null || endDate == null || startDate.isAfter(endDate)) {
+                showError("Invalid Date Range", "Please select a valid date range (start date must be before end date).");
+                return;
+            }
+            try {
+                Map<Date, Integer> data = ProduitDAO.getNewProductsOverTime(startDate, endDate, category);
+                XYChart.Series<String, Number> series = new XYChart.Series<>();
+                series.setName("New Products");
+                data.forEach((date, count) -> {
+                    String dateStr = date.toString();
+                    series.getData().add(new XYChart.Data<>(dateStr, count));
+                });
+                lineChart.getData().clear();
+                lineChart.getData().add(series);
+            } catch (Exception ex) {
+                showError("Chart Error", "Failed to generate chart: " + ex.getMessage());
+            }
+        });
+
+        VBox vbox = new VBox(10,
+                new HBox(10, new Label("Start Date:"), startDatePicker),
+                new HBox(10, new Label("End Date:"), endDatePicker),
+                new HBox(10, new Label("Category:"), categoryCombo),
+                generateButton,
+                lineChart
+        );
+        dialogPane.setContent(vbox);
+        dialogPane.getButtonTypes().add(ButtonType.CLOSE);
+        dialog.showAndWait();
+    }
+
     @FXML
     private void handleResearch() {
         filteredList.setPredicate(product -> {
@@ -312,7 +380,8 @@ public class ProductController {
             }
             String category = categoryComboBox.getValue();
             if (category != null && !category.equals("All")) {
-                match &= product.getCategory() != null && product.getCategory().getNom().equals(category);
+                String categoryName = category.contains(" (Parent:") ? category.substring(0, category.indexOf(" (Parent:")) : category;
+                match &= product.getCategory() != null && product.getCategory().getNom().equals(categoryName);
             }
             try {
                 if (!minPriceField.getText().isEmpty()) {
@@ -369,11 +438,15 @@ public class ProductController {
         confirmation.setContentText("Are you sure you want to delete the selected products?");
         Optional<ButtonType> result = confirmation.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            selectedProducts.forEach(product -> {
-                ProduitDAO.deleteProduct(product.getId());
-                productList.remove(product);
-            });
-            handleResearch();
+            List<String> ids = selectedProducts.stream().map(Produit::getId).collect(Collectors.toList());
+            boolean deleted = ProduitDAO.deleteProducts(ids);
+            if (deleted) {
+                productList.removeAll(selectedProducts);
+                handleResearch();
+                showInfo("Success", "Successfully deleted " + selectedProducts.size() + " product(s).");
+            } else {
+                showError("Delete Failed", "Failed to delete selected products. Check logs for details.");
+            }
         }
     }
 
@@ -383,11 +456,7 @@ public class ProductController {
                 .filter(Produit::isSelected)
                 .collect(Collectors.toList());
         if (selectedProducts.isEmpty()) {
-            Alert alert = new Alert(Alert.AlertType.WARNING);
-            alert.setTitle("No Selection");
-            alert.setHeaderText(null);
-            alert.setContentText("Please select at least one product to export.");
-            alert.showAndWait();
+            showWarning("No Selection", "Please select at least one product to export.");
             return;
         }
         FileChooser fileChooser = new FileChooser();
@@ -500,18 +569,9 @@ public class ProductController {
                 }
                 document.add(table);
                 document.close();
-                Alert success = new Alert(Alert.AlertType.INFORMATION);
-                success.setTitle("Export Successful");
-                success.setHeaderText(null);
-                success.setContentText("Selected products exported to " + file.getName());
-                success.showAndWait();
+                showInfo("Export Successful", "Selected products exported to " + file.getName());
             } catch (Exception e) {
-                Alert error = new Alert(Alert.AlertType.ERROR);
-                error.setTitle("Export Failed");
-                error.setHeaderText(null);
-                error.setContentText("Failed to export products to PDF: " + e.getMessage());
-                error.showAndWait();
-                e.printStackTrace();
+                showError("Export Failed", "Failed to export PDF: " + e.getMessage());
             }
         }
     }
@@ -594,263 +654,85 @@ public class ProductController {
             confirmation.setContentText("Are you sure you want to delete this product?");
             Optional<ButtonType> result = confirmation.showAndWait();
             if (result.isPresent() && result.get() == ButtonType.OK) {
-                ProduitDAO.deleteProduct(product.getId());
-                productList.remove(product);
-                handleResearch();
+                boolean deleted = ProduitDAO.deleteProduct(product.getId());
+                if (deleted) {
+                    productList.remove(product);
+                    handleResearch();
+                    showInfo("Success", "Product deleted successfully.");
+                } else {
+                    showError("Delete Failed", "Failed to delete product. Check logs for details.");
+                }
             }
         }
     }
 
-    private String generateProductDescription(String brand, String category, String name) {
+    private String generateProductDescription(String name, String category) {
         try {
-            String prompt = "Generate an attractive description in English, with a maximum of 200 characters, for an agricultural product named '" + name + "' in the category '" + category + "' intended for a farmers' market.";
+            String prompt = "Generate a concise description (max 200 chars) for an agricultural product named '" + name + "' in category '" + category + "' for a farmers' market.";
             String jsonBody = """
                 {
-                  "messages": [
-                    {
-                      "role": "user",
-                      "content": "%s"
-                    }
-                  ],
-                  "model": "llama3-8b-8192",
-                  "temperature": 1,
-                  "max_tokens": 100
+                  "prompt": "%s",
+                  "max_tokens": 100,
+                  "temperature": 0.7
                 }
                 """.formatted(prompt);
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(GROQ_API_URL))
+                    .uri(URI.create(GROK_API_URL))
                     .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + GROQ_API_KEY)
+                    .header("Authorization", "Bearer " + GROK_API_KEY)
                     .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                     .build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() == 200) {
                 JSONObject jsonResponse = new JSONObject(response.body());
-                String description = jsonResponse.getJSONArray("choices")
-                        .getJSONObject(0)
-                        .getJSONObject("message")
-                        .getString("content");
+                String description = jsonResponse.getString("response");
                 return description.length() > 200 ? description.substring(0, 200) : description;
             } else {
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("API Error");
-                alert.setHeaderText(null);
-                alert.setContentText("Failed to generate description: HTTP " + response.statusCode());
-                alert.showAndWait();
+                showError("API Error", "Failed to generate description: HTTP " + response.statusCode());
             }
         } catch (Exception e) {
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("API Error");
-            alert.setHeaderText(null);
-            alert.setContentText("Failed to generate description: " + e.getMessage());
-            alert.showAndWait();
+            showError("API Error", "Failed to generate description: " + e.getMessage());
         }
         return "";
     }
 
-    private String uploadImageToCloud(File imageFile) throws Exception {
-        String cloudApiUrl = "https://image-uploader-jade.vercel.app/api/server";
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            HttpPost uploadFile = new HttpPost(cloudApiUrl);
-            MultipartEntityBuilder builder = MultipartEntityBuilder.create();
-            builder.addBinaryBody("source", imageFile, org.apache.http.entity.ContentType.create("image/jpeg"), imageFile.getName());
-            uploadFile.setEntity(builder.build());
-            org.apache.http.HttpResponse response = httpClient.execute(uploadFile);
-            int statusCode = response.getStatusLine().getStatusCode();
-            String responseBody = EntityUtils.toString(response.getEntity());
-            if (statusCode == 200) {
-                JSONObject jsonResponse = new JSONObject(responseBody);
-                if (jsonResponse.getBoolean("success")) {
-                    return jsonResponse.getString("image_url");
-                } else {
-                    throw new Exception("Cloud upload failed: " + responseBody);
-                }
-            } else {
-                throw new Exception("Cloud upload failed with status: " + statusCode);
-            }
-        }
-    }
-
-    private void generateProductImage(String productName, TextField imageUrlField, ImageView imagePreview, Label statusLabel) {
-        statusLabel.setText("Generating image...");
-        new Thread(() -> {
-            try {
-                String sanitizedName = productName.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase();
-                String imagePath = IMAGE_DIR + sanitizedName + ".jpg";
-                String requestBody = """
-                    {
-                        "prompt": "%s, simple style",
-                        "image_size": "square",
-                        "num_inference_steps": 10,
-                        "guidance_scale": 3.5,
-                        "num_images": 1,
-                        "output_format": "jpeg",
-                        "safety_tolerance": 2
-                    }
-                    """.formatted(productName);
-                HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(FLUX_API_URL))
-                        .header("Authorization", FLUX_AUTHORIZATION_KEY)
-                        .header("Content-Type", "application/json")
-                        .POST(HttpRequest.BodyPublishers.ofString(requestBody))
-                        .build();
-                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-                if (response.statusCode() != 200) {
-                    updateStatus(statusLabel, "POST Error: " + response.statusCode() + " - " + response.body());
-                    return;
-                }
-                JSONObject jsonResponse;
-                try {
-                    jsonResponse = new JSONObject(response.body());
-                } catch (JSONException e) {
-                    updateStatus(statusLabel, "JSON Parsing Error (Initial Response): " + e.getMessage());
-                    return;
-                }
-                if (jsonResponse.has("images")) {
-                    String imageUrl = jsonResponse.getJSONArray("images").getJSONObject(0).getString("url");
-                    downloadAndSaveImage(imageUrl, imagePath, imageUrlField, imagePreview, statusLabel);
-                    return;
-                }
-                String status = jsonResponse.optString("status", "UNKNOWN");
-                String statusUrl = jsonResponse.optString("status_url", "");
-                String responseUrl = jsonResponse.optString("response_url", "");
-                if (statusUrl.isEmpty() || responseUrl.isEmpty()) {
-                    updateStatus(statusLabel, "Error: Missing status_url or response_url in initial response.");
-                    return;
-                }
-                if (!status.equals("IN_QUEUE") && !status.equals("IN_PROGRESS")) {
-                    updateStatus(statusLabel, "Unexpected status: " + status);
-                    return;
-                }
-                int maxAttempts = 10;
-                int attempt = 0;
-                do {
-                    Thread.sleep(2000);
-                    HttpRequest statusRequest = HttpRequest.newBuilder()
-                            .uri(URI.create(statusUrl))
-                            .header("Authorization", FLUX_AUTHORIZATION_KEY)
-                            .header("Content-Type", "application/json")
-                            .GET()
-                            .build();
-                    HttpResponse<String> statusResponse = client.send(statusRequest, HttpResponse.BodyHandlers.ofString());
-                    JSONObject statusJson;
-                    try {
-                        statusJson = new JSONObject(statusResponse.body());
-                    } catch (JSONException e) {
-                        updateStatus(statusLabel, "JSON Parsing Error (Status Response): " + e.getMessage());
-                        return;
-                    }
-                    status = statusJson.optString("status", "UNKNOWN");
-                    updateStatus(statusLabel, "Status Check [" + attempt + "]: " + status);
-                    attempt++;
-                } while ((status.equals("IN_QUEUE") || status.equals("IN_PROGRESS")) && attempt < maxAttempts);
-                if (!status.equals("COMPLETED")) {
-                    updateStatus(statusLabel, "Task failed or timed out. Status: " + status);
-                    return;
-                }
-                HttpRequest resultRequest = HttpRequest.newBuilder()
-                        .uri(URI.create(responseUrl))
-                        .header("Authorization", FLUX_AUTHORIZATION_KEY)
-                        .header("Content-Type", "application/json")
-                        .GET()
-                        .build();
-                HttpResponse<String> resultResponse = client.send(resultRequest, HttpResponse.BodyHandlers.ofString());
-                if (resultResponse.statusCode() != 200) {
-                    updateStatus(statusLabel, "GET Result Error: " + resultResponse.statusCode() + " - " + resultResponse.body());
-                    return;
-                }
-                JSONObject resultJson;
-                try {
-                    resultJson = new JSONObject(resultResponse.body());
-                } catch (JSONException e) {
-                    updateStatus(statusLabel, "JSON Parsing Error (Result Response): " + e.getMessage());
-                    return;
-                }
-                if (!resultJson.has("images")) {
-                    updateStatus(statusLabel, "Error: No images in final result.");
-                    return;
-                }
-                String imageUrl = resultJson.getJSONArray("images").getJSONObject(0).getString("url");
-                downloadAndSaveImage(imageUrl, imagePath, imageUrlField, imagePreview, statusLabel);
-            } catch (Exception ex) {
-                updateStatus(statusLabel, "Exception: " + ex.getMessage());
-                ex.printStackTrace();
-            }
-        }).start();
-    }
-
-    private void downloadAndSaveImage(String imageUrl, String imagePath, TextField imageUrlField, ImageView imagePreview, Label statusLabel) {
+    private String uploadImage(File imageFile) {
         try {
-            HttpRequest imageRequest = HttpRequest.newBuilder()
-                    .uri(URI.create(imageUrl))
-                    .GET()
-                    .build();
-            HttpResponse<InputStream> imageResponse = client.send(imageRequest, HttpResponse.BodyHandlers.ofInputStream());
-            if (imageResponse.statusCode() != 200) {
-                updateStatus(statusLabel, "Image Download Error: " + imageResponse.statusCode());
-                return;
+            String extension = imageFile.getName().substring(imageFile.getName().lastIndexOf(".") + 1).toLowerCase();
+            if (!List.of("jpg", "jpeg", "png").contains(extension)) {
+                throw new IllegalArgumentException("Invalid image format. Allowed: jpg, jpeg, png.");
             }
-            File tempFile = new File(imagePath);
-            try (FileOutputStream fos = new FileOutputStream(tempFile)) {
-                byte[] buffer = new byte[1024];
-                int bytesRead;
-                InputStream inputStream = imageResponse.body();
-                while ((bytesRead = inputStream.read(buffer)) != -1) {
-                    fos.write(buffer, 0, bytesRead);
-                }
-            }
-            String cloudImageUrl = uploadImageToCloud(tempFile);
-            tempFile.delete();
-            Platform.runLater(() -> {
-                imageUrlField.setText(cloudImageUrl);
-                try {
-                    Image image = new Image(cloudImageUrl);
-                    imagePreview.setImage(image);
-                    updateStatus(statusLabel, "Image generated and uploaded successfully to: " + cloudImageUrl);
-                } catch (Exception e) {
-                    updateStatus(statusLabel, "Error loading image preview: " + e.getMessage());
-                }
-            });
+            String newFilename = UUID.randomUUID().toString() + "." + extension;
+            Path targetPath = Paths.get(IMAGE_DIR, newFilename);
+            Files.copy(imageFile.toPath(), targetPath);
+            return IMAGE_DIR + newFilename;
         } catch (Exception e) {
-            updateStatus(statusLabel, "Error processing image: " + e.getMessage());
+            throw new RuntimeException("Failed to upload image: " + e.getMessage());
         }
-    }
-
-    private void updateStatus(Label statusLabel, String text) {
-        Platform.runLater(() -> statusLabel.setText(text));
     }
 
     private void showProductDialog(Produit product) {
         Dialog<Produit> dialog = new Dialog<>();
         dialog.setTitle(product == null ? "New Product" : "Edit Product");
         DialogPane dialogPane = dialog.getDialogPane();
-        URL cssUrl = getClass().getResource("/com/example/css/produitdialog.css");
-        if (cssUrl != null) {
-            dialogPane.getStylesheets().add(cssUrl.toExternalForm());
-        } else {
-            dialogPane.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-padding: 10;");
-        }
-        dialogPane.getStyleClass().add("dialog-pane");
+        dialogPane.getStylesheets().add(getClass().getResource("/com/example/css/produitdialog.css").toExternalForm());
+
         TextField nameField = new TextField();
         TextArea descriptionField = new TextArea();
         ComboBox<String> categoryCombo = new ComboBox<>(FXCollections.observableArrayList(
-                categoryList.stream().map(Categorie::getNom).toList()
+                categoryList.stream().map(Categorie::getNom).collect(Collectors.toList())
         ));
         TextField priceField = new TextField();
         TextField quantityField = new TextField();
         TextField imageUrlField = new TextField();
         imageUrlField.setEditable(false);
         Button chooseImageButton = new Button("Choose Image");
-        Button generateImageButton = new Button("Generate Image");
         Button generateDescriptionButton = new Button("Generate Description");
-        generateDescriptionButton.getStyleClass().add("secondary-button");
-        generateImageButton.getStyleClass().add("secondary-button");
         ImageView imagePreview = new ImageView();
         imagePreview.setFitWidth(100);
         imagePreview.setFitHeight(100);
         imagePreview.setPreserveRatio(true);
         Label imageStatusLabel = new Label();
-        imageStatusLabel.setStyle("-fx-font-size: 10px;");
         Label nameError = new Label();
         Label descriptionError = new Label();
         Label categoryError = new Label();
@@ -861,6 +743,7 @@ public class ProductController {
         categoryError.setStyle("-fx-text-fill: red; -fx-font-size: 10px;");
         priceError.setStyle("-fx-text-fill: red; -fx-font-size: 10px;");
         quantityError.setStyle("-fx-text-fill: red; -fx-font-size: 10px;");
+
         FileChooser fileChooser = new FileChooser();
         fileChooser.getExtensionFilters().addAll(
                 new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg")
@@ -870,46 +753,31 @@ public class ProductController {
             if (file != null) {
                 try {
                     imageStatusLabel.setText("Uploading image...");
-                    String cloudImageUrl = uploadImageToCloud(file);
-                    imageUrlField.setText(cloudImageUrl);
-                    Image image = new Image(cloudImageUrl);
+                    String imagePath = uploadImage(file);
+                    imageUrlField.setText(imagePath);
+                    Image image = new Image("file:" + imagePath);
                     imagePreview.setImage(image);
                     imageStatusLabel.setText("Image uploaded successfully");
                 } catch (Exception ex) {
                     imageStatusLabel.setText("Failed to upload image: " + ex.getMessage());
-                    Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to upload image: " + ex.getMessage());
-                    alert.showAndWait();
+                    showError("Image Upload Failed", "Failed to upload image: " + ex.getMessage());
                 }
             }
         });
-        generateImageButton.setOnAction(e -> {
-            String productName = nameField.getText().trim();
-            if (productName.isEmpty()) {
-                Alert alert = new Alert(Alert.AlertType.WARNING);
-                alert.setTitle("Input Required");
-                alert.setHeaderText(null);
-                alert.setContentText("Please enter a product name before generating an image.");
-                alert.showAndWait();
-                return;
-            }
-            generateProductImage(productName, imageUrlField, imagePreview, imageStatusLabel);
-        });
+
         generateDescriptionButton.setOnAction(e -> {
             String name = nameField.getText().trim();
             String category = categoryCombo.getValue();
             if (name.isEmpty() || category == null) {
-                Alert alert = new Alert(Alert.AlertType.WARNING);
-                alert.setTitle("Input Required");
-                alert.setHeaderText(null);
-                alert.setContentText("Please enter a product name and select a category.");
-                alert.showAndWait();
+                showWarning("Input Required", "Please enter a product name and select a category.");
                 return;
             }
-            String description = generateProductDescription("", category, name);
+            String description = generateProductDescription(name, category);
             if (!description.isEmpty()) {
                 descriptionField.setText(description);
             }
         });
+
         if (product != null) {
             nameField.setText(product.getNom());
             descriptionField.setText(product.getDescription());
@@ -919,16 +787,18 @@ public class ProductController {
             imageUrlField.setText(product.getImageName() != null ? product.getImageName() : "");
             if (product.getImageName() != null && !product.getImageName().isEmpty()) {
                 try {
-                    Image image = new Image(product.getImageName());
+                    Image image = new Image("file:" + product.getImageName());
                     imagePreview.setImage(image);
                 } catch (Exception ex) {
                     imagePreview.setImage(null);
                 }
             }
         }
+
         Pattern namePattern = Pattern.compile("^[a-zA-Z0-9\\s-]{3,50}$");
         Pattern pricePattern = Pattern.compile("^\\d*\\.?\\d+$");
         Pattern quantityPattern = Pattern.compile("^[0-9]+$");
+
         nameField.textProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal.trim().isEmpty()) {
                 nameError.setText("Name cannot be empty");
@@ -941,6 +811,7 @@ public class ProductController {
                 nameField.setStyle("");
             }
         });
+
         descriptionField.textProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal.trim().isEmpty()) {
                 descriptionError.setText("Description cannot be empty");
@@ -953,6 +824,7 @@ public class ProductController {
                 descriptionField.setStyle("");
             }
         });
+
         categoryCombo.valueProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal == null) {
                 categoryError.setText("Select a category");
@@ -962,6 +834,7 @@ public class ProductController {
                 categoryCombo.setStyle("");
             }
         });
+
         priceField.textProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal.trim().isEmpty()) {
                 priceError.setText("Price cannot be empty");
@@ -988,6 +861,7 @@ public class ProductController {
                 }
             }
         });
+
         quantityField.textProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal.trim().isEmpty()) {
                 quantityError.setText("Quantity cannot be empty");
@@ -1014,6 +888,7 @@ public class ProductController {
                 }
             }
         });
+
         GridPane grid = new GridPane();
         grid.setHgap(10);
         grid.setVgap(5);
@@ -1029,16 +904,16 @@ public class ProductController {
         grid.addRow(9, new Label("Quantity:"), quantityField);
         grid.add(quantityError, 1, 10);
         grid.addRow(11, new Label("Image URL:"), imageUrlField);
-        HBox imageButtons = new HBox(10);
-        imageButtons.getChildren().addAll(chooseImageButton, generateImageButton);
-        grid.addRow(12, new Label(""), imageButtons);
+        grid.addRow(12, new Label(""), chooseImageButton);
         grid.addRow(13, new Label(""), imageStatusLabel);
         grid.addRow(14, new Label("Preview:"), imagePreview);
         dialog.getDialogPane().setContent(grid);
+
         ButtonType saveButtonType = new ButtonType("Save", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
         Button saveButton = (Button) dialog.getDialogPane().lookupButton(saveButtonType);
         saveButton.setDisable(true);
+
         Runnable validateForm = () -> {
             boolean isValid =
                     !nameField.getText().trim().isEmpty() &&
@@ -1056,42 +931,61 @@ public class ProductController {
                             Integer.parseInt(quantityField.getText()) <= 10000;
             saveButton.setDisable(!isValid);
         };
+
         nameField.textProperty().addListener((obs, old, newVal) -> validateForm.run());
         descriptionField.textProperty().addListener((obs, old, newVal) -> validateForm.run());
         categoryCombo.valueProperty().addListener((obs, old, newVal) -> validateForm.run());
         priceField.textProperty().addListener((obs, old, newVal) -> validateForm.run());
         quantityField.textProperty().addListener((obs, old, newVal) -> validateForm.run());
+
         dialog.setResultConverter(buttonType -> {
             if (buttonType == saveButtonType) {
                 try {
                     Produit newProduct = product != null ? product : new Produit();
                     newProduct.setNom(nameField.getText().trim());
+                    User currentUser = sessionManager.getLoggedInUser();
+                    if (currentUser != null && currentUser.getId() != null) {
+                        newProduct.setUserId(currentUser.getId());
+                    } else {
+                        throw new IllegalStateException("No valid user logged in.");
+                    }
                     newProduct.setDescription(descriptionField.getText().trim());
                     String selectedCategoryName = categoryCombo.getValue();
                     Categorie selectedCategory = categoryList.stream()
                             .filter(c -> c.getNom().equals(selectedCategoryName))
                             .findFirst()
                             .orElse(null);
+                    if (selectedCategory == null) {
+                        throw new IllegalArgumentException("Selected category does not exist.");
+                    }
                     newProduct.setCategory(selectedCategory);
                     newProduct.setPrixUnitaire(Float.parseFloat(priceField.getText()));
                     newProduct.setQuantite(Integer.parseInt(quantityField.getText()));
                     newProduct.setImageName(imageUrlField.getText());
-                    User currentUser = sessionManager.getLoggedInUser();
+
                     if (product == null) {
-                        newProduct.setId(UUID.randomUUID());
+                        newProduct.setId(UUID.randomUUID().toString());
                         newProduct.setDateCreation(LocalDateTime.now());
-                        newProduct.setUserId(currentUser != null ? currentUser.getId() : null);
-                        ProduitDAO.saveProduct(newProduct);
-                        productList.add(newProduct);
+                        boolean saved = ProduitDAO.saveProduct(newProduct);
+                        if (saved) {
+                            productList.add(newProduct);
+                            showInfo("Success", "Product added successfully.");
+                        } else {
+                            throw new RuntimeException("Failed to save product to the database. Check logs for details.");
+                        }
                     } else {
-                        ProduitDAO.updateProduct(newProduct);
-                        productTableView.refresh();
+                        boolean updated = ProduitDAO.updateProduct(newProduct);
+                        if (updated) {
+                            productTableView.refresh();
+                            showInfo("Success", "Product updated successfully.");
+                        } else {
+                            throw new RuntimeException("Failed to update product in the database. Check logs for details.");
+                        }
                     }
                     handleResearch();
                     return newProduct;
-                } catch (NumberFormatException ex) {
-                    Alert alert = new Alert(Alert.AlertType.ERROR, "Invalid input format.");
-                    alert.showAndWait();
+                } catch (Exception ex) {
+                    showError("Save Error", "Failed to save product: " + ex.getMessage());
                     return null;
                 }
             }
@@ -1104,25 +998,21 @@ public class ProductController {
         Dialog<Void> dialog = new Dialog<>();
         dialog.setTitle("Add Products via Script");
         DialogPane dialogPane = dialog.getDialogPane();
-        URL cssUrl = getClass().getResource("/com/example/css/produitdialog.css");
-        if (cssUrl != null) {
-            dialogPane.getStylesheets().add(cssUrl.toExternalForm());
-        } else {
-            dialogPane.setStyle("-fx-background-color: white; -fx-border-color: gray; -fx-padding: 10;");
-        }
-        dialogPane.getStyleClass().add("dialog-pane");
+        dialogPane.getStylesheets().add(getClass().getResource("/com/example/css/produitdialog.css").toExternalForm());
+
         TextArea scriptField = new TextArea();
-        scriptField.setPromptText("Enter JSON array of products, e.g., [{\"nom\": \"Apple\", \"description\": \"Fresh apples\", \"category\": \"Fruits\", \"prixUnitaire\": 2.99, \"quantite\": 100, \"imageName\": \"path/to/apple.png\"}, ...]");
+        scriptField.setPromptText("Enter JSON array of products, e.g., [{\"nom\": \"Apple\", \"description\": \"Fresh apples\", \"category\": \"Fruits\", \"prixUnitaire\": 2.99, \"quantite\": 100, \"imageName\": \"Uploads/images/apple.jpg\"}]");
         scriptField.setPrefRowCount(10);
         scriptField.setPrefColumnCount(50);
         Label scriptError = new Label();
         scriptError.setStyle("-fx-text-fill: red; -fx-font-size: 10px;");
         Button clearButton = new Button("Clear");
-        clearButton.getStyleClass().add("secondary-button");
         clearButton.setOnAction(e -> scriptField.clear());
+
         Pattern namePattern = Pattern.compile("^[a-zA-Z0-9\\s-]{3,50}$");
         Pattern pricePattern = Pattern.compile("^\\d*\\.?\\d+$");
         Pattern quantityPattern = Pattern.compile("^[0-9]+$");
+
         scriptField.textProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal.trim().isEmpty()) {
                 scriptError.setText("Script cannot be empty");
@@ -1138,6 +1028,7 @@ public class ProductController {
                 scriptField.setStyle("-fx-border-color: red;");
             }
         });
+
         GridPane grid = new GridPane();
         grid.setHgap(10);
         grid.setVgap(5);
@@ -1145,11 +1036,12 @@ public class ProductController {
         grid.add(scriptError, 1, 1);
         grid.addRow(2, new Label(""), clearButton);
         dialog.getDialogPane().setContent(grid);
+
         ButtonType saveButtonType = new ButtonType("Parse and Save", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
         Button saveButton = (Button) dialog.getDialogPane().lookupButton(saveButtonType);
         saveButton.setDisable(true);
-        saveButton.getStyleClass().add("primary-button");
+
         scriptField.textProperty().addListener((obs, old, newVal) -> {
             boolean isValid = !newVal.trim().isEmpty();
             try {
@@ -1159,19 +1051,20 @@ public class ProductController {
                 saveButton.setDisable(true);
             }
         });
+
         dialog.setResultConverter(buttonType -> {
             if (buttonType == saveButtonType) {
                 try {
-                    JSONArray jsonArray = new JSONArray(scriptField.getText().trim());
-                    if (jsonArray.length() > 100) {
-                        Alert alert = new Alert(Alert.AlertType.ERROR);
-                        alert.setTitle("Too Many Products");
-                        alert.setHeaderText(null);
-                        alert.setContentText("Cannot process more than 100 products at once.");
-                        alert.showAndWait();
+                    User currentUser = sessionManager.getLoggedInUser();
+                    if (currentUser == null || currentUser.getId() == null) {
+                        showError("Authentication Error", "No user is logged in. Please log in and try again.");
                         return null;
                     }
-                    User currentUser = sessionManager.getLoggedInUser();
+                    JSONArray jsonArray = new JSONArray(scriptField.getText().trim());
+                    if (jsonArray.length() > 100) {
+                        showError("Too Many Products", "Cannot add more than 100 products at once.");
+                        return null;
+                    }
                     int successCount = 0;
                     StringBuilder errorMessages = new StringBuilder();
                     for (int i = 0; i < jsonArray.length(); i++) {
@@ -1207,7 +1100,7 @@ public class ProductController {
                             continue;
                         }
                         Produit newProduct = new Produit();
-                        newProduct.setId(UUID.randomUUID());
+                        newProduct.setId(UUID.randomUUID().toString());
                         newProduct.setNom(nom);
                         newProduct.setDescription(description);
                         newProduct.setCategory(category);
@@ -1215,31 +1108,23 @@ public class ProductController {
                         newProduct.setQuantite(quantite);
                         newProduct.setImageName(imageName.isEmpty() ? null : imageName);
                         newProduct.setDateCreation(LocalDateTime.now());
-                        newProduct.setUserId(currentUser != null ? currentUser.getId() : null);
-                        ProduitDAO.saveProduct(newProduct);
-                        productList.add(newProduct);
-                        successCount++;
+                        newProduct.setUserId(currentUser.getId());
+                        boolean saved = ProduitDAO.saveProduct(newProduct);
+                        if (saved) {
+                            productList.add(newProduct);
+                            successCount++;
+                        } else {
+                            errorMessages.append(String.format("Product %d: Failed to save to database. Check logs for details.\n", i + 1));
+                        }
                     }
                     handleResearch();
                     if (successCount == jsonArray.length()) {
-                        Alert success = new Alert(Alert.AlertType.INFORMATION);
-                        success.setTitle("Success");
-                        success.setHeaderText(null);
-                        success.setContentText(String.format("Successfully added %d product(s).", successCount));
-                        success.showAndWait();
+                        showInfo("Success", String.format("Successfully added %d product(s).", successCount));
                     } else {
-                        Alert partialSuccess = new Alert(Alert.AlertType.WARNING);
-                        partialSuccess.setTitle("Partial Success");
-                        partialSuccess.setHeaderText(null);
-                        partialSuccess.setContentText(String.format("Added %d product(s). Errors:\n%s", successCount, errorMessages.toString()));
-                        partialSuccess.showAndWait();
+                        showWarning("Partial Success", String.format("Added %d product(s). Errors:\n%s", successCount, errorMessages.toString()));
                     }
                 } catch (Exception e) {
-                    Alert error = new Alert(Alert.AlertType.ERROR);
-                    error.setTitle("Script Error");
-                    error.setHeaderText(null);
-                    error.setContentText("Failed to parse script: " + e.getMessage());
-                    error.showAndWait();
+                    showError("Script Error", "Failed to parse and save products: " + e.getMessage());
                 }
             }
             return null;
@@ -1261,5 +1146,29 @@ public class ProductController {
         });
         contextMenu.getItems().addAll(editItem, deleteItem);
         productTableView.setContextMenu(contextMenu);
+    }
+
+    private void showError(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    private void showWarning(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    private void showInfo(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 }

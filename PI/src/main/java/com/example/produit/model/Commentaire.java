@@ -2,6 +2,7 @@ package com.example.produit.model;
 
 import com.example.auth.model.User;
 import javafx.beans.property.*;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
