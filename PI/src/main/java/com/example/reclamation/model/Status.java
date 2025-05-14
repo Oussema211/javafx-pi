@@ -1,9 +1,9 @@
 package com.example.reclamation.model;
 
 public enum Status {
-    en_cours("en_cours"),
-    resolue("resolue"),
-    fermee("fermee"),
+    WAITING("en_cours"),
+    RESOLVED("resolue"),
+    CLOSED("fermee"),
     REVIEW("review");
 
     private final String displayName;

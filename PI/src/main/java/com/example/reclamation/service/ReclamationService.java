@@ -179,52 +179,95 @@ public class ReclamationService {
         }
     }
 
-    public Reclamation getReclamationById(UUID id) {
-        String sql = "SELECT * FROM reclamations WHERE id = ?";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, id.toString());
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return new Reclamation(
-                        UUID.fromString(rs.getString("id")),
-                        UUID.fromString(rs.getString("user_id")),
-                        rs.getString("tag_id") != null ? UUID.fromString(rs.getString("tag_id")) : null,
-                        rs.getTimestamp("date_reclamation"),
-                        rs.getInt("rate"),
-                        rs.getString("title"),
-                        rs.getString("description"),
-                        Status.fromString(rs.getString("statut"))
-                );
-            }
-        } catch (SQLException e) {
-            System.err.println("Error fetching reclamation by ID: " + e.getMessage());
-        }
+  public Reclamation getReclamationById(UUID id) {
+    if (id == null) {
+        System.err.println("Reclamation ID is null, cannot fetch reclamation.");
         return null;
     }
 
+    String sql = "SELECT * FROM reclamations WHERE id = ?";
+    try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        pstmt.setString(1, id.toString());
+        ResultSet rs = pstmt.executeQuery();
+        if (rs.next()) {
+            UUID userId = rs.getString("user_id") != null ? UUID.fromString(rs.getString("user_id")) : null;
+            UUID tagId = rs.getString("tag_id") != null ? UUID.fromString(rs.getString("tag_id")) : null;
+            Timestamp dateReclamation = rs.getTimestamp("date_reclamation");
+            int rate = rs.getInt("rate");
+            String title = rs.getString("title");
+            String description = rs.getString("description");
+            Status statut = rs.getString("statut") != null ? Status.fromString(rs.getString("statut")) : Status.WAITING;
+
+            return new Reclamation(
+                UUID.fromString(rs.getString("id")),
+                userId,
+                tagId,
+                dateReclamation,
+                rate,
+                title,
+                description,
+                statut
+            );
+        }
+    } catch (SQLException e) {
+        System.err.println("Error fetching reclamation by ID: " + e.getMessage());
+    }
+    return null;
+}
+
+public boolean updateReclamation(Reclamation reclamation) {
+    if (reclamation == null || reclamation.getId() == null) {
+        System.err.println("Reclamation or its ID is null, cannot update.");
+        return false;
+    }
+
+    String sql = "UPDATE reclamations SET user_id = ?, tag_id = ?, date_reclamation = ?, rate = ?, " +
+                 "title = ?, description = ?, statut = ? WHERE id = ?";
+    try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        pstmt.setString(1, reclamation.getUserId() != null ? reclamation.getUserId().toString() : null);
+        pstmt.setString(2, reclamation.getTagId() != null ? reclamation.getTagId().toString() : null);
+        pstmt.setTimestamp(3, new Timestamp(reclamation.getDateReclamation().getTime()));
+        pstmt.setInt(4, reclamation.getRate());
+        pstmt.setString(5, reclamation.getTitle());
+        pstmt.setString(6, reclamation.getDescription());
+        pstmt.setString(7, reclamation.getStatut().getDisplayName());
+        pstmt.setString(8, reclamation.getId().toString());
+        int rowsAffected = pstmt.executeUpdate();
+        return rowsAffected > 0;
+    } catch (SQLException e) {
+        System.err.println("Error updating reclamation: " + e.getMessage());
+        return false;
+    }
+}
     public List<Reclamation> getAllReclamations() {
         List<Reclamation> reclamations = new ArrayList<>();
         String sql = "SELECT * FROM reclamations";
         try (Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                reclamations.add(new Reclamation(
-                        UUID.fromString(rs.getString("id")),
-                        UUID.fromString(rs.getString("user_id")),
-                        rs.getString("tag_id") != null ? UUID.fromString(rs.getString("tag_id")) : null,
-                        rs.getTimestamp("date_reclamation"),
-                        rs.getInt("rate"),
-                        rs.getString("title"),
-                        rs.getString("description"),
-                        Status.fromString(rs.getString("statut"))
-                ));
-            }
-        } catch (SQLException e) {
-            System.err.println("Error fetching all reclamations: " + e.getMessage());
-        }
-        return reclamations;
-    }
+            // Safely handle null or invalid UUID strings
+            UUID id = rs.getString("id") != null ? UUID.fromString(rs.getString("id")) : UUID.randomUUID();
+            UUID userId = rs.getString("user_id") != null ? UUID.fromString(rs.getString("user_id")) : null;
+            UUID tagId = rs.getString("tag_id") != null ? UUID.fromString(rs.getString("tag_id")) : null;
 
+            // Ensure other fields are handled safely
+            Timestamp dateReclamation = rs.getTimestamp("date_reclamation");
+            int rate = rs.getInt("rate");
+            String title = rs.getString("title");
+            String description = rs.getString("description");
+            Status statut = rs.getString("statut") != null ? Status.fromString(rs.getString("statut")) : Status.WAITING; // Default status
+
+            // Create Reclamation object
+            Reclamation reclamation = new Reclamation(id, userId, tagId, dateReclamation, rate, title, description, statut);
+            reclamations.add(reclamation);
+        }
+    } catch (SQLException e) {
+        System.err.println("Error fetching all reclamations: " + e.getMessage());
+    } catch (IllegalArgumentException e) {
+        System.err.println("Invalid UUID format in database: " + e.getMessage());
+    }
+    return reclamations;
+}
     public List<Reclamation> getReclamationsByTag(UUID tagId) {
         List<Reclamation> reclamations = new ArrayList<>();
         String sql = "SELECT * FROM reclamations WHERE tag_id = ?";
@@ -249,25 +292,7 @@ public class ReclamationService {
         return reclamations;
     }
 
-    public boolean updateReclamation(Reclamation reclamation) {
-        String sql = "UPDATE reclamations SET user_id = ?, tag_id = ?, date_reclamation = ?, rate = ?, " +
-                     "title = ?, description = ?, statut = ? WHERE id = ?";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, reclamation.getUserId().toString());
-            pstmt.setString(2, reclamation.getTagId() != null ? reclamation.getTagId().toString() : null);
-            pstmt.setTimestamp(3, new Timestamp(reclamation.getDateReclamation().getTime()));
-            pstmt.setInt(4, reclamation.getRate());
-            pstmt.setString(5, reclamation.getTitle());
-            pstmt.setString(6, reclamation.getDescription());
-            pstmt.setString(7, reclamation.getStatut().getDisplayName());
-            pstmt.setString(8, reclamation.getId().toString());
-            int rowsAffected = pstmt.executeUpdate();
-            return rowsAffected > 0;
-        } catch (SQLException e) {
-            System.err.println("Error updating reclamation: " + e.getMessage());
-            return false;
-        }
-    }
+   
 
     public boolean deleteReclamation(UUID id) {
         String sql = "DELETE FROM reclamations WHERE id = ?";
