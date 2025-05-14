@@ -10,6 +10,9 @@ import javafx.scene.layout.VBox;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class FastBuyController {
 
@@ -47,7 +50,13 @@ public class FastBuyController {
         inputArea.setPrefHeight(200);
         inputArea.getStyleClass().add("input-textarea");
 
-        content.getChildren().addAll(instructions, inputArea);
+        TextArea feedbackArea = new TextArea();
+        feedbackArea.setEditable(false);
+        feedbackArea.setPrefRowCount(5);
+        feedbackArea.setPrefHeight(100);
+        feedbackArea.getStyleClass().add("feedback-textarea");
+
+        content.getChildren().addAll(instructions, inputArea, feedbackArea);
         dialog.getDialogPane().setContent(content);
 
         Button submitButton = (Button) dialog.getDialogPane().lookupButton(submitButtonType);
@@ -57,14 +66,14 @@ public class FastBuyController {
 
         dialog.showAndWait().ifPresent(result -> {
             if (result == submitButtonType) {
-                processFastBuyInput(inputArea.getText().trim());
+                feedbackArea.clear();
+                processFastBuyInput(inputArea.getText().trim(), feedbackArea);
             }
         });
     }
 
-    private void processFastBuyInput(String input) {
+    private void processFastBuyInput(String input, TextArea feedbackArea) {
         String[] items = input.split(",\\s*");
-        StringBuilder feedback = new StringBuilder();
         boolean allSuccessful = true;
 
         for (String item : items) {
@@ -72,52 +81,87 @@ public class FastBuyController {
             if (item.isEmpty()) continue;
 
             try {
-                String[] parts = item.split("\\s+", 2);
-                if (parts.length < 2) {
-                    feedback.append("Invalid format: '").append(item).append("'\n");
+                // Parse quantity and product name
+                Pattern pattern = Pattern.compile("(\\d+\\.?\\d*)\\s*(kg|units?)\\s*of\\s*(.+)");
+                Matcher matcher = pattern.matcher(item.toLowerCase());
+                if (!matcher.matches()) {
+                    feedbackArea.appendText("Invalid format for '" + item + "'. Use 'Xkg of product' or 'X units of product'.\n");
                     allSuccessful = false;
                     continue;
                 }
 
-                String quantityStr = parts[0].replaceAll("[^0-9.]", "");
-                double quantity = Double.parseDouble(quantityStr);
-                int qty = (int) Math.ceil(quantity);
+                double quantity = Double.parseDouble(matcher.group(1));
+                String unit = matcher.group(2);
+                String productName = matcher.group(3).trim();
+                int qty = (unit.equals("kg") && quantity > 0) ? (int) Math.ceil(quantity) : (int) quantity;
 
-                String productName = parts[1].toLowerCase();
-                productName = productName.replaceAll("^(of\\s+)", "").trim();
+                if (qty <= 0) {
+                    feedbackArea.appendText("Invalid quantity for '" + item + "'. Must be positive.\n");
+                    allSuccessful = false;
+                    continue;
+                }
 
-                String finalProductName = productName;
+                // Match product
                 Optional<Produit> matchedProduct = allProducts.stream()
-                        .filter(p -> p.getNom().toLowerCase().contains(finalProductName))
-                        .findFirst();
+                        .filter(p -> p.getNom().toLowerCase().contains(productName))
+                        .min((p1, p2) -> {
+                            int dist1 = levenshteinDistance(p1.getNom().toLowerCase(), productName);
+                            int dist2 = levenshteinDistance(p2.getNom().toLowerCase(), productName);
+                            return Integer.compare(dist1, dist2);
+                        });
 
                 if (matchedProduct.isPresent()) {
                     Produit product = matchedProduct.get();
                     try {
-                        CartManager.addProduct(product, qty);
-                        feedback.append("Added ").append(qty).append("x ").append(product.getNom()).append(" to cart\n");
+                        if (product.getQuantite() < qty) {
+                            feedbackArea.appendText("Insufficient stock for '" + product.getNom() + "'. Available: " + product.getQuantite() + "\n");
+                            allSuccessful = false;
+                        } else {
+                            CartManager.addProduct(product, qty);
+                            feedbackArea.appendText("Added " + qty + "x " + product.getNom() + " to cart\n");
+                        }
                     } catch (IllegalArgumentException e) {
-                        feedback.append(e.getMessage()).append("\n");
+                        feedbackArea.appendText(e.getMessage() + "\n");
                         allSuccessful = false;
                     }
                 } else {
-                    feedback.append("Product not found: '").append(productName).append("'\n");
+                    feedbackArea.appendText("Product not found: '" + productName + "'. Did you mean one of: " +
+                            suggestProducts(productName, 3) + "?\n");
                     allSuccessful = false;
                 }
             } catch (NumberFormatException e) {
-                feedback.append("Invalid quantity in: '").append(item).append("'\n");
+                feedbackArea.appendText("Invalid quantity in: '" + item + "'\n");
                 allSuccessful = false;
             } catch (Exception e) {
-                feedback.append("Error processing: '").append(item).append("': ").append(e.getMessage()).append("\n");
+                feedbackArea.appendText("Error processing: '" + item + "': " + e.getMessage() + "\n");
                 allSuccessful = false;
             }
         }
 
-        showAlert(
-                allSuccessful ? Alert.AlertType.INFORMATION : Alert.AlertType.WARNING,
-                allSuccessful ? "Fast Buy Completed" : "Fast Buy Issues",
-                feedback.toString()
-        );
+        if (feedbackArea.getText().isEmpty()) {
+            feedbackArea.appendText("No valid items processed.\n");
+        }
+    }
+
+    private String suggestProducts(String target, int limit) {
+        return allProducts.stream()
+                .filter(p -> levenshteinDistance(p.getNom().toLowerCase(), target) < 3)
+                .limit(limit)
+                .map(p -> p.getNom())
+                .collect(Collectors.joining(", "));
+    }
+
+    private int levenshteinDistance(String s1, String s2) {
+        int[][] dp = new int[s1.length() + 1][s2.length() + 1];
+        for (int i = 0; i <= s1.length(); i++) dp[i][0] = i;
+        for (int j = 0; j <= s2.length(); j++) dp[0][j] = j;
+        for (int i = 1; i <= s1.length(); i++) {
+            for (int j = 1; j <= s2.length(); j++) {
+                int cost = s1.charAt(i - 1) == s2.charAt(j - 1) ? 0 : 1;
+                dp[i][j] = Math.min(Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1), dp[i - 1][j - 1] + cost);
+            }
+        }
+        return dp[s1.length()][s2.length()];
     }
 
     private void showAlert(Alert.AlertType type, String title, String message) {
